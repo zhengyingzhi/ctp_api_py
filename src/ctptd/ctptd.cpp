@@ -8338,6 +8338,11 @@ void TdApi::createFtdcTraderApi(string pszFlowPath)
 	this->api->RegisterSpi(this);
 };
 
+string TdApi::getApiVersion()
+{
+	return CThostFtdcTraderApi::GetApiVersion();
+}
+
 void TdApi::release()
 {
 	this->api->Release();
@@ -11136,6 +11141,7 @@ BOOST_PYTHON_MODULE(ctptd)
 
 	class_<TdApiWrap, boost::noncopyable>("TdApi")
 		.def("createFtdcTraderApi", &TdApiWrap::createFtdcTraderApi)
+		.def("getApiVersion", &TdApiWrap::getApiVersion)
 		.def("release", &TdApiWrap::release)
 		.def("init", &TdApiWrap::init)
 		.def("join", &TdApiWrap::join)

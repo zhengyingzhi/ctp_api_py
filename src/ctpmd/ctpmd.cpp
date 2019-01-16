@@ -640,6 +640,11 @@ void MdApi::createFtdcMdApi(string pszFlowPath)
 	this->api->RegisterSpi(this);
 };
 
+string MdApi::getApiVersion()
+{
+	return CThostFtdcMdApi::GetApiVersion();
+}
+
 void MdApi::release()
 {
 	this->api->Release();
@@ -897,6 +902,7 @@ BOOST_PYTHON_MODULE(ctpmd)
 
 	class_<MdApiWrap, boost::noncopyable>("MdApi")
 		.def("createFtdcMdApi", &MdApiWrap::createFtdcMdApi)
+		.def("getApiVersion", &MdApiWrap::getApiVersion)
 		.def("release", &MdApiWrap::release)
 		.def("init", &MdApiWrap::init)
 		.def("join", &MdApiWrap::join)

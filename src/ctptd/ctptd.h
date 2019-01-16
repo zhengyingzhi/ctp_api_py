@@ -1190,6 +1190,8 @@ public:
 
 	void createFtdcTraderApi(string pszFlowPath = "");
 
+	string getApiVersion();
+
 	void release();
 
 	void init();

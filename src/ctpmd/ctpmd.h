@@ -280,6 +280,8 @@ public:
 
 	void createFtdcMdApi(string pszFlowPath = "");
 
+	string getApiVersion();
+
 	void release();
 
 	void init();
