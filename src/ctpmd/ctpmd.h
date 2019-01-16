@@ -6,6 +6,9 @@
 #endif
 #include <string>
 #include <queue>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 
 //Boost
 #define BOOST_PYTHON_STATIC_LIB
@@ -14,8 +17,8 @@
 #include <boost/python/dict.hpp>	//python封装
 #include <boost/python/object.hpp>	//python封装
 #include <boost/python.hpp>			//python封装
-#include <boost/thread.hpp>			//任务队列的线程功能
-#include <boost/bind.hpp>			//任务队列的线程功能
+// #include <boost/thread.hpp>			//任务队列的线程功能
+// #include <boost/bind.hpp>			//任务队列的线程功能
 #include <boost/any.hpp>			//任务队列的任务实现
 #include <boost/locale.hpp>			//字符集转换
 //API
@@ -94,7 +97,8 @@ public:
 	//存入新的任务
 	void push(Data const& data)
 	{
-		mutex::scoped_lock lock(the_mutex);				//获取互斥锁
+		// mutex::scoped_lock lock(the_mutex);				//获取互斥锁
+		unique_lock<mutex> lock(the_mutex);				//获取互斥锁
 		the_queue.push(data);							//向队列中存入数据
 		lock.unlock();									//释放锁
 		the_condition_variable.notify_one();			//通知正在阻塞等待的线程
@@ -103,14 +107,16 @@ public:
 	//检查队列是否为空
 	bool empty() const
 	{
-		mutex::scoped_lock lock(the_mutex);
+		// mutex::scoped_lock lock(the_mutex);
+		unique_lock<mutex> lock(the_mutex);
 		return the_queue.empty();
 	}
 
 	//取出
 	Data wait_and_pop()
 	{
-		mutex::scoped_lock lock(the_mutex);
+		// mutex::scoped_lock lock(the_mutex);
+		unique_lock<mutex> lock(the_mutex);
 
 		while (the_queue.empty())						//当队列为空时
 		{
@@ -156,7 +162,7 @@ private:
 public:
 	MdApi()
 	{
-		function0<void> f = boost::bind(&MdApi::processTask, this);
+		function0<void> f = std::bind(&MdApi::processTask, this);
 		thread t(f);
 		this->task_thread = &t;
 	};

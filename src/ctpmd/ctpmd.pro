@@ -40,9 +40,10 @@ QMAKE_CXXFLAGS += -std=c++0x -fPIC -Wno-unused-parameter -fvisibility=hidden -fv
 DEFINES += __STDC_FORMAT_MACROS
 
 
-INCLUDEPATH += ctpapi
+INCLUDEPATH += ../../api/ctp
 INCLUDEPATH += /usr/local/include/boost/include
-INCLUDEPATH += /opt/python3.5/include/python3.5m
+# INCLUDEPATH += /opt/python3.5/include/python3.5m
+INCLUDEPATH += ../../thirdparty/python35/include
 
 LIBS += -lpthread -lrt
 
@@ -56,9 +57,7 @@ LIBS += $${BOOST_DIR}/libboost_system.a
 LIBS += $${BOOST_DIR}/libboost_chrono.a
 LIBS += $${BOOST_DIR}/libboost_atomic.a
 LIBS += $${BOOST_DIR}/libboost_locale.a
-#LIBS += -L/home/bigquant/Downloads/Python354/ -lpython3
-LIBS += -L/home/bigquant/Downloads/Python354/libpython3.5m.a
-#LIBS += /opt/python3.5/lib/libpython3.5m.a
+LIBS += -L../../thirdparty/python35/linux64 -lpython3.5m
 LIBS += -L../api/ctp/linux64 -lthostmduserapi
 
 
