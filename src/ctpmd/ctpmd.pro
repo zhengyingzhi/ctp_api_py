@@ -51,7 +51,7 @@ LIBS += -lpthread -lrt
 BOOST_DIR = ../../thirdparty/boost_1_66_0/linux64
 
 #LIBS += -L$${BOOST_DIR} -lboost_thread -lboost_date_time -lboost_system -lboost_chrono -lboost_atomic -lboost_locale
-LIBS += /usr/local/lib/libboost_python.a
+LIBS += $${BOOST_DIR}/libboost_python.a
 LIBS += $${BOOST_DIR}/libboost_thread.a
 LIBS += $${BOOST_DIR}/libboost_date_time.a
 LIBS += $${BOOST_DIR}/libboost_system.a

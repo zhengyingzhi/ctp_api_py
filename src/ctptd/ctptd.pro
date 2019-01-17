@@ -44,14 +44,14 @@ INCLUDEPATH += ../api/ctp
 # INCLUDEPATH += /usr/local/include/boost/include
 # INCLUDEPATH += /opt/python3.5/include/python3.5m
 INCLUDEPATH += ../../thirdparty/boost_1_66_0
-INCLUDEPATH += INCLUDEPATH += ../../thirdparty/python35/linux_include
+INCLUDEPATH += ../../thirdparty/python35/linux_include
 
 LIBS += -lpthread -lrt
 
 BOOST_DIR = ../../thirdparty/boost_1_66_0/linux64
 
 #LIBS += -L$${BOOST_DIR} -lboost_thread -lboost_date_time -lboost_system -lboost_chrono -lboost_atomic -lboost_locale
-LIBS += /usr/local/lib/libboost_python.a
+LIBS += $${BOOST_DIR}/libboost_python.a
 LIBS += $${BOOST_DIR}/libboost_thread.a
 LIBS += $${BOOST_DIR}/libboost_date_time.a
 LIBS += $${BOOST_DIR}/libboost_system.a
