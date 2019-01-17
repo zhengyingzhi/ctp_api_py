@@ -41,13 +41,14 @@ DEFINES += __STDC_FORMAT_MACROS
 
 
 INCLUDEPATH += ../../api/ctp
-INCLUDEPATH += /usr/local/include/boost/include
+# INCLUDEPATH += /usr/local/include/boost/include
 # INCLUDEPATH += /opt/python3.5/include/python3.5m
+INCLUDEPATH += ../../thirdparty/boost_1_66_0
 INCLUDEPATH += ../../thirdparty/python35/include
 
 LIBS += -lpthread -lrt
 
-BOOST_DIR = /home/bigquant/Downloads/boost_1_66_0/stage/lib
+BOOST_DIR = ../../thirdparty/boost_1_66_0/linux64
 
 #LIBS += -L$${BOOST_DIR} -lboost_thread -lboost_date_time -lboost_system -lboost_chrono -lboost_atomic -lboost_locale
 LIBS += /usr/local/lib/libboost_python.a
