@@ -4684,6 +4684,12 @@ void TdApi::processRspExecOrderInsert(Task task)
 	data["InstrumentID"] = boost::locale::conv::to_utf<char>(task_data.InstrumentID, std::string("GB2312"));
 	data["OffsetFlag"] = task_data.OffsetFlag;
 	data["HedgeFlag"] = task_data.HedgeFlag;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["AccountID"] = boost::locale::conv::to_utf<char>(task_data.AccountID, std::string("GB2312"));
+    data["CurrencyID"] = boost::locale::conv::to_utf<char>(task_data.CurrencyID, std::string("GB2312"));
+    data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -4710,6 +4716,9 @@ void TdApi::processRspExecOrderAction(Task task)
 	data["ActionFlag"] = task_data.ActionFlag;
 	data["InstrumentID"] = boost::locale::conv::to_utf<char>(task_data.InstrumentID, std::string("GB2312"));
 	data["SessionID"] = task_data.SessionID;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -4730,6 +4739,9 @@ void TdApi::processRspForQuoteInsert(Task task)
 	data["InvestorID"] = boost::locale::conv::to_utf<char>(task_data.InvestorID, std::string("GB2312"));
 	data["InstrumentID"] = boost::locale::conv::to_utf<char>(task_data.InstrumentID, std::string("GB2312"));
 	data["BrokerID"] = boost::locale::conv::to_utf<char>(task_data.BrokerID, std::string("GB2312"));
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -4762,7 +4774,11 @@ void TdApi::processRspQuoteInsert(Task task)
 	data["InstrumentID"] = boost::locale::conv::to_utf<char>(task_data.InstrumentID, std::string("GB2312"));
 	data["BidVolume"] = task_data.BidVolume;
 	data["RequestID"] = task_data.RequestID;
-	data["ForQuoteSysID"] = boost::locale::conv::to_utf<char>(task_data.ForQuoteSysID, std::string("GB2312"));
+    data["ForQuoteSysID"] = boost::locale::conv::to_utf<char>(task_data.ForQuoteSysID, std::string("GB2312"));
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+	data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -4851,7 +4867,10 @@ void TdApi::processRspCombActionInsert(Task task)
 	data["BrokerID"] = boost::locale::conv::to_utf<char>(task_data.BrokerID, std::string("GB2312"));
 	data["HedgeFlag"] = task_data.HedgeFlag;
 	data["Direction"] = task_data.Direction;
-	data["Volume"] = task_data.Volume;
+    data["Volume"] = task_data.Volume;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -4923,7 +4942,13 @@ void TdApi::processRspQryOrder(Task task)
 	data["IsSwapOrder"] = task_data.IsSwapOrder;
 	data["ExchangeInstID"] = boost::locale::conv::to_utf<char>(task_data.ExchangeInstID, std::string("GB2312"));
 	data["OrderStatus"] = task_data.OrderStatus;
-	data["InstallID"] = task_data.InstallID;
+    data["InstallID"] = task_data.InstallID;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["AccountID"] = boost::locale::conv::to_utf<char>(task_data.AccountID, std::string("GB2312"));
+    data["CurrencyID"] = boost::locale::conv::to_utf<char>(task_data.CurrencyID, std::string("GB2312"));
+    data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -4967,7 +4992,8 @@ void TdApi::processRspQryTrade(Task task)
 	data["TradeDate"] = boost::locale::conv::to_utf<char>(task_data.TradeDate, std::string("GB2312"));
 	data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
 	data["HedgeFlag"] = task_data.HedgeFlag;
-	data["Direction"] = task_data.Direction;
+    data["Direction"] = task_data.Direction;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5026,7 +5052,8 @@ void TdApi::processRspQryInvestorPosition(Task task)
 	data["ExchangeMargin"] = task_data.ExchangeMargin;
 	data["MarginRateByMoney"] = task_data.MarginRateByMoney;
 	data["PositionProfit"] = task_data.PositionProfit;
-	data["Commission"] = task_data.Commission;
+    data["Commission"] = task_data.Commission;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5087,7 +5114,9 @@ void TdApi::processRspQryTradingAccount(Task task)
 	data["ExchangeMargin"] = task_data.ExchangeMargin;
 	data["PreFundMortgageIn"] = task_data.PreFundMortgageIn;
 	data["PositionProfit"] = task_data.PositionProfit;
-	data["PreMargin"] = task_data.PreMargin;
+    data["PreMargin"] = task_data.PreMargin;
+    data["FrozenSwap"] = task_data.FrozenSwap;
+    data["RemainSwap"] = task_data.RemainSwap;
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5136,7 +5165,8 @@ void TdApi::processRspQryTradingCode(Task task)
 	data["ClientIDType"] = task_data.ClientIDType;
 	data["ExchangeID"] = boost::locale::conv::to_utf<char>(task_data.ExchangeID, std::string("GB2312"));
 	data["BrokerID"] = boost::locale::conv::to_utf<char>(task_data.BrokerID, std::string("GB2312"));
-	data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
+    data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5160,7 +5190,9 @@ void TdApi::processRspQryInstrumentMarginRate(Task task)
 	data["BrokerID"] = boost::locale::conv::to_utf<char>(task_data.BrokerID, std::string("GB2312"));
 	data["IsRelative"] = task_data.IsRelative;
 	data["HedgeFlag"] = task_data.HedgeFlag;
-	data["LongMarginRatioByMoney"] = task_data.LongMarginRatioByMoney;
+    data["LongMarginRatioByMoney"] = task_data.LongMarginRatioByMoney;
+    data["ExchangeID"] = boost::locale::conv::to_utf<char>(task_data.ExchangeID, std::string("GB2312"));
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5186,7 +5218,8 @@ void TdApi::processRspQryInstrumentCommissionRate(Task task)
 	data["OpenRatioByMoney"] = task_data.OpenRatioByMoney;
 	data["CloseTodayRatioByMoney"] = task_data.CloseTodayRatioByMoney;
 	data["InstrumentID"] = boost::locale::conv::to_utf<char>(task_data.InstrumentID, std::string("GB2312"));
-	data["OpenRatioByVolume"] = task_data.OpenRatioByVolume;
+    data["OpenRatioByVolume"] = task_data.OpenRatioByVolume;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5360,7 +5393,9 @@ void TdApi::processRspQrySettlementInfo(Task task)
 	data["Content"] = boost::locale::conv::to_utf<char>(task_data.Content, std::string("GB2312"));
 	data["BrokerID"] = boost::locale::conv::to_utf<char>(task_data.BrokerID, std::string("GB2312"));
 	data["SettlementID"] = task_data.SettlementID;
-	data["SequenceNo"] = task_data.SequenceNo;
+    data["SequenceNo"] = task_data.SequenceNo;
+    data["AccountID"] = boost::locale::conv::to_utf<char>(task_data.AccountID, std::string("GB2312"));
+    data["CurrencyID"] = boost::locale::conv::to_utf<char>(task_data.CurrencyID, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5590,7 +5625,8 @@ void TdApi::processRspQryExchangeMarginRate(Task task)
 	data["InstrumentID"] = boost::locale::conv::to_utf<char>(task_data.InstrumentID, std::string("GB2312"));
 	data["BrokerID"] = boost::locale::conv::to_utf<char>(task_data.BrokerID, std::string("GB2312"));
 	data["HedgeFlag"] = task_data.HedgeFlag;
-	data["LongMarginRatioByMoney"] = task_data.LongMarginRatioByMoney;
+    data["LongMarginRatioByMoney"] = task_data.LongMarginRatioByMoney;
+    data["ExchangeID"] = boost::locale::conv::to_utf<char>(task_data.ExchangeID, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5736,7 +5772,8 @@ void TdApi::processRspQryOptionInstrTradeCost(Task task)
 	data["InstrumentID"] = boost::locale::conv::to_utf<char>(task_data.InstrumentID, std::string("GB2312"));
 	data["BrokerID"] = boost::locale::conv::to_utf<char>(task_data.BrokerID, std::string("GB2312"));
 	data["HedgeFlag"] = task_data.HedgeFlag;
-	data["FixedMargin"] = task_data.FixedMargin;
+    data["FixedMargin"] = task_data.FixedMargin;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5763,7 +5800,8 @@ void TdApi::processRspQryOptionInstrCommRate(Task task)
 	data["CloseTodayRatioByMoney"] = task_data.CloseTodayRatioByMoney;
 	data["InstrumentID"] = boost::locale::conv::to_utf<char>(task_data.InstrumentID, std::string("GB2312"));
 	data["StrikeRatioByVolume"] = task_data.StrikeRatioByVolume;
-	data["OpenRatioByVolume"] = task_data.OpenRatioByVolume;
+    data["OpenRatioByVolume"] = task_data.OpenRatioByVolume;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5816,7 +5854,12 @@ void TdApi::processRspQryExecOrder(Task task)
 	data["InstallID"] = task_data.InstallID;
 	data["HedgeFlag"] = task_data.HedgeFlag;
 	data["PosiDirection"] = task_data.PosiDirection;
-	data["InvestorID"] = boost::locale::conv::to_utf<char>(task_data.InvestorID, std::string("GB2312"));
+    data["InvestorID"] = boost::locale::conv::to_utf<char>(task_data.InvestorID, std::string("GB2312"));
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["CurrencyID"] = boost::locale::conv::to_utf<char>(task_data.CurrencyID, std::string("GB2312"));
+    data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5850,7 +5893,10 @@ void TdApi::processRspQryForQuote(Task task)
 	data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
 	data["ForQuoteLocalID"] = boost::locale::conv::to_utf<char>(task_data.ForQuoteLocalID, std::string("GB2312"));
 	data["SessionID"] = task_data.SessionID;
-	data["InvestorID"] = boost::locale::conv::to_utf<char>(task_data.InvestorID, std::string("GB2312"));
+    data["InvestorID"] = boost::locale::conv::to_utf<char>(task_data.InvestorID, std::string("GB2312"));
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -5909,7 +5955,12 @@ void TdApi::processRspQryQuote(Task task)
 	data["ExchangeInstID"] = boost::locale::conv::to_utf<char>(task_data.ExchangeInstID, std::string("GB2312"));
 	data["BidOrderSysID"] = boost::locale::conv::to_utf<char>(task_data.BidOrderSysID, std::string("GB2312"));
 	data["InstallID"] = task_data.InstallID;
-	data["QuoteLocalID"] = boost::locale::conv::to_utf<char>(task_data.QuoteLocalID, std::string("GB2312"));
+    data["QuoteLocalID"] = boost::locale::conv::to_utf<char>(task_data.QuoteLocalID, std::string("GB2312"));
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["AccountID"] = boost::locale::conv::to_utf<char>(task_data.AccountID, std::string("GB2312"));
+    data["CurrencyID"] = boost::locale::conv::to_utf<char>(task_data.CurrencyID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -6241,7 +6292,13 @@ void TdApi::processRtnOrder(Task task)
 	data["IsSwapOrder"] = task_data.IsSwapOrder;
 	data["ExchangeInstID"] = boost::locale::conv::to_utf<char>(task_data.ExchangeInstID, std::string("GB2312"));
 	data["OrderStatus"] = task_data.OrderStatus;
-	data["InstallID"] = task_data.InstallID;
+    data["InstallID"] = task_data.InstallID;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["AccountID"] = boost::locale::conv::to_utf<char>(task_data.AccountID, std::string("GB2312"));
+    data["CurrencyID"] = boost::locale::conv::to_utf<char>(task_data.CurrencyID, std::string("GB2312"));
+    data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	this->onRtnOrder(data);
 };
@@ -6280,7 +6337,8 @@ void TdApi::processRtnTrade(Task task)
 	data["TradeDate"] = boost::locale::conv::to_utf<char>(task_data.TradeDate, std::string("GB2312"));
 	data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
 	data["HedgeFlag"] = task_data.HedgeFlag;
-	data["Direction"] = task_data.Direction;
+    data["Direction"] = task_data.Direction;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
 
 	this->onRtnTrade(data);
 };
@@ -6313,7 +6371,13 @@ void TdApi::processErrRtnOrderInsert(Task task)
 	data["VolumeTotalOriginal"] = task_data.VolumeTotalOriginal;
 	data["ExchangeID"] = boost::locale::conv::to_utf<char>(task_data.ExchangeID, std::string("GB2312"));
 	data["OrderRef"] = boost::locale::conv::to_utf<char>(task_data.OrderRef, std::string("GB2312"));
-	data["Direction"] = task_data.Direction;
+    data["Direction"] = task_data.Direction;
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["AccountID"] = boost::locale::conv::to_utf<char>(task_data.AccountID, std::string("GB2312"));
+    data["CurrencyID"] = boost::locale::conv::to_utf<char>(task_data.CurrencyID, std::string("GB2312"));
+    data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -6353,7 +6417,10 @@ void TdApi::processErrRtnOrderAction(Task task)
 	data["OrderActionStatus"] = task_data.OrderActionStatus;
 	data["ActionTime"] = boost::locale::conv::to_utf<char>(task_data.ActionTime, std::string("GB2312"));
 	data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
-	data["OrderRef"] = boost::locale::conv::to_utf<char>(task_data.OrderRef, std::string("GB2312"));
+    data["OrderRef"] = boost::locale::conv::to_utf<char>(task_data.OrderRef, std::string("GB2312"));
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -6575,7 +6642,10 @@ void TdApi::processErrRtnExecOrderAction(Task task)
 	data["ParticipantID"] = boost::locale::conv::to_utf<char>(task_data.ParticipantID, std::string("GB2312"));
 	data["ExecOrderLocalID"] = boost::locale::conv::to_utf<char>(task_data.ExecOrderLocalID, std::string("GB2312"));
 	data["ActionTime"] = boost::locale::conv::to_utf<char>(task_data.ActionTime, std::string("GB2312"));
-	data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
+    data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -6720,7 +6790,10 @@ void TdApi::processErrRtnQuoteAction(Task task)
 	data["FrontID"] = task_data.FrontID;
 	data["ActionTime"] = boost::locale::conv::to_utf<char>(task_data.ActionTime, std::string("GB2312"));
 	data["ClientID"] = boost::locale::conv::to_utf<char>(task_data.ClientID, std::string("GB2312"));
-	data["QuoteLocalID"] = boost::locale::conv::to_utf<char>(task_data.QuoteLocalID, std::string("GB2312"));
+    data["QuoteLocalID"] = boost::locale::conv::to_utf<char>(task_data.QuoteLocalID, std::string("GB2312"));
+    data["InvestUnitID"] = boost::locale::conv::to_utf<char>(task_data.InvestUnitID, std::string("GB2312"));
+    data["IPAddress"] = boost::locale::conv::to_utf<char>(task_data.IPAddress, std::string("GB2312"));
+    data["MacAddress"] = boost::locale::conv::to_utf<char>(task_data.MacAddress, std::string("GB2312"));
 
 	CThostFtdcRspInfoField task_error = any_cast<CThostFtdcRspInfoField>(task.task_error);
 	dict error;
@@ -8516,6 +8589,7 @@ int TdApi::reqUserLogin2(dict req, int nRequestID)
     getStr(req, "OneTimePassword", myreq.OneTimePassword);
     getStr(req, "ProtocolInfo", myreq.ProtocolInfo);
     getStr(req, "Password", myreq.Password);
+    getStr(req, "LoginRemark", myreq.LoginRemark);
     int i = this->api->ReqUserLogin2(&myreq, nRequestID);
     return i;
 }
@@ -8645,7 +8719,10 @@ int TdApi::reqOrderAction(dict req, int nRequestID)
 	getStr(req, "BrokerID", myreq.BrokerID);
 	getInt(req, "RequestID", &myreq.RequestID);
 	getStr(req, "OrderSysID", myreq.OrderSysID);
-	getInt(req, "FrontID", &myreq.FrontID);
+    getInt(req, "FrontID", &myreq.FrontID);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
+    getStr(req, "IPAddress", myreq.IPAddress);
+    getStr(req, "MacAddress", myreq.MacAddress);
 	int i = this->api->ReqOrderAction(&myreq, nRequestID);
 	return i;
 };
@@ -8661,7 +8738,8 @@ int TdApi::reqQueryMaxOrderVolume(dict req, int nRequestID)
 	getStr(req, "ExchangeID", myreq.ExchangeID);
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "BrokerID", myreq.BrokerID);
-	getInt(req, "MaxVolume", &myreq.MaxVolume);
+    getInt(req, "MaxVolume", &myreq.MaxVolume);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQueryMaxOrderVolume(&myreq, nRequestID);
 	return i;
 };
@@ -8673,7 +8751,10 @@ int TdApi::reqSettlementInfoConfirm(dict req, int nRequestID)
 	getStr(req, "ConfirmTime", myreq.ConfirmTime);
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "BrokerID", myreq.BrokerID);
-	getStr(req, "ConfirmDate", myreq.ConfirmDate);
+    getStr(req, "ConfirmDate", myreq.ConfirmDate);
+    getInt(req, "SettlementID", &myreq.SettlementID);
+    getStr(req, "AccountID", myreq.AccountID);
+    getStr(req, "CurrencyID", myreq.CurrencyID);
 	int i = this->api->ReqSettlementInfoConfirm(&myreq, nRequestID);
 	return i;
 };
@@ -8798,8 +8879,12 @@ int TdApi::reqQuoteAction(dict req, int nRequestID)
 	getInt(req, "RequestID", &myreq.RequestID);
 	getChar(req, "ActionFlag", &myreq.ActionFlag);
 	getInt(req, "FrontID", &myreq.FrontID);
-	getStr(req, "QuoteSysID", myreq.QuoteSysID);
-	getStr(req, "QuoteRef", myreq.QuoteRef);
+    getStr(req, "QuoteSysID", myreq.QuoteSysID);
+    getStr(req, "QuoteRef", myreq.QuoteRef);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
+    getStr(req, "ClientID", myreq.ClientID);
+    getStr(req, "IPAddress", myreq.IPAddress);
+    getStr(req, "MacAddress", myreq.MacAddress);
 	int i = this->api->ReqQuoteAction(&myreq, nRequestID);
 	return i;
 };
@@ -8864,7 +8949,8 @@ int TdApi::reqQryOrder(dict req, int nRequestID)
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "BrokerID", myreq.BrokerID);
 	getStr(req, "OrderSysID", myreq.OrderSysID);
-	getStr(req, "InsertTimeEnd", myreq.InsertTimeEnd);
+    getStr(req, "InsertTimeEnd", myreq.InsertTimeEnd);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQryOrder(&myreq, nRequestID);
 	return i;
 };
@@ -8879,7 +8965,8 @@ int TdApi::reqQryTrade(dict req, int nRequestID)
 	getStr(req, "TradeID", myreq.TradeID);
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "BrokerID", myreq.BrokerID);
-	getStr(req, "TradeTimeEnd", myreq.TradeTimeEnd);
+    getStr(req, "TradeTimeEnd", myreq.TradeTimeEnd);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQryTrade(&myreq, nRequestID);
 	return i;
 };
@@ -8891,7 +8978,8 @@ int TdApi::reqQryInvestorPosition(dict req, int nRequestID)
 	getStr(req, "InstrumentID", myreq.InstrumentID);
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "ExchangeID", myreq.ExchangeID);
-	getStr(req, "BrokerID", myreq.BrokerID);
+    getStr(req, "BrokerID", myreq.BrokerID);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQryInvestorPosition(&myreq, nRequestID);
 	return i;
 };
@@ -8903,7 +8991,8 @@ int TdApi::reqQryTradingAccount(dict req, int nRequestID)
 	getStr(req, "CurrencyID", myreq.CurrencyID);
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getChar(req, "BizType", &myreq.BizType);
-	getStr(req, "BrokerID", myreq.BrokerID);
+    getStr(req, "BrokerID", myreq.BrokerID);
+    getStr(req, "AccountID", myreq.AccountID);
 	int i = this->api->ReqQryTradingAccount(&myreq, nRequestID);
 	return i;
 };
@@ -8926,7 +9015,8 @@ int TdApi::reqQryTradingCode(dict req, int nRequestID)
 	getStr(req, "ExchangeID", myreq.ExchangeID);
 	getStr(req, "BrokerID", myreq.BrokerID);
 	getChar(req, "ClientIDType", &myreq.ClientIDType);
-	getStr(req, "ClientID", myreq.ClientID);
+    getStr(req, "ClientID", myreq.ClientID);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQryTradingCode(&myreq, nRequestID);
 	return i;
 };
@@ -8938,7 +9028,9 @@ int TdApi::reqQryInstrumentMarginRate(dict req, int nRequestID)
 	getStr(req, "InstrumentID", myreq.InstrumentID);
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "BrokerID", myreq.BrokerID);
-	getChar(req, "HedgeFlag", &myreq.HedgeFlag);
+    getChar(req, "HedgeFlag", &myreq.HedgeFlag);
+    getStr(req, "ExchangeID", myreq.ExchangeID);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQryInstrumentMarginRate(&myreq, nRequestID);
 	return i;
 };
@@ -8950,7 +9042,8 @@ int TdApi::reqQryInstrumentCommissionRate(dict req, int nRequestID)
 	getStr(req, "InstrumentID", myreq.InstrumentID);
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "ExchangeID", myreq.ExchangeID);
-	getStr(req, "BrokerID", myreq.BrokerID);
+    getStr(req, "BrokerID", myreq.BrokerID);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQryInstrumentCommissionRate(&myreq, nRequestID);
 	return i;
 };
@@ -9003,7 +9096,9 @@ int TdApi::reqQrySettlementInfo(dict req, int nRequestID)
 	memset(&myreq, 0, sizeof(myreq));
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "BrokerID", myreq.BrokerID);
-	getStr(req, "TradingDay", myreq.TradingDay);
+    getStr(req, "TradingDay", myreq.TradingDay);
+    getStr(req, "AccountID", myreq.AccountID);
+    getStr(req, "CurrencyID", myreq.CurrencyID);
 	int i = this->api->ReqQrySettlementInfo(&myreq, nRequestID);
 	return i;
 };
@@ -9189,7 +9284,8 @@ int TdApi::reqQryOptionInstrTradeCost(dict req, int nRequestID)
 	getDouble(req, "UnderlyingPrice", &myreq.UnderlyingPrice);
 	getChar(req, "HedgeFlag", &myreq.HedgeFlag);
 	getStr(req, "InvestorID", myreq.InvestorID);
-	getStr(req, "BrokerID", myreq.BrokerID);
+    getStr(req, "BrokerID", myreq.BrokerID);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQryOptionInstrTradeCost(&myreq, nRequestID);
 	return i;
 };
@@ -9201,7 +9297,8 @@ int TdApi::reqQryOptionInstrCommRate(dict req, int nRequestID)
 	getStr(req, "InstrumentID", myreq.InstrumentID);
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "ExchangeID", myreq.ExchangeID);
-	getStr(req, "BrokerID", myreq.BrokerID);
+    getStr(req, "BrokerID", myreq.BrokerID);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQryOptionInstrCommRate(&myreq, nRequestID);
 	return i;
 };
@@ -9230,7 +9327,8 @@ int TdApi::reqQryForQuote(dict req, int nRequestID)
 	getStr(req, "InsertTimeStart", myreq.InsertTimeStart);
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "BrokerID", myreq.BrokerID);
-	getStr(req, "InsertTimeEnd", myreq.InsertTimeEnd);
+    getStr(req, "InsertTimeEnd", myreq.InsertTimeEnd);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQryForQuote(&myreq, nRequestID);
 	return i;
 };
@@ -9245,7 +9343,8 @@ int TdApi::reqQryQuote(dict req, int nRequestID)
 	getStr(req, "InvestorID", myreq.InvestorID);
 	getStr(req, "BrokerID", myreq.BrokerID);
 	getStr(req, "QuoteSysID", myreq.QuoteSysID);
-	getStr(req, "InsertTimeEnd", myreq.InsertTimeEnd);
+    getStr(req, "InsertTimeEnd", myreq.InsertTimeEnd);
+    getStr(req, "InvestUnitID", myreq.InvestUnitID);
 	int i = this->api->ReqQryQuote(&myreq, nRequestID);
 	return i;
 };
@@ -11155,7 +11254,9 @@ BOOST_PYTHON_MODULE(ctptd)
 		.def("reqUserLogout", &TdApiWrap::reqUserLogout)
 		.def("reqUserPasswordUpdate", &TdApiWrap::reqUserPasswordUpdate)
 		.def("reqTradingAccountPasswordUpdate", &TdApiWrap::reqTradingAccountPasswordUpdate)
-		.def("reqOrderInsert", &TdApiWrap::reqOrderInsert)
+        .def("reqUserLogin2", &TdApiWrap::reqUserLogin2)
+        .def("reqUserPasswordUpdate2", &TdApiWrap::reqUserPasswordUpdate2)
+        .def("reqOrderInsert", &TdApiWrap::reqOrderInsert)
 		.def("reqParkedOrderInsert", &TdApiWrap::reqParkedOrderInsert)
 		.def("reqParkedOrderAction", &TdApiWrap::reqParkedOrderAction)
 		.def("reqOrderAction", &TdApiWrap::reqOrderAction)
