@@ -3,9 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctpmd", "..\..\src\ctpmd\ctpmd.vcxproj", "{5C319FF0-2EA3-4BC1-B43D-85F7042A8A08}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctpmd", "..\..\src\ctp\ctpmd\ctpmd.vcxproj", "{5C319FF0-2EA3-4BC1-B43D-85F7042A8A08}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctptd", "..\..\src\ctptd\ctptd.vcxproj", "{8D8E0329-1D3E-4D95-A2CE-58398FED69E3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctptd", "..\..\src\ctp\ctptd\ctptd.vcxproj", "{8D8E0329-1D3E-4D95-A2CE-58398FED69E3}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xspeedsecmd", "..\..\src\xspeedsec\xspeedsecmd\xsppedsecmd.vcxproj", "{91EAACAA-EF6C-408C-A089-9F8D5581EF6A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xspeedsectd", "..\..\src\xspeedsec\xspeedsectd\xspeedsectd.vcxproj", "{931FD781-2999-4F40-B8E9-535B79F0955A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +35,20 @@ Global
 		{8D8E0329-1D3E-4D95-A2CE-58398FED69E3}.Release|x64.Build.0 = Release|x64
 		{8D8E0329-1D3E-4D95-A2CE-58398FED69E3}.Release|x86.ActiveCfg = Release|Win32
 		{8D8E0329-1D3E-4D95-A2CE-58398FED69E3}.Release|x86.Build.0 = Release|Win32
+		{91EAACAA-EF6C-408C-A089-9F8D5581EF6A}.Debug|x64.ActiveCfg = Debug|Win32
+		{91EAACAA-EF6C-408C-A089-9F8D5581EF6A}.Debug|x86.ActiveCfg = Debug|Win32
+		{91EAACAA-EF6C-408C-A089-9F8D5581EF6A}.Debug|x86.Build.0 = Debug|Win32
+		{91EAACAA-EF6C-408C-A089-9F8D5581EF6A}.Release|x64.ActiveCfg = Release|x64
+		{91EAACAA-EF6C-408C-A089-9F8D5581EF6A}.Release|x64.Build.0 = Release|x64
+		{91EAACAA-EF6C-408C-A089-9F8D5581EF6A}.Release|x64.Deploy.0 = Release|x64
+		{91EAACAA-EF6C-408C-A089-9F8D5581EF6A}.Release|x86.ActiveCfg = Release|Win32
+		{91EAACAA-EF6C-408C-A089-9F8D5581EF6A}.Release|x86.Build.0 = Release|Win32
+		{931FD781-2999-4F40-B8E9-535B79F0955A}.Debug|x64.ActiveCfg = Debug|Win32
+		{931FD781-2999-4F40-B8E9-535B79F0955A}.Debug|x86.ActiveCfg = Debug|Win32
+		{931FD781-2999-4F40-B8E9-535B79F0955A}.Debug|x86.Build.0 = Debug|Win32
+		{931FD781-2999-4F40-B8E9-535B79F0955A}.Release|x64.ActiveCfg = Release|x64
+		{931FD781-2999-4F40-B8E9-535B79F0955A}.Release|x86.ActiveCfg = Release|Win32
+		{931FD781-2999-4F40-B8E9-535B79F0955A}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
