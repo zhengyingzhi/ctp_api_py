@@ -2,4 +2,5 @@ TEMPLATE = subdirs
 
 SUBDIRS += \
 ../../src/ctptd \
-../../src/ctpmd
+../../src/ctpmd \
+../../src/kdmd

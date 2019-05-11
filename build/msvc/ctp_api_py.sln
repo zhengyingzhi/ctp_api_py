@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xspeedsecmd", "..\..\src\xs
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xspeedsectd", "..\..\src\xspeedsec\xspeedsectd\xspeedsectd.vcxproj", "{931FD781-2999-4F40-B8E9-535B79F0955A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kdmd", "..\..\src\kdmd\kdmd.vcxproj", "{0F2DDCFA-3C4D-40D0-9369-B6A8E157C24D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -49,6 +51,14 @@ Global
 		{931FD781-2999-4F40-B8E9-535B79F0955A}.Release|x64.ActiveCfg = Release|x64
 		{931FD781-2999-4F40-B8E9-535B79F0955A}.Release|x86.ActiveCfg = Release|Win32
 		{931FD781-2999-4F40-B8E9-535B79F0955A}.Release|x86.Build.0 = Release|Win32
+		{0F2DDCFA-3C4D-40D0-9369-B6A8E157C24D}.Debug|x64.ActiveCfg = Debug|x64
+		{0F2DDCFA-3C4D-40D0-9369-B6A8E157C24D}.Debug|x64.Build.0 = Debug|x64
+		{0F2DDCFA-3C4D-40D0-9369-B6A8E157C24D}.Debug|x86.ActiveCfg = Debug|Win32
+		{0F2DDCFA-3C4D-40D0-9369-B6A8E157C24D}.Debug|x86.Build.0 = Debug|Win32
+		{0F2DDCFA-3C4D-40D0-9369-B6A8E157C24D}.Release|x64.ActiveCfg = Release|x64
+		{0F2DDCFA-3C4D-40D0-9369-B6A8E157C24D}.Release|x64.Build.0 = Release|x64
+		{0F2DDCFA-3C4D-40D0-9369-B6A8E157C24D}.Release|x86.ActiveCfg = Release|Win32
+		{0F2DDCFA-3C4D-40D0-9369-B6A8E157C24D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

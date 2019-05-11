@@ -12,65 +12,163 @@
 
 void getInt(dict d, string key, int *value)
 {
-	if (d.has_key(key))		//检查字典中是否存在该键值
-	{
-		object o = d[key];	//获取该键值
-		extract<int> x(o);	//创建提取器
-		if (x.check())		//如果可以提取
-		{
-			*value = x();	//对目标整数指针赋值
-		}
-	}
+    if (d.has_key(key))		//检查字典中是否存在该键值
+    {
+        object o = d[key];	//获取该键值
+        extract<int> x(o);	//创建提取器
+        if (x.check())		//如果可以提取
+        {
+            *value = x();	//对目标整数指针赋值
+        }
+    }
 };
 
 void getDouble(dict d, string key, double *value)
 {
-	if (d.has_key(key))
-	{
-		object o = d[key];
-		extract<double> x(o);
-		if (x.check())
-		{
-			*value = x();
-		}
-	}
+    if (d.has_key(key))
+    {
+        object o = d[key];
+        extract<double> x(o);
+        if (x.check())
+        {
+            *value = x();
+        }
+    }
 };
 
 void getStr(dict d, string key, char *value)
 {
-	if (d.has_key(key))
-	{
-		object o = d[key];
-		extract<string> x(o);
-		if (x.check())
-		{
-			string s = x();
-			const char *buffer = s.c_str();
-			//对字符串指针赋值必须使用strcpy_s, vs2013使用strcpy编译通不过
-			//+1应该是因为C++字符串的结尾符号？不是特别确定，不加这个1会出错
+    if (d.has_key(key))
+    {
+        object o = d[key];
+        extract<string> x(o);
+        if (x.check())
+        {
+            string s = x();
+            const char *buffer = s.c_str();
+            //对字符串指针赋值必须使用strcpy_s, vs2013使用strcpy编译通不过
+            //+1应该是因为C++字符串的结尾符号？不是特别确定，不加这个1会出错
 #ifdef _MSC_VER //WIN32
-			strcpy_s(value, strlen(buffer) + 1, buffer);
+            strcpy_s(value, strlen(buffer) + 1, buffer);
 #elif __GNUC__
-			strncpy(value, buffer, strlen(buffer) + 1);
+            strncpy(value, buffer, strlen(buffer) + 1);
 #endif
-		}
-	}
+        }
+    }
 };
 
 void getChar(dict d, string key, char *value)
 {
-	if (d.has_key(key))
-	{
-		object o = d[key];
-		extract<string> x(o);
-		if (x.check())
-		{
-			string s = x();
-			const char *buffer = s.c_str();
-			*value = *buffer;
-		}
-	}
+    if (d.has_key(key))
+    {
+        object o = d[key];
+        extract<string> x(o);
+        if (x.check())
+        {
+            string s = x();
+            const char *buffer = s.c_str();
+            *value = *buffer;
+        }
+    }
 };
+
+void getInstrumentKey(dict req, kd_md_instrument_key_t* apInstruKey)
+{
+    int lMarketId = 0, lServiceId = 0;
+    kd_md_instrument_key_t lInstrKey = { 0 };
+    getStr(req, "InstrumentID", apInstruKey->m_InstrumentID);
+    getInt(req, "MarketId", &lMarketId);
+    getInt(req, "ServiceId", &lServiceId);
+    apInstruKey->m_MarketId = lMarketId;
+    apInstruKey->m_ServiceId = lServiceId;
+}
+
+void extractData(dict outData, kd_md_data_t* apData)
+{
+    uint16_t lMarketId = apData->m_MarketId;
+    uint16_t lServiceId = apData->m_ServiceId;
+    if (lMarketId == KD_MI_SSE || lMarketId == KD_MI_SZSE)
+    {
+        if (lServiceId == KD_SI_IDX_ProductInfo)
+        {
+            KDIndexProductInfo* lpIdxInfo;
+            lpIdxInfo = (KDIndexProductInfo*)apData->m_pDataInfo;
+            outData["InstrumentID"] = std::string(lpIdxInfo->InstrumentID);
+            outData["InstrumentName"] = std::string(lpIdxInfo->InstrumentName);
+            outData["DecimalPoint"] = lpIdxInfo->DecimalPoint;
+            outData["PreCloseIndex"] = lpIdxInfo->PreCloseIndex;
+            outData["MarketId"] = lpIdxInfo->MarketId;
+        }
+        else if (lServiceId == KD_SI_IDX_MarketData)
+        {
+            KDIndexMarketData* lpIdxMD;
+            lpIdxMD = (KDIndexMarketData*)apData->m_pDataInfo;
+            outData["InstrumentID"] = std::string(lpIdxMD->InstrumentID);
+            outData["OpenIndex"]    = lpIdxMD->OpenIndex;
+            outData["HighIndex"]    = lpIdxMD->HighIndex;
+            outData["LowIndex"]     = lpIdxMD->LowIndex;
+            outData["LastIndex"]    = lpIdxMD->LastIndex;
+            outData["CloseIndex"]   = lpIdxMD->CloseIndex;
+            outData["PreCloseIndex"] = lpIdxMD->PreCloseIndex;
+            outData["Volume"]       = lpIdxMD->Volume;
+            outData["Turnover"]     = lpIdxMD->Turnover;
+            outData["TradingDay"]   = lpIdxMD->TradingDay;
+            outData["ActionDay"]    = lpIdxMD->ActionDay;
+            outData["UpdateTime"]   = lpIdxMD->UpdateTime;
+        }
+        else if (lServiceId == KD_SI_STK_ProductInfo)
+        {
+            KDStockProductInfo* lpStkInfo;
+            lpStkInfo = (KDStockProductInfo*)apData->m_pDataInfo;
+            outData["InstrumentID"]     = std::string(lpStkInfo->InstrumentID);
+            outData["InstrumentName"]   = std::string(lpStkInfo->InstrumentName);
+            outData["DecimalPoint"]     = lpStkInfo->DecimalPoint;
+            outData["PreClosePrice"]    = lpStkInfo->PreClosePrice;
+            outData["UpperLimitPrice"]  = lpStkInfo->UpperLimitPrice;
+            outData["LowerLimitPrice"]  = lpStkInfo->LowerLimitPrice;
+            outData["MarketId"]         = lpStkInfo->MarketId;
+        }
+        else if (lServiceId == KD_SI_STK_MarketDataL1)
+        {
+            KDStockMarketDataL1* lpStkMD;
+            lpStkMD = (KDStockMarketDataL1*)apData->m_pDataInfo;
+            outData["InstrumentID"] = std::string(lpStkMD->InstrumentID);
+            outData["OpenPrice"]    = lpStkMD->OpenPrice;
+            outData["HighestPrice"] = lpStkMD->HighestPrice;
+            outData["LowestPrice"]  = lpStkMD->LowestPrice;
+            outData["LastPrice"]    = lpStkMD->LastPrice;
+            outData["BidPrice"]     = lpStkMD->BidPrice;
+            outData["BidVol"]       = lpStkMD->BidVol;
+            outData["AskPrice"]     = lpStkMD->AskPrice;
+            outData["AskVol"]       = lpStkMD->AskVol;
+            outData["Volume"]       = lpStkMD->Volume;
+            outData["Turnover"]     = lpStkMD->Turnover;
+            outData["AveragePrice"] = lpStkMD->AveragePrice;
+            outData["ClosePrice"]   = lpStkMD->ClosePrice;
+            outData["IOPV"]         = lpStkMD->IOPV;
+            outData["PreIOPV"]      = lpStkMD->PreIOPV;
+            outData["TradingDay"]   = lpStkMD->TradingDay;
+            outData["ActionDay"]    = lpStkMD->ActionDay;
+            outData["UpdateTime"]   = lpStkMD->UpdateTime;
+            outData["Status"]       = lpStkMD->Status;
+            outData["StopFlag"]     = lpStkMD->StopFlag;
+        }
+        else if (lServiceId == KD_SI_KLineData)
+        {
+            KDKLine* lpKLine;
+            lpKLine = (KDKLine*)apData->m_pDataInfo;
+            outData["InstrumentID"] = std::string(lpKLine->InstrumentID);
+            outData["Day"]  = lpKLine->Day;
+            outData["Time"] = lpKLine->Time;
+            outData["Open"] = lpKLine->Open;
+            outData["High"] = lpKLine->High;
+            outData["Low"]  = lpKLine->Low;
+            outData["Close"] = lpKLine->Close;
+            outData["Volume"] = lpKLine->Volume;
+            outData["Turnover"] = lpKLine->Turnover;
+        }
+    }
+}
 
 
 ///-------------------------------------------------------------------------------------
@@ -78,6 +176,8 @@ void getChar(dict d, string key, char *value)
 ///-------------------------------------------------------------------------------------
 void KDMdApi::mdApiHandlerStatic(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData)
 {
+    fprintf(stderr, "mdApiHandlerStatic:%d\n", aMsgType);
+    return;
     KDMdApi* lpThis;
     lpThis = (KDMdApi*)KDMdGetUserData(apMdApi);
     lpThis->mdApiHandler(apMdApi, aMsgType, apData);
@@ -119,6 +219,7 @@ void KDMdApi::mdApiHandler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved
 
 void KDMdApi::processFrontConnected()
 {
+    // fprintf(stderr, "processFrontConnected\n");
     PyLock lock;
     this->onFrontConnected();
 };
@@ -194,6 +295,14 @@ void KDMdApi::processRspQueryData(kd_md_recved_data_t* apData)
     PyLock lock;
     dict data;
     dict error;
+    if (apData->m_ErrorID == 0)
+    {
+        extractData(data, &apData->m_Data);
+    }
+    else
+    {
+        error["ErrorID"] = apData->m_ErrorID;
+    }
     bool lIsLast = apData->m_IsLast ? true : false;
     this->onRspQryData(data, error, lIsLast);
 }
@@ -202,36 +311,8 @@ void KDMdApi::processRtnData(kd_md_recved_data_t* apData)
 {
     PyLock lock;
     dict data;
-    uint16_t lMarketId = apData->m_Data.m_MarketId;
-    uint16_t lServiceId = apData->m_Data.m_ServiceId;
-    if (lMarketId == KD_MI_SSE || lMarketId == KD_MI_SZSE)
-    {
-        if (lServiceId == KD_SI_IDX_ProductInfo)
-        {
-            KDIndexProductInfo* lpIdxInfo;
-            lpIdxInfo = (KDIndexProductInfo*)apData->m_Data.m_pDataInfo;
-            data["InstrumentID"] = std::string(lpIdxInfo->InstrumentID);
-        }
-        else if (lServiceId == KD_SI_IDX_MarketData)
-        {
-            KDIndexMarketData* lpIdxMD;
-            lpIdxMD = (KDIndexMarketData*)apData->m_Data.m_pDataInfo;
-            data["InstrumentID"] = std::string(lpIdxMD->InstrumentID);
-        }
-        else if (lServiceId == KD_SI_STK_ProductInfo)
-        {
-            KDStockProductInfo* lpStkInfo;
-            lpStkInfo = (KDStockProductInfo*)apData->m_Data.m_pDataInfo;
-            data["InstrumentID"] = std::string(lpStkInfo->InstrumentID);
-        }
-        else if (lServiceId == KD_SI_STK_MarketDataL1)
-        {
-            KDStockMarketDataL1* lpStkMD;
-            lpStkMD = (KDStockMarketDataL1*)apData->m_Data.m_pDataInfo;
-            data["InstrumentID"] = std::string(lpStkMD->InstrumentID);
-        }
-    }
-    this->onRtnMarketData(lMarketId, lServiceId, data);
+    extractData(data, &apData->m_Data);
+    this->onRtnMarketData(apData->m_Data.m_MarketId, apData->m_Data.m_ServiceId, data);
 };
 
 
@@ -281,23 +362,17 @@ void KDMdApi::registerFront(string pszFrontAddress, uint16_t port)
     KDMdRegisterServer(this->api, &lTcpInfo, 1);
 };
 
-int KDMdApi::subscribeMarketData(string aInstrument, uint16_t aMarketId, uint16_t aServiceId)
+int KDMdApi::subscribeMarketData(dict req)
 {
-    int lMarketId = 0, lServiceId = 0;
     kd_md_instrument_key_t lInstrKey = { 0 };
-    strncpy(lInstrKey.m_InstrumentID, aInstrument.c_str(), sizeof(lInstrKey) - 1);
-    lInstrKey.m_MarketId = aMarketId;
-    lInstrKey.m_ServiceId = aServiceId;
+    getInstrumentKey(req, &lInstrKey);
     return KDMdSubscribe(this->api, &lInstrKey, 1);
 };
 
-int KDMdApi::unSubscribeMarketData(string aInstrument, uint16_t aMarketId, uint16_t aServiceId)
+int KDMdApi::unSubscribeMarketData(dict req)
 {
-    int lMarketId = 0, lServiceId = 0;
     kd_md_instrument_key_t lInstrKey = { 0 };
-    strncpy(lInstrKey.m_InstrumentID, aInstrument.c_str(), sizeof(lInstrKey) - 1);
-    lInstrKey.m_MarketId = aMarketId;
-    lInstrKey.m_ServiceId = aServiceId;
+    getInstrumentKey(req, &lInstrKey);
     return KDMdUnSubscribe(this->api, &lInstrKey, 1);
 };
 
@@ -310,12 +385,8 @@ int KDMdApi::unSubscribeAll()
 int KDMdApi::reqQryData(dict req)
 {
     int rv;
-    int lMarketId = 0, lServiceId = 0;
     kd_md_instrument_key_t lInstrKey = { 0 };
-    getStr(req, "InstrumentID", lInstrKey.m_InstrumentID);
-    getInt(req, "MarketId", &lMarketId);
-    getInt(req, "ServiceId", &lServiceId);
-
+    getInstrumentKey(req, &lInstrKey);
     rv = KDMdReqQryData(this->api, &lInstrKey, 1);
     return rv;
 }
@@ -323,18 +394,16 @@ int KDMdApi::reqQryData(dict req)
 int KDMdApi::reqGetData(dict req, dict outData, int aTimeoutMS)
 {
     int rv;
-    int lMarketId = 0, lServiceId = 0;
     kd_md_instrument_key_t lInstrKey = { 0 };
-    getStr(req, "InstrumentID", lInstrKey.m_InstrumentID);
-    getInt(req, "MarketId", &lMarketId);
-    getInt(req, "ServiceId", &lServiceId);
+    getInstrumentKey(req, &lInstrKey);
 
     kd_md_data_t* lpData = NULL;
     uint32_t lDataSize = 1;
     rv = KDMdReqGetData(this->api, &lInstrKey, 1, &lpData, &lDataSize, aTimeoutMS);
     if (lpData)
     {
-        // 
+        // fprintf(stderr, "[api]reqGetData MI:%d,SI:%d\n", lpData->m_MarketId, lpData->m_ServiceId);
+        extractData(outData, lpData);
     }
     return rv;
 }
@@ -379,6 +448,7 @@ struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
 {
     virtual void onFrontConnected()
     {
+        // fprintf(stderr, "KDMdApiWrap onFrontConnected\n");
         //以下的try...catch...可以实现捕捉python环境中错误的功能，防止C++直接出现原因未知的崩溃
         try
         {
@@ -494,6 +564,7 @@ BOOST_PYTHON_MODULE(kdmd)
         .def("reqGetData", &KDMdApiWrap::reqGetData)
         .def("reqUserLogin", &KDMdApiWrap::reqUserLogin)
         .def("reqUserLogout", &KDMdApiWrap::reqUserLogout)
+        .def("openDebug", &KDMdApiWrap::openDebug)
 
         .def("onFrontConnected", pure_virtual(&KDMdApiWrap::onFrontConnected))
         .def("onFrontDisconnected", pure_virtual(&KDMdApiWrap::onFrontDisconnected))

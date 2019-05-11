@@ -13,6 +13,7 @@
 #include <boost/python/module.hpp>	//python封装
 #include <boost/python/def.hpp>		//python封装
 #include <boost/python/dict.hpp>	//python封装
+#include <boost/python/list.hpp>	//python封装
 #include <boost/python/object.hpp>	//python封装
 #include <boost/python.hpp>			//python封装
 // #include <boost/thread.hpp>			//任务队列的线程功能
@@ -170,9 +171,9 @@ public:
 
     void registerFront(string pszFrontAddress, uint16_t port);
 
-    int subscribeMarketData(string instrumentID, uint16_t aMarketId, uint16_t aServiceId);
+    int subscribeMarketData(dict req);
 
-    int unSubscribeMarketData(string instrumentID, uint16_t aMarketId, uint16_t aServiceId);
+    int unSubscribeMarketData(dict req);
 
     int unSubscribeAll();
 
