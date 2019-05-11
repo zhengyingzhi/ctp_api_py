@@ -1,6 +1,9 @@
 // vnctpmd.cpp : 定义 DLL 应用程序的导出函数。
 //
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "kdmd.h"
 #include "KDCommonDef.h"
 #include "KDMDApiStruct.h"
@@ -170,17 +173,30 @@ void extractData(dict outData, kd_md_data_t* apData)
     }
 }
 
+kd_md_recved_data_t* clone_recved_data(const kd_md_recved_data_t* apRawData)
+{
+    kd_md_recved_data_t* lpNewData;
+    lpNewData = (kd_md_recved_data_t*)malloc(sizeof(kd_md_recved_data_t) + apRawData->m_Data.m_DataSize);
+    memcpy(lpNewData, apRawData, sizeof(kd_md_recved_data_t));
+    memcpy(lpNewData->m_Data.m_pDataInfo, apRawData->m_Data.m_pDataInfo, apRawData->m_Data.m_DataSize);
+    return lpNewData;
+}
+
 
 ///-------------------------------------------------------------------------------------
 ///C++的回调函数将数据保存到队列中
 ///-------------------------------------------------------------------------------------
 void KDMdApi::mdApiHandlerStatic(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData)
 {
-    fprintf(stderr, "mdApiHandlerStatic:%d\n", aMsgType);
-    return;
+    // fprintf(stderr, "mdApiHandlerStatic:%d\n", aMsgType);
+    // return;
     KDMdApi* lpThis;
     lpThis = (KDMdApi*)KDMdGetUserData(apMdApi);
-    lpThis->mdApiHandler(apMdApi, aMsgType, apData);
+
+    Task task = Task()
+    task.task_name = aMsgType
+    task.task_data = clone_recved_data(apData);
+    lpThis->taskQueue.push(task)
 }
 
 void KDMdApi::mdApiHandler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData)
@@ -216,6 +232,16 @@ void KDMdApi::mdApiHandler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved
     }
 }
 
+void KDMdApi::processTask()
+{
+    while (1)
+    {
+        Task task = this->task_queue.wait_and_pop()
+        mdApiHandler(this->api, task.task_name, task.task_data)
+        if (task.task_data)
+            free(task.task_data)
+    }
+}
 
 void KDMdApi::processFrontConnected()
 {
@@ -449,6 +475,15 @@ int KDMdApi::reqUserLogout(dict req)
     return KDMdReqLogout(this->api);
 };
 
+void KDMdApi::setUserData(void* apUserData)
+{
+    KDMdSetUserData(this->api, apUserData);
+}
+
+void* KDMdApi::getUserData()
+{
+    return KDMdGetUserData(this->api);
+}
 
 
 ///-------------------------------------------------------------------------------------
@@ -577,6 +612,8 @@ BOOST_PYTHON_MODULE(kdmd)
         .def("reqGetData", &KDMdApiWrap::reqGetData)
         .def("reqUserLogin", &KDMdApiWrap::reqUserLogin)
         .def("reqUserLogout", &KDMdApiWrap::reqUserLogout)
+        .def("setUserData", &KDMdApiWrap::setUserData)
+        .def("getUserData", &KDMdApiWrap::getUserData)
         .def("openDebug", &KDMdApiWrap::openDebug)
 
         .def("onFrontConnected", pure_virtual(&KDMdApiWrap::onFrontConnected))

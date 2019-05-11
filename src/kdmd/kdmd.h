@@ -10,16 +10,16 @@
 
 //Boost
 #define BOOST_PYTHON_STATIC_LIB
-#include <boost/python/module.hpp>	//python封装
-#include <boost/python/def.hpp>		//python封装
-#include <boost/python/dict.hpp>	//python封装
-#include <boost/python/list.hpp>	//python封装
-#include <boost/python/object.hpp>	//python封装
-#include <boost/python.hpp>			//python封装
-// #include <boost/thread.hpp>			//任务队列的线程功能
-// #include <boost/bind.hpp>			//任务队列的线程功能
-// #include <boost/any.hpp>			//任务队列的任务实现
-// #include <boost/locale.hpp>			//字符集转换
+#include <boost/python/module.hpp>    //python封装
+#include <boost/python/def.hpp>        //python封装
+#include <boost/python/dict.hpp>    //python封装
+#include <boost/python/list.hpp>    //python封装
+#include <boost/python/object.hpp>    //python封装
+#include <boost/python.hpp>            //python封装
+// #include <boost/thread.hpp>            //任务队列的线程功能
+// #include <boost/bind.hpp>            //任务队列的线程功能
+// #include <boost/any.hpp>            //任务队列的任务实现
+// #include <boost/locale.hpp>            //字符集转换
 //API
 #include "KDMdUserApi.h"
 
@@ -42,6 +42,59 @@ using namespace boost;
 #define ONRTNDEPTHMARKETDATA 11
 #define ONRTNFORQUOTERSP 12
 
+
+
+//任务结构体
+struct Task
+{
+    int task_name;        //回调函数名称对应的常量
+    kd_md_recved_data_t* task_data;
+};
+
+
+///线程安全的队列
+template<typename Data>
+class ConcurrentQueue
+{
+private:
+    queue<Data> the_queue;                              //标准库队列
+    mutable mutex the_mutex;                            //boost互斥锁
+    condition_variable the_condition_variable;          //boost条件变量
+
+public:
+
+    //存入新的任务
+    void push(Data const& data)
+    {
+        mutex::scoped_lock lock(the_mutex);             //获取互斥锁
+        the_queue.push(data);                           //向队列中存入数据
+        lock.unlock();                                  //释放锁
+        the_condition_variable.notify_one();            //通知正在阻塞等待的线程
+    }
+
+    //检查队列是否为空
+    bool empty() const
+    {
+        mutex::scoped_lock lock(the_mutex);
+        return the_queue.empty();
+    }
+
+    //取出
+    Data wait_and_pop()
+    {
+        mutex::scoped_lock lock(the_mutex);
+
+        while (the_queue.empty())                        //当队列为空时
+        {
+            the_condition_variable.wait(lock);           //等待条件变量通知
+        }
+
+        Data popped_value = the_queue.front();          //获取队列中的最后一个任务
+        the_queue.pop();                                //删除该任务
+        return popped_value;                            //返回该任务
+    }
+
+};
 
 
 ///-------------------------------------------------------------------------------------
@@ -95,16 +148,23 @@ void getStr(dict d, string key, char* value);
 class KDMdApi
 {
 private:
-    kd_md_api_t* api;           // API对象
+    kd_md_api_t* api;                   // API对象
+    thread* task_thread;                //工作线程指针（向python中推送数据）
+    ConcurrentQueue<Task> task_queue;   //任务队列
 
 public:
     KDMdApi() : api()
     {
+        function0<void> f = boost::bind(&MdApi::processTask, this);
+        thread t(f);
+        this->task_thread = &t;
     }
 
     ~KDMdApi()
     {
     }
+
+    ConcurrentQueue* taskQueue() { return &task_queue; }
 
     //-------------------------------------------------------------------------------------
     //API回调函数
@@ -115,6 +175,8 @@ public:
     //-------------------------------------------------------------------------------------
     //task：任务
     //-------------------------------------------------------------------------------------
+    void processTask()
+
     void processFrontConnected();
 
     void processFrontDisconnected(kd_md_recved_data_t* apData);
@@ -194,4 +256,8 @@ public:
     int reqUserLogin(dict req, int aTimeoutMS = 0);
 
     int reqUserLogout(dict req);
+
+    void  setUserData(void* apUserData);
+
+    void* getUserData();
 };
