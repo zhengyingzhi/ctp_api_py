@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="kdmd.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="kdmd.h" />
+    <ClInclude Include="..\api\kdmd\KDCommonDef.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\api\kdmd\KDFutureMarket.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\api\kdmd\KDMDApiStruct.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\api\kdmd\KDMdUserApi.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\api\kdmd\KDStockMarket.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{4c5b6c81-5158-4998-8a6d-e0900bfa9e0c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
