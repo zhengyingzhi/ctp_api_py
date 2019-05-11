@@ -169,6 +169,10 @@ public:
 
     int exit();
 
+    int setOption(int32_t aOptionKey, int32_t aOptionValue);
+
+    int getOption(int32_t aOptionKey, int32_t* aOptionValue);
+
     void registerFront(string pszFrontAddress, uint16_t port);
 
     int subscribeMarketData(dict req);

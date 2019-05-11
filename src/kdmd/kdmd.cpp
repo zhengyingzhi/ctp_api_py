@@ -354,6 +354,17 @@ int KDMdApi::exit()
     return 1;
 };
 
+int KDMdApi::setOption(int32_t aOptionKey, int32_t aOptionValue)
+{
+    return KDMdSetOption(this->api, aOptionKey, &aOptionValue, sizeof(aOptionValue));
+}
+
+int KDMdApi::getOption(int32_t aOptionKey, int32_t* aOptionValue)
+{
+    uint32_t lValueSize = sizeof(int32_t);
+    return KDMdGetOption(this->api, aOptionKey, aOptionValue, &lValueSize);
+}
+
 void KDMdApi::registerFront(string pszFrontAddress, uint16_t port)
 {
     kd_md_tcp_info_t lTcpInfo = { 0 };
@@ -557,6 +568,8 @@ BOOST_PYTHON_MODULE(kdmd)
         .def("release", &KDMdApiWrap::release)
         .def("init", &KDMdApiWrap::init)
         .def("exit", &KDMdApiWrap::exit)
+        .def("setOption", &KDMdApiWrap::setOption)
+        .def("getOption", &KDMdApiWrap::getOption)
         .def("registerFront", &KDMdApiWrap::registerFront)
         .def("subscribeMarketData", &KDMdApiWrap::subscribeMarketData)
         .def("unSubscribeMarketData", &KDMdApiWrap::unSubscribeMarketData)
