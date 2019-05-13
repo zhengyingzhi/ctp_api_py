@@ -10,16 +10,16 @@
 
 //Boost
 #define BOOST_PYTHON_STATIC_LIB
-#include <boost/python/module.hpp>    //python封装
-#include <boost/python/def.hpp>        //python封装
+#include <boost/python/module.hpp>  //python封装
+#include <boost/python/def.hpp>     //python封装
 #include <boost/python/dict.hpp>    //python封装
 #include <boost/python/list.hpp>    //python封装
-#include <boost/python/object.hpp>    //python封装
-#include <boost/python.hpp>            //python封装
-// #include <boost/thread.hpp>            //任务队列的线程功能
-// #include <boost/bind.hpp>            //任务队列的线程功能
-// #include <boost/any.hpp>            //任务队列的任务实现
-// #include <boost/locale.hpp>            //字符集转换
+#include <boost/python/object.hpp>  //python封装
+#include <boost/python.hpp>         //python封装
+#include <boost/thread.hpp>         //任务队列的线程功能
+#include <boost/bind.hpp>           //任务队列的线程功能
+#include <boost/any.hpp>            //任务队列的任务实现
+#include <boost/locale.hpp>         //字符集转换
 //API
 #include "KDMdUserApi.h"
 
@@ -28,22 +28,10 @@ using namespace std;
 using namespace boost::python;
 using namespace boost;
 
-//常量
-#define ONFRONTCONNECTED 1
-#define ONFRONTDISCONNECTED 2
-#define ONHEARTBEATWARNING 3
-#define ONRSPUSERLOGIN 4
-#define ONRSPUSERLOGOUT 5
-#define ONRSPERROR 6
-#define ONRSPSUBMARKETDATA 7
-#define ONRSPUNSUBMARKETDATA 8
-#define ONRSPSUBFORQUOTERSP 9
-#define ONRSPUNSUBFORQUOTERSP 10
-#define ONRTNDEPTHMARKETDATA 11
-#define ONRTNFORQUOTERSP 12
 
+#define MD_ENABLE_WORK_THREAD   0
 
-
+#if MD_ENABLE_WORK_THREAD
 //任务结构体
 struct Task
 {
@@ -96,6 +84,7 @@ public:
 
 };
 
+#endif// MD_ENABLE_WORK_THREAD
 
 ///-------------------------------------------------------------------------------------
 ///API中的部分组件
@@ -149,22 +138,24 @@ class KDMdApi
 {
 private:
     kd_md_api_t* api;                   // API对象
+#if MD_ENABLE_WORK_THREAD
     thread* task_thread;                //工作线程指针（向python中推送数据）
     ConcurrentQueue<Task> task_queue;   //任务队列
+#endif// MD_ENABLE_WORK_THREAD
 
 public:
     KDMdApi() : api()
     {
-        function0<void> f = boost::bind(&MdApi::processTask, this);
+#if MD_ENABLE_WORK_THREAD
+        function0<void> f = boost::bind(&KDMdApi::processTask, this);
         thread t(f);
         this->task_thread = &t;
+#endif//MD_ENABLE_WORK_THREAD
     }
 
     ~KDMdApi()
     {
     }
-
-    ConcurrentQueue* taskQueue() { return &task_queue; }
 
     //-------------------------------------------------------------------------------------
     //API回调函数
@@ -175,7 +166,7 @@ public:
     //-------------------------------------------------------------------------------------
     //task：任务
     //-------------------------------------------------------------------------------------
-    void processTask()
+    void processTask();
 
     void processFrontConnected();
 
@@ -257,7 +248,7 @@ public:
 
     int reqUserLogout(dict req);
 
-    void  setUserData(void* apUserData);
+    // void  setUserData(void* apUserData);
 
-    void* getUserData();
+    // void* getUserData();
 };

@@ -193,10 +193,14 @@ void KDMdApi::mdApiHandlerStatic(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_
     KDMdApi* lpThis;
     lpThis = (KDMdApi*)KDMdGetUserData(apMdApi);
 
-    Task task = Task()
-    task.task_name = aMsgType
+#if MD_ENABLE_WORK_THREAD
+    Task task = Task();
+    task.task_name = aMsgType;
     task.task_data = clone_recved_data(apData);
-    lpThis->taskQueue.push(task)
+    lpThis->task_queue.push(task);
+#else
+    lpThis->mdApiHandler(lpThis->api, aMsgType, apData);
+#endif// MD_ENABLE_WORK_THREAD
 }
 
 void KDMdApi::mdApiHandler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData)
@@ -232,16 +236,18 @@ void KDMdApi::mdApiHandler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved
     }
 }
 
+#if MD_ENABLE_WORK_THREAD
 void KDMdApi::processTask()
 {
     while (1)
     {
-        Task task = this->task_queue.wait_and_pop()
-        mdApiHandler(this->api, task.task_name, task.task_data)
+        Task task = this->task_queue.wait_and_pop();
+        this->mdApiHandler(this->api, task.task_name, task.task_data);
         if (task.task_data)
-            free(task.task_data)
+            free(task.task_data);
     }
 }
+#endif// MD_ENABLE_WORK_THREAD
 
 void KDMdApi::processFrontConnected()
 {
@@ -352,6 +358,7 @@ void KDMdApi::createMdApi(string pszFlowPath)
     (void)pszFlowPath;
     this->api = KDMdCreate();
 
+    KDMdSetUserData(this->api, this);
     KDMdRegisterHandler(this->api, KDMdApi::mdApiHandlerStatic);
 };
 
@@ -475,15 +482,15 @@ int KDMdApi::reqUserLogout(dict req)
     return KDMdReqLogout(this->api);
 };
 
-void KDMdApi::setUserData(void* apUserData)
-{
-    KDMdSetUserData(this->api, apUserData);
-}
-
-void* KDMdApi::getUserData()
-{
-    return KDMdGetUserData(this->api);
-}
+// void KDMdApi::setUserData(void* apUserData)
+// {
+//     KDMdSetUserData(this->api, apUserData);
+// }
+// 
+// void* KDMdApi::getUserData()
+// {
+//     return KDMdGetUserData(this->api);
+// }
 
 
 ///-------------------------------------------------------------------------------------
@@ -612,8 +619,8 @@ BOOST_PYTHON_MODULE(kdmd)
         .def("reqGetData", &KDMdApiWrap::reqGetData)
         .def("reqUserLogin", &KDMdApiWrap::reqUserLogin)
         .def("reqUserLogout", &KDMdApiWrap::reqUserLogout)
-        .def("setUserData", &KDMdApiWrap::setUserData)
-        .def("getUserData", &KDMdApiWrap::getUserData)
+        // .def("setUserData", &KDMdApiWrap::setUserData)
+        // .def("getUserData", &KDMdApiWrap::getUserData)
         .def("openDebug", &KDMdApiWrap::openDebug)
 
         .def("onFrontConnected", pure_virtual(&KDMdApiWrap::onFrontConnected))

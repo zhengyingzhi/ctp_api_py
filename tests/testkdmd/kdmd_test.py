@@ -36,7 +36,6 @@ class TestKDMdApi(KDMdApi):
     @simple_log    
     def onFrontConnected(self):
         """服务器连接"""
-        print('md connected')
         pass
 
     #----------------------------------------------------------------------
@@ -112,7 +111,7 @@ def main():
     # 初始化api，连接前置机
     api.init(0)
     sleep(0.5)
-    
+
     # 登陆
     loginReq = {}                           # 创建一个空字典
     loginReq['UserID'] = '00100001'         # 参数作为字典键值的方式传入
