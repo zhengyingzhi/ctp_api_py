@@ -78,7 +78,6 @@ void getChar(dict d, string key, char *value)
 void getInstrumentKey(dict req, kd_md_instrument_key_t* apInstruKey)
 {
     int lMarketId = 0, lServiceId = 0;
-    kd_md_instrument_key_t lInstrKey = { 0 };
     getStr(req, "InstrumentID", apInstruKey->m_InstrumentID);
     getInt(req, "MarketId", &lMarketId);
     getInt(req, "ServiceId", &lServiceId);
