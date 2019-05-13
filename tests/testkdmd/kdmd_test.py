@@ -83,8 +83,8 @@ class TestKDMdApi(KDMdApi):
         print_dict(data)
 
 #----------------------------------------------------------------------
-def main():
-    print('test py35 x64 kd md api')
+def main(server_ip, server_port):
+    print('test py35 x64 kd md api server %s:%s' % (server_ip, server_port))
 
     """主测试函数，出现堵塞时可以考虑使用sleep"""
     reqid = 0
@@ -100,8 +100,7 @@ def main():
     api.createMdApi('')
     
     # 注册前置机地址
-    api.registerFront("39.104.95.144", 8500)
-    # api.registerFront("192.168.1.174", 8502)
+    api.registerFront(server_ip, server_port)
 
     # 设置心跳时间
     api.setOption(0x10, 15000)
@@ -110,12 +109,12 @@ def main():
 
     # 初始化api，连接前置机
     api.init(0)
-    sleep(0.5)
-
+    sleep(1.5)
+    
     # 登陆
     loginReq = {}                           # 创建一个空字典
     loginReq['UserID'] = '00100001'         # 参数作为字典键值的方式传入
-    loginReq['Password'] = 'bigquant123'    # 键名和C++中的结构体成员名对应
+    loginReq['Password'] = ''               # 键名和C++中的结构体成员名对应
     i = api.reqUserLogin(loginReq, 0)
     sleep(0.5)
     
@@ -148,7 +147,7 @@ def main():
 
     # 连续运行，用于输出行情
     while (1):
-        sleep(10)
+        sleep(1)
         #data = {}
         #api.reqGetData(req, data, 2000)
         #print("reqGetData rv:%s, data:%s" % (rv, data))
@@ -156,4 +155,8 @@ def main():
     
     
 if __name__ == '__main__':
-    main()
+    print(sys.argv)
+    if len(sys.argv) < 3:
+        print("command like: python3 kdmd_test.py ip port")
+    else:
+        main(sys.argv[1], int(sys.argv[2]))
