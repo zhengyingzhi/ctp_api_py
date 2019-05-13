@@ -112,10 +112,10 @@ def main(server_ip, server_port):
     sleep(1.5)
     
     # 登陆
-    loginReq = {}                           # 创建一个空字典
-    loginReq['UserID'] = '00100001'         # 参数作为字典键值的方式传入
-    loginReq['Password'] = ''               # 键名和C++中的结构体成员名对应
-    i = api.reqUserLogin(loginReq, 0)
+    login_req = {}                           # 创建一个空字典
+    login_req['UserID'] = '00100001'         # 参数作为字典键值的方式传入
+    login_req['Password'] = ''               # 键名和C++中的结构体成员名对应
+    i = api.reqUserLogin(login_req, 0)
     sleep(0.5)
     
     ## 登出，测试出错（无此功能）
