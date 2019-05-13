@@ -8,6 +8,8 @@
 #include <string>
 #include <queue>
 
+#define MD_ENABLE_WORK_THREAD   0
+
 //Boost
 #define BOOST_PYTHON_STATIC_LIB
 #include <boost/python/module.hpp>  //python封装
@@ -16,9 +18,11 @@
 #include <boost/python/list.hpp>    //python封装
 #include <boost/python/object.hpp>  //python封装
 #include <boost/python.hpp>         //python封装
+#if MD_ENABLE_WORK_THREAD
 #include <boost/thread.hpp>         //任务队列的线程功能
 #include <boost/bind.hpp>           //任务队列的线程功能
 #include <boost/any.hpp>            //任务队列的任务实现
+#endif//MD_ENABLE_WORK_THREAD
 #include <boost/locale.hpp>         //字符集转换
 //API
 #include "KDMdUserApi.h"
@@ -28,8 +32,6 @@ using namespace std;
 using namespace boost::python;
 using namespace boost;
 
-
-#define MD_ENABLE_WORK_THREAD   0
 
 #if MD_ENABLE_WORK_THREAD
 //任务结构体
