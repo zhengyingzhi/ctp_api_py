@@ -1,4 +1,4 @@
-// kdmd.cpp : ¶¨Òå DLL Ó¦ÓÃ³ÌĞòµÄµ¼³öº¯Êı¡£
+// kdmd.cpp : å®šä¹‰ DLL åº”ç”¨ç¨‹åºçš„å¯¼å‡ºå‡½æ•°ã€‚
 //
 
 #include <stdlib.h>
@@ -10,18 +10,18 @@
 #include "KDStockMarket.h"
 
 ///-------------------------------------------------------------------------------------
-///´ÓPython¶ÔÏóµ½C++ÀàĞÍ×ª»»ÓÃµÄº¯Êı
+///ä»Pythonå¯¹è±¡åˆ°C++ç±»å‹è½¬æ¢ç”¨çš„å‡½æ•°
 ///-------------------------------------------------------------------------------------
 
 void getInt(dict d, string key, int *value)
 {
-    if (d.has_key(key))		//¼ì²é×ÖµäÖĞÊÇ·ñ´æÔÚ¸Ã¼üÖµ
+    if (d.has_key(key))		//æ£€æŸ¥å­—å…¸ä¸­æ˜¯å¦å­˜åœ¨è¯¥é”®å€¼
     {
-        object o = d[key];	//»ñÈ¡¸Ã¼üÖµ
-        extract<int> x(o);	//´´½¨ÌáÈ¡Æ÷
-        if (x.check())		//Èç¹û¿ÉÒÔÌáÈ¡
+        object o = d[key];	//è·å–è¯¥é”®å€¼
+        extract<int> x(o);	//åˆ›å»ºæå–å™¨
+        if (x.check())		//å¦‚æœå¯ä»¥æå–
         {
-            *value = x();	//¶ÔÄ¿±êÕûÊıÖ¸Õë¸³Öµ
+            *value = x();	//å¯¹ç›®æ ‡æ•´æ•°æŒ‡é’ˆèµ‹å€¼
         }
     }
 };
@@ -49,8 +49,8 @@ void getStr(dict d, string key, char *value)
         {
             string s = x();
             const char *buffer = s.c_str();
-            //¶Ô×Ö·û´®Ö¸Õë¸³Öµ±ØĞëÊ¹ÓÃstrcpy_s, vs2013Ê¹ÓÃstrcpy±àÒëÍ¨²»¹ı
-            //+1Ó¦¸ÃÊÇÒòÎªC++×Ö·û´®µÄ½áÎ²·ûºÅ£¿²»ÊÇÌØ±ğÈ·¶¨£¬²»¼ÓÕâ¸ö1»á³ö´í
+            //å¯¹å­—ç¬¦ä¸²æŒ‡é’ˆèµ‹å€¼å¿…é¡»ä½¿ç”¨strcpy_s, vs2013ä½¿ç”¨strcpyç¼–è¯‘é€šä¸è¿‡
+            //+1åº”è¯¥æ˜¯å› ä¸ºC++å­—ç¬¦ä¸²çš„ç»“å°¾ç¬¦å·ï¼Ÿä¸æ˜¯ç‰¹åˆ«ç¡®å®šï¼Œä¸åŠ è¿™ä¸ª1ä¼šå‡ºé”™
 #ifdef _MSC_VER //WIN32
             strcpy_s(value, strlen(buffer) + 1, buffer);
 #elif __GNUC__
@@ -95,17 +95,17 @@ void extractData(dict outData, kd_md_data_t* apData)
         {
             KDIndexProductInfo* lpIdxInfo;
             lpIdxInfo = (KDIndexProductInfo*)apData->m_pDataInfo;
-            outData["InstrumentID"] = std::string(lpIdxInfo->InstrumentID);
-            outData["InstrumentName"] = std::string(lpIdxInfo->InstrumentName);
-            outData["DecimalPoint"] = lpIdxInfo->DecimalPoint;
-            outData["PreCloseIndex"] = lpIdxInfo->PreCloseIndex;
-            outData["MarketId"] = lpIdxInfo->MarketId;
+            outData["InstrumentID"]     = boost::locale::conv::to_utf<char>(lpIdxInfo->InstrumentID, std::string("GB2312"));
+            outData["InstrumentName"]   = boost::locale::conv::to_utf<char>(lpIdxInfo->InstrumentName, std::string("GB2312"));
+            outData["DecimalPoint"]     = lpIdxInfo->DecimalPoint;
+            outData["PreCloseIndex"]    = lpIdxInfo->PreCloseIndex;
+            outData["MarketId"]         = lpIdxInfo->MarketId;
         }
         else if (lServiceId == KD_SI_IDX_MarketData)
         {
             KDIndexMarketData* lpIdxMD;
             lpIdxMD = (KDIndexMarketData*)apData->m_pDataInfo;
-            outData["InstrumentID"] = std::string(lpIdxMD->InstrumentID);
+            outData["InstrumentID"] = boost::locale::conv::to_utf<char>(lpIdxMD->InstrumentID, std::string("GB2312"));
             outData["OpenIndex"]    = lpIdxMD->OpenIndex;
             outData["HighIndex"]    = lpIdxMD->HighIndex;
             outData["LowIndex"]     = lpIdxMD->LowIndex;
@@ -122,6 +122,8 @@ void extractData(dict outData, kd_md_data_t* apData)
         {
             KDStockProductInfo* lpStkInfo;
             lpStkInfo = (KDStockProductInfo*)apData->m_pDataInfo;
+            outData["InstrumentID"]     = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentID, std::string("GB2312"));
+            outData["InstrumentName"]   = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentName, std::string("GB2312"));
             outData["InstrumentID"]     = std::string(lpStkInfo->InstrumentID);
             outData["InstrumentName"]   = std::string(lpStkInfo->InstrumentName);
             outData["DecimalPoint"]     = lpStkInfo->DecimalPoint;
@@ -134,7 +136,7 @@ void extractData(dict outData, kd_md_data_t* apData)
         {
             KDStockMarketDataL1* lpStkMD;
             lpStkMD = (KDStockMarketDataL1*)apData->m_pDataInfo;
-            outData["InstrumentID"] = std::string(lpStkMD->InstrumentID);
+            outData["InstrumentID"] = boost::locale::conv::to_utf<char>(lpStkMD->InstrumentID, std::string("GB2312"));
             outData["OpenPrice"]    = lpStkMD->OpenPrice;
             outData["HighestPrice"] = lpStkMD->HighestPrice;
             outData["LowestPrice"]  = lpStkMD->LowestPrice;
@@ -159,7 +161,7 @@ void extractData(dict outData, kd_md_data_t* apData)
         {
             KDKLine* lpKLine;
             lpKLine = (KDKLine*)apData->m_pDataInfo;
-            outData["InstrumentID"] = std::string(lpKLine->InstrumentID);
+            outData["InstrumentID"] = boost::locale::conv::to_utf<char>(lpKLine->InstrumentID, std::string("GB2312"));
             outData["Day"]  = lpKLine->Day;
             outData["Time"] = lpKLine->Time;
             outData["Open"] = lpKLine->Open;
@@ -183,7 +185,7 @@ kd_md_recved_data_t* clone_recved_data(const kd_md_recved_data_t* apRawData)
 
 
 ///-------------------------------------------------------------------------------------
-///C++µÄ»Øµ÷º¯Êı½«Êı¾İ±£´æµ½¶ÓÁĞÖĞ
+///C++çš„å›è°ƒå‡½æ•°å°†æ•°æ®ä¿å­˜åˆ°é˜Ÿåˆ—ä¸­
 ///-------------------------------------------------------------------------------------
 void KDMdApi::mdApiHandlerStatic(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData)
 {
@@ -349,7 +351,7 @@ void KDMdApi::processRtnData(kd_md_recved_data_t* apData)
 
 
 ///-------------------------------------------------------------------------------------
-///Ö÷¶¯º¯Êı
+///ä¸»åŠ¨å‡½æ•°
 ///-------------------------------------------------------------------------------------
 
 void KDMdApi::createMdApi(string pszFlowPath)
@@ -379,7 +381,7 @@ void KDMdApi::init(uint32_t aTimeoutMS)
 
 int KDMdApi::exit()
 {
-    //¸Ãº¯ÊıÔÚÔ­ÉúAPIÀïÃ»ÓĞ£¬ÓÃÓÚ°²È«ÍË³öAPIÓÃ£¬Ô­ÉúµÄjoinËÆºõ²»Ì«ÎÈ¶¨
+    //è¯¥å‡½æ•°åœ¨åŸç”ŸAPIé‡Œæ²¡æœ‰ï¼Œç”¨äºå®‰å…¨é€€å‡ºAPIç”¨ï¼ŒåŸç”Ÿçš„joinä¼¼ä¹ä¸å¤ªç¨³å®š
     KDMdRegisterHandler(this->api, NULL);
     KDMdRelease(this->api);
     this->api = NULL;
@@ -493,7 +495,7 @@ int KDMdApi::reqUserLogout(dict req)
 
 
 ///-------------------------------------------------------------------------------------
-///Boost.Python·â×°
+///Boost.Pythonå°è£…
 ///-------------------------------------------------------------------------------------
 
 struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
@@ -501,7 +503,7 @@ struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
     virtual void onFrontConnected()
     {
         // fprintf(stderr, "KDMdApiWrap onFrontConnected\n");
-        //ÒÔÏÂµÄtry...catch...¿ÉÒÔÊµÏÖ²¶×½python»·¾³ÖĞ´íÎóµÄ¹¦ÄÜ£¬·ÀÖ¹C++Ö±½Ó³öÏÖÔ­ÒòÎ´ÖªµÄ±ÀÀ£
+        //ä»¥ä¸‹çš„try...catch...å¯ä»¥å®ç°æ•æ‰pythonç¯å¢ƒä¸­é”™è¯¯çš„åŠŸèƒ½ï¼Œé˜²æ­¢C++ç›´æ¥å‡ºç°åŸå› æœªçŸ¥çš„å´©æºƒ
         try
         {
             this->get_override("onFrontConnected")();
@@ -601,7 +603,7 @@ struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
 
 BOOST_PYTHON_MODULE(kdmd)
 {
-    PyEval_InitThreads();   //µ¼ÈëÊ±ÔËĞĞ£¬±£Ö¤ÏÈ´´½¨GIL
+    PyEval_InitThreads();   //å¯¼å…¥æ—¶è¿è¡Œï¼Œä¿è¯å…ˆåˆ›å»ºGIL
 
     class_<KDMdApiWrap, boost::noncopyable>("KDMdApi")
         .def("createMdApi", &KDMdApiWrap::createMdApi)

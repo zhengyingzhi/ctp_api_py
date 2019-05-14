@@ -1,6 +1,6 @@
-//ËµÃ÷²¿·Ö
+//è¯´æ˜éƒ¨åˆ†
 
-//ÏµÍ³
+//ç³»ç»Ÿ
 #ifdef WIN32
 #include "stdafx.h"
 #endif
@@ -12,76 +12,76 @@
 
 //Boost
 #define BOOST_PYTHON_STATIC_LIB
-#include <boost/python/module.hpp>  //python·â×°
-#include <boost/python/def.hpp>     //python·â×°
-#include <boost/python/dict.hpp>    //python·â×°
-#include <boost/python/list.hpp>    //python·â×°
-#include <boost/python/object.hpp>  //python·â×°
-#include <boost/python.hpp>         //python·â×°
+#include <boost/python/module.hpp>  //pythonå°è£…
+#include <boost/python/def.hpp>     //pythonå°è£…
+#include <boost/python/dict.hpp>    //pythonå°è£…
+#include <boost/python/list.hpp>    //pythonå°è£…
+#include <boost/python/object.hpp>  //pythonå°è£…
+#include <boost/python.hpp>         //pythonå°è£…
 #if MD_ENABLE_WORK_THREAD
-#include <boost/thread.hpp>         //ÈÎÎñ¶ÓÁĞµÄÏß³Ì¹¦ÄÜ
-#include <boost/bind.hpp>           //ÈÎÎñ¶ÓÁĞµÄÏß³Ì¹¦ÄÜ
-#include <boost/any.hpp>            //ÈÎÎñ¶ÓÁĞµÄÈÎÎñÊµÏÖ
+#include <boost/thread.hpp>         //ä»»åŠ¡é˜Ÿåˆ—çš„çº¿ç¨‹åŠŸèƒ½
+#include <boost/bind.hpp>           //ä»»åŠ¡é˜Ÿåˆ—çš„çº¿ç¨‹åŠŸèƒ½
+#include <boost/any.hpp>            //ä»»åŠ¡é˜Ÿåˆ—çš„ä»»åŠ¡å®ç°
 #endif//MD_ENABLE_WORK_THREAD
-#include <boost/locale.hpp>         //×Ö·û¼¯×ª»»
+#include <boost/locale.hpp>         //å­—ç¬¦é›†è½¬æ¢
 //API
 #include "KDMdUserApi.h"
 
-//ÃüÃû¿Õ¼ä
+//å‘½åç©ºé—´
 using namespace std;
 using namespace boost::python;
 using namespace boost;
 
 
 #if MD_ENABLE_WORK_THREAD
-//ÈÎÎñ½á¹¹Ìå
+//ä»»åŠ¡ç»“æ„ä½“
 struct Task
 {
-    int task_name;        //»Øµ÷º¯ÊıÃû³Æ¶ÔÓ¦µÄ³£Á¿
+    int task_name;        //å›è°ƒå‡½æ•°åç§°å¯¹åº”çš„å¸¸é‡
     kd_md_recved_data_t* task_data;
 };
 
 
-///Ïß³Ì°²È«µÄ¶ÓÁĞ
+///çº¿ç¨‹å®‰å…¨çš„é˜Ÿåˆ—
 template<typename Data>
 class ConcurrentQueue
 {
 private:
-    queue<Data> the_queue;                              //±ê×¼¿â¶ÓÁĞ
-    mutable mutex the_mutex;                            //boost»¥³âËø
-    condition_variable the_condition_variable;          //boostÌõ¼ş±äÁ¿
+    queue<Data> the_queue;                              //æ ‡å‡†åº“é˜Ÿåˆ—
+    mutable mutex the_mutex;                            //boostäº’æ–¥é”
+    condition_variable the_condition_variable;          //boostæ¡ä»¶å˜é‡
 
 public:
 
-    //´æÈëĞÂµÄÈÎÎñ
+    //å­˜å…¥æ–°çš„ä»»åŠ¡
     void push(Data const& data)
     {
-        mutex::scoped_lock lock(the_mutex);             //»ñÈ¡»¥³âËø
-        the_queue.push(data);                           //Ïò¶ÓÁĞÖĞ´æÈëÊı¾İ
-        lock.unlock();                                  //ÊÍ·ÅËø
-        the_condition_variable.notify_one();            //Í¨ÖªÕıÔÚ×èÈûµÈ´ıµÄÏß³Ì
+        mutex::scoped_lock lock(the_mutex);             //è·å–äº’æ–¥é”
+        the_queue.push(data);                           //å‘é˜Ÿåˆ—ä¸­å­˜å…¥æ•°æ®
+        lock.unlock();                                  //é‡Šæ”¾é”
+        the_condition_variable.notify_one();            //é€šçŸ¥æ­£åœ¨é˜»å¡ç­‰å¾…çš„çº¿ç¨‹
     }
 
-    //¼ì²é¶ÓÁĞÊÇ·ñÎª¿Õ
+    //æ£€æŸ¥é˜Ÿåˆ—æ˜¯å¦ä¸ºç©º
     bool empty() const
     {
         mutex::scoped_lock lock(the_mutex);
         return the_queue.empty();
     }
 
-    //È¡³ö
+    //å–å‡º
     Data wait_and_pop()
     {
         mutex::scoped_lock lock(the_mutex);
 
-        while (the_queue.empty())                        //µ±¶ÓÁĞÎª¿ÕÊ±
+        while (the_queue.empty())                        //å½“é˜Ÿåˆ—ä¸ºç©ºæ—¶
         {
-            the_condition_variable.wait(lock);           //µÈ´ıÌõ¼ş±äÁ¿Í¨Öª
+            the_condition_variable.wait(lock);           //ç­‰å¾…æ¡ä»¶å˜é‡é€šçŸ¥
         }
 
-        Data popped_value = the_queue.front();          //»ñÈ¡¶ÓÁĞÖĞµÄ×îºóÒ»¸öÈÎÎñ
-        the_queue.pop();                                //É¾³ı¸ÃÈÎÎñ
-        return popped_value;                            //·µ»Ø¸ÃÈÎÎñ
+        Data popped_value = the_queue.front();          //è·å–é˜Ÿåˆ—ä¸­çš„æœ€åä¸€ä¸ªä»»åŠ¡
+        the_queue.pop();                                //åˆ é™¤è¯¥ä»»åŠ¡
+        return popped_value;                            //è¿”å›è¯¥ä»»åŠ¡
     }
 
 };
@@ -89,24 +89,24 @@ public:
 #endif// MD_ENABLE_WORK_THREAD
 
 ///-------------------------------------------------------------------------------------
-///APIÖĞµÄ²¿·Ö×é¼ş
+///APIä¸­çš„éƒ¨åˆ†ç»„ä»¶
 ///-------------------------------------------------------------------------------------
 
-//GILÈ«¾ÖËø¼ò»¯»ñÈ¡ÓÃ£¬
-//ÓÃÓÚ°ïÖúC++Ïß³Ì»ñµÃGILËø£¬´Ó¶ø·ÀÖ¹python±ÀÀ£
+//GILå…¨å±€é”ç®€åŒ–è·å–ç”¨ï¼Œ
+//ç”¨äºå¸®åŠ©C++çº¿ç¨‹è·å¾—GILé”ï¼Œä»è€Œé˜²æ­¢pythonå´©æºƒ
 class PyLock
 {
 private:
     PyGILState_STATE gil_state;
 
 public:
-    //ÔÚÄ³¸öº¯Êı·½·¨ÖĞ´´½¨¸Ã¶ÔÏóÊ±£¬»ñµÃGILËø
+    //åœ¨æŸä¸ªå‡½æ•°æ–¹æ³•ä¸­åˆ›å»ºè¯¥å¯¹è±¡æ—¶ï¼Œè·å¾—GILé”
     PyLock()
     {
         gil_state = PyGILState_Ensure();
     }
 
-    //ÔÚÄ³¸öº¯ÊıÍê³ÉºóÏú»Ù¸Ã¶ÔÏóÊ±£¬½â·ÅGILËø
+    //åœ¨æŸä¸ªå‡½æ•°å®Œæˆåé”€æ¯è¯¥å¯¹è±¡æ—¶ï¼Œè§£æ”¾GILé”
     ~PyLock()
     {
         PyGILState_Release(gil_state);
@@ -115,34 +115,34 @@ public:
 
 
 
-//´Ó×ÖµäÖĞ»ñÈ¡Ä³¸ö½¨Öµ¶ÔÓ¦µÄÕûÊı£¬²¢¸³Öµµ½ÇëÇó½á¹¹Ìå¶ÔÏóµÄÖµÉÏ
+//ä»å­—å…¸ä¸­è·å–æŸä¸ªå»ºå€¼å¯¹åº”çš„æ•´æ•°ï¼Œå¹¶èµ‹å€¼åˆ°è¯·æ±‚ç»“æ„ä½“å¯¹è±¡çš„å€¼ä¸Š
 void getInt(dict d, string key, int* value);
 
 
-//´Ó×ÖµäÖĞ»ñÈ¡Ä³¸ö½¨Öµ¶ÔÓ¦µÄ¸¡µãÊı£¬²¢¸³Öµµ½ÇëÇó½á¹¹Ìå¶ÔÏóµÄÖµÉÏ
+//ä»å­—å…¸ä¸­è·å–æŸä¸ªå»ºå€¼å¯¹åº”çš„æµ®ç‚¹æ•°ï¼Œå¹¶èµ‹å€¼åˆ°è¯·æ±‚ç»“æ„ä½“å¯¹è±¡çš„å€¼ä¸Š
 void getDouble(dict d, string key, double* value);
 
 
-//´Ó×ÖµäÖĞ»ñÈ¡Ä³¸ö½¨Öµ¶ÔÓ¦µÄ×Ö·û£¬²¢¸³Öµµ½ÇëÇó½á¹¹Ìå¶ÔÏóµÄÖµÉÏ
+//ä»å­—å…¸ä¸­è·å–æŸä¸ªå»ºå€¼å¯¹åº”çš„å­—ç¬¦ï¼Œå¹¶èµ‹å€¼åˆ°è¯·æ±‚ç»“æ„ä½“å¯¹è±¡çš„å€¼ä¸Š
 void getChar(dict d, string key, char* value);
 
 
-//´Ó×ÖµäÖĞ»ñÈ¡Ä³¸ö½¨Öµ¶ÔÓ¦µÄ×Ö·û´®£¬²¢¸³Öµµ½ÇëÇó½á¹¹Ìå¶ÔÏóµÄÖµÉÏ
+//ä»å­—å…¸ä¸­è·å–æŸä¸ªå»ºå€¼å¯¹åº”çš„å­—ç¬¦ä¸²ï¼Œå¹¶èµ‹å€¼åˆ°è¯·æ±‚ç»“æ„ä½“å¯¹è±¡çš„å€¼ä¸Š
 void getStr(dict d, string key, char* value);
 
 
 ///-------------------------------------------------------------------------------------
-///C++ SPIµÄ»Øµ÷º¯Êı·½·¨ÊµÏÖ
+///C++ SPIçš„å›è°ƒå‡½æ•°æ–¹æ³•å®ç°
 ///-------------------------------------------------------------------------------------
 
-//APIµÄ¼Ì³ĞÊµÏÖ
+//APIçš„ç»§æ‰¿å®ç°
 class KDMdApi
 {
 private:
-    kd_md_api_t* api;                   // API¶ÔÏó
+    kd_md_api_t* api;                   // APIå¯¹è±¡
 #if MD_ENABLE_WORK_THREAD
-    thread* task_thread;                //¹¤×÷Ïß³ÌÖ¸Õë£¨ÏòpythonÖĞÍÆËÍÊı¾İ£©
-    ConcurrentQueue<Task> task_queue;   //ÈÎÎñ¶ÓÁĞ
+    thread* task_thread;                //å·¥ä½œçº¿ç¨‹æŒ‡é’ˆï¼ˆå‘pythonä¸­æ¨é€æ•°æ®ï¼‰
+    ConcurrentQueue<Task> task_queue;   //ä»»åŠ¡é˜Ÿåˆ—
 #endif// MD_ENABLE_WORK_THREAD
 
 public:
@@ -160,13 +160,13 @@ public:
     }
 
     //-------------------------------------------------------------------------------------
-    //API»Øµ÷º¯Êı
+    //APIå›è°ƒå‡½æ•°
     //-------------------------------------------------------------------------------------
     static void mdApiHandlerStatic(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData);
     void mdApiHandler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData);
 
     //-------------------------------------------------------------------------------------
-    //task£ºÈÎÎñ
+    //taskï¼šä»»åŠ¡
     //-------------------------------------------------------------------------------------
     void processTask();
 
@@ -187,11 +187,11 @@ public:
     void processRtnData(kd_md_recved_data_t* apData);
 
     //-------------------------------------------------------------------------------------
-    //data£º»Øµ÷º¯ÊıµÄÊı¾İ×Öµä
-    //error£º»Øµ÷º¯ÊıµÄ´íÎó×Öµä
-    //id£ºÇëÇóid
-    //last£ºÊÇ·ñÎª×îºó·µ»Ø
-    //i£ºÕûÊı
+    //dataï¼šå›è°ƒå‡½æ•°çš„æ•°æ®å­—å…¸
+    //errorï¼šå›è°ƒå‡½æ•°çš„é”™è¯¯å­—å…¸
+    //idï¼šè¯·æ±‚id
+    //lastï¼šæ˜¯å¦ä¸ºæœ€åè¿”å›
+    //iï¼šæ•´æ•°
     //-------------------------------------------------------------------------------------
 
     virtual void onFrontConnected() {};
@@ -211,7 +211,7 @@ public:
     virtual void onRtnMarketData(uint16_t aMarketId, uint16_t aServiceId, dict data) {};
 
     //-------------------------------------------------------------------------------------
-    //req:Ö÷¶¯º¯ÊıµÄÇëÇó×Öµä
+    //req:ä¸»åŠ¨å‡½æ•°çš„è¯·æ±‚å­—å…¸
     //-------------------------------------------------------------------------------------
 
     void createMdApi(string pszFlowPath = "");
