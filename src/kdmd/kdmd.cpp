@@ -1,4 +1,4 @@
-// kdmd.cpp : 定义 DLL 应用程序的导出函数。
+﻿// kdmd.cpp : 定义 DLL 应用程序的导出函数。
 //
 
 #include <stdlib.h>
@@ -81,8 +81,18 @@ void getInstrumentKey(dict req, kd_md_instrument_key_t* apInstruKey)
     getStr(req, "InstrumentID", apInstruKey->m_InstrumentID);
     getInt(req, "MarketId", &lMarketId);
     getInt(req, "ServiceId", &lServiceId);
-    apInstruKey->m_MarketId = lMarketId;
-    apInstruKey->m_ServiceId = lServiceId;
+    apInstruKey->m_MarketId = (uint16_t)lMarketId;
+    apInstruKey->m_ServiceId = (uint16_t)lServiceId;
+}
+
+void extractArrayData(dict outData, const char* apKey, uint32_t srcData[], uint32_t aSize)
+{
+    char lKey[64] = "";
+    for (uint32_t i = 1; i <= aSize; ++i)
+    {
+        sprintf(lKey, apKey, i);
+        outData[lKey] = srcData[i - 1];
+    }
 }
 
 void extractData(dict outData, kd_md_data_t* apData)
@@ -124,8 +134,6 @@ void extractData(dict outData, kd_md_data_t* apData)
             lpStkInfo = (KDStockProductInfo*)apData->m_pDataInfo;
             outData["InstrumentID"]     = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentID, std::string("GB2312"));
             outData["InstrumentName"]   = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentName, std::string("GB2312"));
-            outData["InstrumentID"]     = std::string(lpStkInfo->InstrumentID);
-            outData["InstrumentName"]   = std::string(lpStkInfo->InstrumentName);
             outData["DecimalPoint"]     = lpStkInfo->DecimalPoint;
             outData["PreClosePrice"]    = lpStkInfo->PreClosePrice;
             outData["UpperLimitPrice"]  = lpStkInfo->UpperLimitPrice;
@@ -141,10 +149,10 @@ void extractData(dict outData, kd_md_data_t* apData)
             outData["HighestPrice"] = lpStkMD->HighestPrice;
             outData["LowestPrice"]  = lpStkMD->LowestPrice;
             outData["LastPrice"]    = lpStkMD->LastPrice;
-            outData["BidPrice"]     = lpStkMD->BidPrice;
-            outData["BidVol"]       = lpStkMD->BidVol;
-            outData["AskPrice"]     = lpStkMD->AskPrice;
-            outData["AskVol"]       = lpStkMD->AskVol;
+            extractArrayData(outData, "BidPrice%u", lpStkMD->BidPrice, 5);
+            extractArrayData(outData, "BidVol%u",   lpStkMD->BidVol, 5);
+            extractArrayData(outData, "AskPrice%u", lpStkMD->AskPrice, 5);
+            extractArrayData(outData, "AskVol%u",   lpStkMD->AskVol, 5);
             outData["Volume"]       = lpStkMD->Volume;
             outData["Turnover"]     = lpStkMD->Turnover;
             outData["AveragePrice"] = lpStkMD->AveragePrice;
@@ -401,7 +409,8 @@ int KDMdApi::getOption(int32_t aOptionKey, int32_t* aOptionValue)
 
 void KDMdApi::registerFront(string pszFrontAddress, uint16_t port)
 {
-    kd_md_tcp_info_t lTcpInfo = { 0 };
+    kd_md_tcp_info_t lTcpInfo;
+    memset(&lTcpInfo, 0, sizeof(lTcpInfo));
     strncpy(lTcpInfo.m_ServerAddress, pszFrontAddress.c_str(), sizeof(lTcpInfo.m_ServerAddress) - 1);
     lTcpInfo.m_ServerPort = port;
     KDMdRegisterServer(this->api, &lTcpInfo, 1);
@@ -409,14 +418,16 @@ void KDMdApi::registerFront(string pszFrontAddress, uint16_t port)
 
 int KDMdApi::subscribeMarketData(dict req)
 {
-    kd_md_instrument_key_t lInstrKey = { 0 };
+    kd_md_instrument_key_t lInstrKey;
+    memset(&lInstrKey, 0, sizeof(lInstrKey));
     getInstrumentKey(req, &lInstrKey);
     return KDMdSubscribe(this->api, &lInstrKey, 1);
 };
 
 int KDMdApi::unSubscribeMarketData(dict req)
 {
-    kd_md_instrument_key_t lInstrKey = { 0 };
+    kd_md_instrument_key_t lInstrKey;
+    memset(&lInstrKey, 0, sizeof(lInstrKey));
     getInstrumentKey(req, &lInstrKey);
     return KDMdUnSubscribe(this->api, &lInstrKey, 1);
 };
@@ -430,7 +441,8 @@ int KDMdApi::unSubscribeAll()
 int KDMdApi::reqQryData(dict req)
 {
     int rv;
-    kd_md_instrument_key_t lInstrKey = { 0 };
+    kd_md_instrument_key_t lInstrKey;
+    memset(&lInstrKey, 0, sizeof(lInstrKey));
     getInstrumentKey(req, &lInstrKey);
     rv = KDMdReqQryData(this->api, &lInstrKey, 1);
     return rv;
@@ -439,7 +451,8 @@ int KDMdApi::reqQryData(dict req)
 int KDMdApi::reqGetData(dict req, dict outData, int aTimeoutMS)
 {
     int rv;
-    kd_md_instrument_key_t lInstrKey = { 0 };
+    kd_md_instrument_key_t lInstrKey;
+    memset(&lInstrKey, 0, sizeof(lInstrKey));
     getInstrumentKey(req, &lInstrKey);
 
     kd_md_data_t* lpData = NULL;
