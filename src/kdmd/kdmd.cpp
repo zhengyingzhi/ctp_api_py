@@ -9,6 +9,8 @@
 #include "KDMDApiStruct.h"
 #include "KDStockMarket.h"
 
+#define DEFAULT_MAX_REQ_SIZE    256
+
 ///-------------------------------------------------------------------------------------
 ///从Python对象到C++类型转换用的函数
 ///-------------------------------------------------------------------------------------
@@ -75,14 +77,68 @@ void getChar(dict d, string key, char *value)
     }
 };
 
-void getInstrumentKey(dict req, kd_md_instrument_key_t* apInstruKey)
+typedef struct {
+    char* ptr;
+    int   len;
+}zditem_t;
+
+int str_delimiter_ex(const char* src, int length, zditem_t* retArr, int arrSize, const char* sep)
+{
+    int lenSep = (int)strlen(sep);
+    int index = 0;
+    const char* sentinel = src + length;
+    while (index < arrSize)
+    {
+        const char* end;
+        if (lenSep == 1)
+            end = strchr(src, *sep);
+        else
+            end = strstr(src, sep);
+
+        if (end == NULL || end >= sentinel)
+        {
+            // last item
+            if (sentinel - src > 0)
+            {
+                retArr[index].ptr = (char*)src;
+                retArr[index].len = (int)(sentinel - src);
+                index++;
+            }
+            break;
+        }
+
+        retArr[index].ptr = (char*)src;
+        retArr[index].len = (int)(end - src);
+        index++;
+
+        // next pos
+        src = end + lenSep;
+    }
+
+    return index;
+}
+
+int getInstrumentKey(dict req, kd_md_instrument_key_t* apInstruKey, int aSize)
 {
     int lMarketId = 0, lServiceId = 0;
-    getStr(req, "InstrumentID", apInstruKey->m_InstrumentID);
+    char lInstrumentIDs[4080] = "";
+    getStr(req, "InstrumentID", lInstrumentIDs);
     getInt(req, "MarketId", &lMarketId);
     getInt(req, "ServiceId", &lServiceId);
-    apInstruKey->m_MarketId = (uint16_t)lMarketId;
-    apInstruKey->m_ServiceId = (uint16_t)lServiceId;
+
+        zditem_t lItems[1000];
+        int lCount = str_delimiter_ex(lInstrumentIDs, (int)strlen(lInstrumentIDs), lItems, 1000, ",");
+        int lCount2 = 0;
+        for (int i = 0; i < lCount && i < aSize; ++i)
+        {
+            if (lItems[i].len <= 0 || lItems[i].len > 31)
+                continue;
+            ++lCount2;
+            strncpy(apInstruKey[i].m_InstrumentID, lItems[i].ptr, lItems[i].len);
+            apInstruKey[i].m_MarketId = (uint16_t)lMarketId;
+            apInstruKey[i].m_ServiceId = (uint16_t)lServiceId;
+        }
+        return lCount2;
 }
 
 void extractArrayData(dict outData, const char* apKey, uint32_t srcData[], uint32_t aSize)
@@ -418,18 +474,24 @@ void KDMdApi::registerFront(string pszFrontAddress, uint16_t port)
 
 int KDMdApi::subscribeMarketData(dict req)
 {
-    kd_md_instrument_key_t lInstrKey;
-    memset(&lInstrKey, 0, sizeof(lInstrKey));
-    getInstrumentKey(req, &lInstrKey);
-    return KDMdSubscribe(this->api, &lInstrKey, 1);
+    kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
+    memset(&lInstrKeys, 0, sizeof(lInstrKeys));
+    uint32_t lCount = getInstrumentKey(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
+    if (lCount == 0) {
+        return KD_MD_ERR_RequestMaxCount;
+    }
+    return KDMdSubscribe(this->api, lInstrKeys, lCount);
 };
 
 int KDMdApi::unSubscribeMarketData(dict req)
 {
-    kd_md_instrument_key_t lInstrKey;
-    memset(&lInstrKey, 0, sizeof(lInstrKey));
-    getInstrumentKey(req, &lInstrKey);
-    return KDMdUnSubscribe(this->api, &lInstrKey, 1);
+    kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
+    memset(&lInstrKeys, 0, sizeof(lInstrKeys));
+    uint32_t lCount = getInstrumentKey(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
+    if (lCount == 0) {
+        return KD_MD_ERR_RequestMaxCount;
+    }
+    return KDMdUnSubscribe(this->api, lInstrKeys, lCount);
 };
 
 
@@ -441,23 +503,29 @@ int KDMdApi::unSubscribeAll()
 int KDMdApi::reqQryData(dict req)
 {
     int rv;
-    kd_md_instrument_key_t lInstrKey;
-    memset(&lInstrKey, 0, sizeof(lInstrKey));
-    getInstrumentKey(req, &lInstrKey);
-    rv = KDMdReqQryData(this->api, &lInstrKey, 1);
+    kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
+    memset(&lInstrKeys, 0, sizeof(lInstrKeys));
+    uint32_t lCount = getInstrumentKey(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
+    if (lCount == 0) {
+        return KD_MD_ERR_RequestMaxCount;
+    }
+    rv = KDMdReqQryData(this->api, lInstrKeys, lCount);
     return rv;
 }
 
 int KDMdApi::reqGetData(dict req, dict outData, int aTimeoutMS)
 {
     int rv;
-    kd_md_instrument_key_t lInstrKey;
-    memset(&lInstrKey, 0, sizeof(lInstrKey));
-    getInstrumentKey(req, &lInstrKey);
+    kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
+    memset(&lInstrKeys, 0, sizeof(lInstrKeys));
+    uint32_t lCount = getInstrumentKey(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
+    if (lCount == 0) {
+        return KD_MD_ERR_RequestMaxCount;
+    }
 
     kd_md_data_t* lpData = NULL;
     uint32_t lDataSize = 1;
-    rv = KDMdReqGetData(this->api, &lInstrKey, 1, &lpData, &lDataSize, aTimeoutMS);
+    rv = KDMdReqGetData(this->api, lInstrKeys, lCount, &lpData, &lDataSize, aTimeoutMS);
     if (lpData)
     {
         // fprintf(stderr, "[api]reqGetData MI:%d,SI:%d\n", lpData->m_MarketId, lpData->m_ServiceId);
