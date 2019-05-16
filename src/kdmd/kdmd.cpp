@@ -15,7 +15,7 @@
 ///从Python对象到C++类型转换用的函数
 ///-------------------------------------------------------------------------------------
 
-void getInt(dict d, string key, int *value)
+void get_int(dict d, string key, int *value)
 {
     if (d.has_key(key))		//检查字典中是否存在该键值
     {
@@ -28,7 +28,7 @@ void getInt(dict d, string key, int *value)
     }
 };
 
-void getDouble(dict d, string key, double *value)
+void get_double(dict d, string key, double *value)
 {
     if (d.has_key(key))
     {
@@ -41,7 +41,7 @@ void getDouble(dict d, string key, double *value)
     }
 };
 
-void getStr(dict d, string key, char *value)
+void get_str(dict d, string key, char *value)
 {
     if (d.has_key(key))
     {
@@ -62,7 +62,7 @@ void getStr(dict d, string key, char *value)
     }
 };
 
-void getChar(dict d, string key, char *value)
+void get_char(dict d, string key, char *value)
 {
     if (d.has_key(key))
     {
@@ -118,13 +118,13 @@ int str_delimiter_ex(const char* src, int length, zditem_t* retArr, int arrSize,
     return index;
 }
 
-int getInstrumentKey(dict req, kd_md_instrument_key_t* apInstruKey, int aSize)
+int get_instrument_key(dict req, kd_md_instrument_key_t* apInstruKey, int aSize)
 {
     int lMarketId = 0, lServiceId = 0;
     char lInstrumentIDs[4080] = "";
-    getStr(req, "InstrumentID", lInstrumentIDs);
-    getInt(req, "MarketId", &lMarketId);
-    getInt(req, "ServiceId", &lServiceId);
+    get_str(req, "InstrumentID", lInstrumentIDs);
+    get_int(req, "MarketId", &lMarketId);
+    get_int(req, "ServiceId", &lServiceId);
 
         zditem_t lItems[1000];
         int lCount = str_delimiter_ex(lInstrumentIDs, (int)strlen(lInstrumentIDs), lItems, 1000, ",");
@@ -141,17 +141,17 @@ int getInstrumentKey(dict req, kd_md_instrument_key_t* apInstruKey, int aSize)
         return lCount2;
 }
 
-void extractArrayData(dict outData, const char* apKey, uint32_t srcData[], uint32_t aSize)
+void extract_array_data(dict out_data, const char* apKey, uint32_t src_data[], uint32_t aSize)
 {
     char lKey[64] = "";
     for (uint32_t i = 1; i <= aSize; ++i)
     {
         sprintf(lKey, apKey, i);
-        outData[lKey] = srcData[i - 1];
+        out_data[lKey] = src_data[i - 1];
     }
 }
 
-void extractData(dict outData, kd_md_data_t* apData)
+void extract_data(dict out_data, kd_md_data_t* apData)
 {
     uint16_t lMarketId = apData->m_MarketId;
     uint16_t lServiceId = apData->m_ServiceId;
@@ -161,79 +161,79 @@ void extractData(dict outData, kd_md_data_t* apData)
         {
             KDIndexProductInfo* lpIdxInfo;
             lpIdxInfo = (KDIndexProductInfo*)apData->m_pDataInfo;
-            outData["InstrumentID"]     = boost::locale::conv::to_utf<char>(lpIdxInfo->InstrumentID, std::string("GB2312"));
-            outData["InstrumentName"]   = boost::locale::conv::to_utf<char>(lpIdxInfo->InstrumentName, std::string("GB2312"));
-            outData["DecimalPoint"]     = lpIdxInfo->DecimalPoint;
-            outData["PreCloseIndex"]    = lpIdxInfo->PreCloseIndex;
-            outData["MarketId"]         = lpIdxInfo->MarketId;
+            out_data["InstrumentID"]    = boost::locale::conv::to_utf<char>(lpIdxInfo->InstrumentID, std::string("GB2312"));
+            out_data["InstrumentName"]  = boost::locale::conv::to_utf<char>(lpIdxInfo->InstrumentName, std::string("GB2312"));
+            out_data["DecimalPoint"]    = lpIdxInfo->DecimalPoint;
+            out_data["PreCloseIndex"]   = lpIdxInfo->PreCloseIndex;
+            out_data["MarketId"]        = lpIdxInfo->MarketId;
         }
         else if (lServiceId == KD_SI_IDX_MarketData)
         {
             KDIndexMarketData* lpIdxMD;
             lpIdxMD = (KDIndexMarketData*)apData->m_pDataInfo;
-            outData["InstrumentID"] = boost::locale::conv::to_utf<char>(lpIdxMD->InstrumentID, std::string("GB2312"));
-            outData["OpenIndex"]    = lpIdxMD->OpenIndex;
-            outData["HighIndex"]    = lpIdxMD->HighIndex;
-            outData["LowIndex"]     = lpIdxMD->LowIndex;
-            outData["LastIndex"]    = lpIdxMD->LastIndex;
-            outData["CloseIndex"]   = lpIdxMD->CloseIndex;
-            outData["PreCloseIndex"] = lpIdxMD->PreCloseIndex;
-            outData["Volume"]       = lpIdxMD->Volume;
-            outData["Turnover"]     = lpIdxMD->Turnover;
-            outData["TradingDay"]   = lpIdxMD->TradingDay;
-            outData["ActionDay"]    = lpIdxMD->ActionDay;
-            outData["UpdateTime"]   = lpIdxMD->UpdateTime;
+            out_data["InstrumentID"] = boost::locale::conv::to_utf<char>(lpIdxMD->InstrumentID, std::string("GB2312"));
+            out_data["OpenIndex"]    = lpIdxMD->OpenIndex;
+            out_data["HighIndex"]    = lpIdxMD->HighIndex;
+            out_data["LowIndex"]     = lpIdxMD->LowIndex;
+            out_data["LastIndex"]    = lpIdxMD->LastIndex;
+            out_data["CloseIndex"]   = lpIdxMD->CloseIndex;
+            out_data["PreCloseIndex"] = lpIdxMD->PreCloseIndex;
+            out_data["Volume"]       = lpIdxMD->Volume;
+            out_data["Turnover"]     = lpIdxMD->Turnover;
+            out_data["TradingDay"]   = lpIdxMD->TradingDay;
+            out_data["ActionDay"]    = lpIdxMD->ActionDay;
+            out_data["UpdateTime"]   = lpIdxMD->UpdateTime;
         }
         else if (lServiceId == KD_SI_STK_ProductInfo)
         {
             KDStockProductInfo* lpStkInfo;
             lpStkInfo = (KDStockProductInfo*)apData->m_pDataInfo;
-            outData["InstrumentID"]     = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentID, std::string("GB2312"));
-            outData["InstrumentName"]   = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentName, std::string("GB2312"));
-            outData["DecimalPoint"]     = lpStkInfo->DecimalPoint;
-            outData["PreClosePrice"]    = lpStkInfo->PreClosePrice;
-            outData["UpperLimitPrice"]  = lpStkInfo->UpperLimitPrice;
-            outData["LowerLimitPrice"]  = lpStkInfo->LowerLimitPrice;
-            outData["MarketId"]         = lpStkInfo->MarketId;
+            out_data["InstrumentID"]     = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentID, std::string("GB2312"));
+            out_data["InstrumentName"]   = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentName, std::string("GB2312"));
+            out_data["DecimalPoint"]     = lpStkInfo->DecimalPoint;
+            out_data["PreClosePrice"]    = lpStkInfo->PreClosePrice;
+            out_data["UpperLimitPrice"]  = lpStkInfo->UpperLimitPrice;
+            out_data["LowerLimitPrice"]  = lpStkInfo->LowerLimitPrice;
+            out_data["MarketId"]         = lpStkInfo->MarketId;
         }
         else if (lServiceId == KD_SI_STK_MarketDataL1)
         {
             KDStockMarketDataL1* lpStkMD;
             lpStkMD = (KDStockMarketDataL1*)apData->m_pDataInfo;
-            outData["InstrumentID"] = boost::locale::conv::to_utf<char>(lpStkMD->InstrumentID, std::string("GB2312"));
-            outData["OpenPrice"]    = lpStkMD->OpenPrice;
-            outData["HighestPrice"] = lpStkMD->HighestPrice;
-            outData["LowestPrice"]  = lpStkMD->LowestPrice;
-            outData["LastPrice"]    = lpStkMD->LastPrice;
-            extractArrayData(outData, "BidPrice%u", lpStkMD->BidPrice, 5);
-            extractArrayData(outData, "BidVol%u",   lpStkMD->BidVol, 5);
-            extractArrayData(outData, "AskPrice%u", lpStkMD->AskPrice, 5);
-            extractArrayData(outData, "AskVol%u",   lpStkMD->AskVol, 5);
-            outData["Volume"]       = lpStkMD->Volume;
-            outData["Turnover"]     = lpStkMD->Turnover;
-            outData["AveragePrice"] = lpStkMD->AveragePrice;
-            outData["ClosePrice"]   = lpStkMD->ClosePrice;
-            outData["IOPV"]         = lpStkMD->IOPV;
-            outData["PreIOPV"]      = lpStkMD->PreIOPV;
-            outData["TradingDay"]   = lpStkMD->TradingDay;
-            outData["ActionDay"]    = lpStkMD->ActionDay;
-            outData["UpdateTime"]   = lpStkMD->UpdateTime;
-            outData["Status"]       = lpStkMD->Status;
-            outData["StopFlag"]     = lpStkMD->StopFlag;
+            out_data["InstrumentID"] = boost::locale::conv::to_utf<char>(lpStkMD->InstrumentID, std::string("GB2312"));
+            out_data["OpenPrice"]    = lpStkMD->OpenPrice;
+            out_data["HighestPrice"] = lpStkMD->HighestPrice;
+            out_data["LowestPrice"]  = lpStkMD->LowestPrice;
+            out_data["LastPrice"]    = lpStkMD->LastPrice;
+            extract_array_data(out_data, "BidPrice%u", lpStkMD->BidPrice, 5);
+            extract_array_data(out_data, "BidVol%u",   lpStkMD->BidVol, 5);
+            extract_array_data(out_data, "AskPrice%u", lpStkMD->AskPrice, 5);
+            extract_array_data(out_data, "AskVol%u",   lpStkMD->AskVol, 5);
+            out_data["Volume"]       = lpStkMD->Volume;
+            out_data["Turnover"]     = lpStkMD->Turnover;
+            out_data["AveragePrice"] = lpStkMD->AveragePrice;
+            out_data["ClosePrice"]   = lpStkMD->ClosePrice;
+            out_data["IOPV"]         = lpStkMD->IOPV;
+            out_data["PreIOPV"]      = lpStkMD->PreIOPV;
+            out_data["TradingDay"]   = lpStkMD->TradingDay;
+            out_data["ActionDay"]    = lpStkMD->ActionDay;
+            out_data["UpdateTime"]   = lpStkMD->UpdateTime;
+            out_data["Status"]       = lpStkMD->Status;
+            out_data["StopFlag"]     = lpStkMD->StopFlag;
         }
         else if (lServiceId == KD_SI_KLineData)
         {
             KDKLine* lpKLine;
             lpKLine = (KDKLine*)apData->m_pDataInfo;
-            outData["InstrumentID"] = boost::locale::conv::to_utf<char>(lpKLine->InstrumentID, std::string("GB2312"));
-            outData["Day"]  = lpKLine->Day;
-            outData["Time"] = lpKLine->Time;
-            outData["Open"] = lpKLine->Open;
-            outData["High"] = lpKLine->High;
-            outData["Low"]  = lpKLine->Low;
-            outData["Close"] = lpKLine->Close;
-            outData["Volume"] = lpKLine->Volume;
-            outData["Turnover"] = lpKLine->Turnover;
+            out_data["InstrumentID"] = boost::locale::conv::to_utf<char>(lpKLine->InstrumentID, std::string("GB2312"));
+            out_data["Day"]  = lpKLine->Day;
+            out_data["Time"] = lpKLine->Time;
+            out_data["Open"] = lpKLine->Open;
+            out_data["High"] = lpKLine->High;
+            out_data["Low"]  = lpKLine->Low;
+            out_data["Close"] = lpKLine->Close;
+            out_data["Volume"] = lpKLine->Volume;
+            out_data["Turnover"] = lpKLine->Turnover;
         }
     }
 }
@@ -251,7 +251,7 @@ kd_md_recved_data_t* clone_recved_data(const kd_md_recved_data_t* apRawData)
 ///-------------------------------------------------------------------------------------
 ///C++的回调函数将数据保存到队列中
 ///-------------------------------------------------------------------------------------
-void KDMdApi::mdApiHandlerStatic(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData)
+void KDMdApi::md_api_handler_static(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData)
 {
     // fprintf(stderr, "mdApiHandlerStatic:%d\n", aMsgType);
     // return;
@@ -264,37 +264,37 @@ void KDMdApi::mdApiHandlerStatic(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_
     task.task_data = clone_recved_data(apData);
     lpThis->task_queue.push(task);
 #else
-    lpThis->mdApiHandler(lpThis->api, aMsgType, apData);
+    lpThis->md_api_handler(lpThis->api, aMsgType, apData);
 #endif// MD_ENABLE_WORK_THREAD
 }
 
-void KDMdApi::mdApiHandler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData)
+void KDMdApi::md_api_handler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData)
 {
     switch (aMsgType)
     {
     case KD_MT_Connected:
-        processFrontConnected();
+        process_front_connected();
         break;
     case KD_MT_Disconnected:
-        processFrontDisconnected(apData);
+        process_front_disconnected(apData);
         break;
     case KD_MT_Login:
-        processRspUserLogin(apData);
+        process_rsp_user_login(apData);
         break;
     case KD_MT_Logout:
-        processRspUserLogout(apData);
+        process_rsp_user_logout(apData);
         break;
     case KD_MT_Subscribe:
-        processRspSubMarketData(apData);
+        process_rsp_sub_market_data(apData);
         break;
     case KD_MT_UnSubscribe:
-        processRspUnSubMarketData(apData);
+        process_rsp_unsub_market_data(apData);
         break;
     case KD_MT_Query:
-        processRspQueryData(apData);
+        process_rsp_qry_data(apData);
         break;
     case KD_MT_Publish:
-        processRtnData(apData);
+        process_rtn_data(apData);
         break;
     default:
         break;
@@ -302,32 +302,32 @@ void KDMdApi::mdApiHandler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved
 }
 
 #if MD_ENABLE_WORK_THREAD
-void KDMdApi::processTask()
+void KDMdApi::process_task()
 {
     while (1)
     {
         Task task = this->task_queue.wait_and_pop();
-        this->mdApiHandler(this->api, task.task_name, task.task_data);
+        this->md_api_handler(this->api, task.task_name, task.task_data);
         if (task.task_data)
             free(task.task_data);
     }
 }
 #endif// MD_ENABLE_WORK_THREAD
 
-void KDMdApi::processFrontConnected()
+void KDMdApi::process_front_connected()
 {
     // fprintf(stderr, "processFrontConnected\n");
     PyLock lock;
-    this->onFrontConnected();
+    this->on_front_connected();
 };
 
-void KDMdApi::processFrontDisconnected(kd_md_recved_data_t* apData)
+void KDMdApi::process_front_disconnected(kd_md_recved_data_t* apData)
 {
     PyLock lock;
-    this->onFrontDisconnected(apData->m_ErrorID);
+    this->on_front_disconnected(apData->m_ErrorID);
 };
 
-void KDMdApi::processRspUserLogin(kd_md_recved_data_t* apData)
+void KDMdApi::process_rsp_user_login(kd_md_recved_data_t* apData)
 {
     PyLock lock;
     dict data;
@@ -340,10 +340,10 @@ void KDMdApi::processRspUserLogin(kd_md_recved_data_t* apData)
     data["ServerFlag"]  = lpLoginData->m_ServerFlag;
     data["ErrorID"]     = apData->m_ErrorID;
 
-    this->onRspUserLogin(data);
+    this->on_rsp_user_login(data);
 };
 
-void KDMdApi::processRspUserLogout(kd_md_recved_data_t* apData)
+void KDMdApi::process_rsp_user_logout(kd_md_recved_data_t* apData)
 {
     PyLock lock;
     dict data;
@@ -354,10 +354,10 @@ void KDMdApi::processRspUserLogout(kd_md_recved_data_t* apData)
     data["ReqID"] = lpLogoutData->m_ReqID;
     data["Flag"] = lpLogoutData->m_Flag;
 
-    this->onRspUserLogout(data);
+    this->on_rsp_user_logout(data);
 };
 
-void KDMdApi::processRspSubMarketData(kd_md_recved_data_t* apData)
+void KDMdApi::process_rsp_sub_market_data(kd_md_recved_data_t* apData)
 {
     PyLock lock;
     dict data;
@@ -369,10 +369,10 @@ void KDMdApi::processRspSubMarketData(kd_md_recved_data_t* apData)
     data["ErrorID"] = apData->m_ErrorID;
 
     bool lIsLast = apData->m_IsLast ? true : false;
-    this->onRspSubMarketData(data, lIsLast);
+    this->on_rsp_sub_market_data(data, lIsLast);
 };
 
-void KDMdApi::processRspUnSubMarketData(kd_md_recved_data_t* apData)
+void KDMdApi::process_rsp_unsub_market_data(kd_md_recved_data_t* apData)
 {
     PyLock lock;
     dict data;
@@ -384,32 +384,32 @@ void KDMdApi::processRspUnSubMarketData(kd_md_recved_data_t* apData)
     data["ErrorID"] = apData->m_ErrorID;
 
     bool lIsLast = apData->m_IsLast ? true : false;
-    this->onRspSubMarketData(data, lIsLast);
+    this->on_rsp_unsub_market_data(data, lIsLast);
 };
 
-void KDMdApi::processRspQueryData(kd_md_recved_data_t* apData)
+void KDMdApi::process_rsp_qry_data(kd_md_recved_data_t* apData)
 {
     PyLock lock;
     dict data;
     dict error;
     if (apData->m_ErrorID == 0)
     {
-        extractData(data, &apData->m_Data);
+        extract_data(data, &apData->m_Data);
     }
     else
     {
         error["ErrorID"] = apData->m_ErrorID;
     }
     bool lIsLast = apData->m_IsLast ? true : false;
-    this->onRspQryData(data, error, lIsLast);
+    this->on_rsp_qry_data(data, error, lIsLast);
 }
 
-void KDMdApi::processRtnData(kd_md_recved_data_t* apData)
+void KDMdApi::process_rtn_data(kd_md_recved_data_t* apData)
 {
     PyLock lock;
     dict data;
-    extractData(data, &apData->m_Data);
-    this->onRtnMarketData(apData->m_Data.m_MarketId, apData->m_Data.m_ServiceId, data);
+    extract_data(data, &apData->m_Data);
+    this->on_rtn_market_data(apData->m_Data.m_MarketId, apData->m_Data.m_ServiceId, data);
 };
 
 
@@ -418,16 +418,16 @@ void KDMdApi::processRtnData(kd_md_recved_data_t* apData)
 ///主动函数
 ///-------------------------------------------------------------------------------------
 
-void KDMdApi::createMdApi(string pszFlowPath)
+void KDMdApi::create_md_api(string flow_path)
 {
-    (void)pszFlowPath;
+    (void)flow_path;
     this->api = KDMdCreate();
 
     KDMdSetUserData(this->api, this);
-    KDMdRegisterHandler(this->api, KDMdApi::mdApiHandlerStatic);
+    KDMdRegisterHandler(this->api, KDMdApi::md_api_handler_static);
 };
 
-string KDMdApi::getApiVersion()
+string KDMdApi::get_api_version()
 {
     std::string lApiVersion = KDMdGetVersion(NULL);
     return lApiVersion;
@@ -438,9 +438,9 @@ void KDMdApi::release()
     KDMdRelease(this->api);
 };
 
-void KDMdApi::init(uint32_t aTimeoutMS)
+void KDMdApi::init(uint32_t timeoutms)
 {
-    KDMdInit(this->api, aTimeoutMS);
+    KDMdInit(this->api, timeoutms);
 };
 
 int KDMdApi::exit()
@@ -452,42 +452,42 @@ int KDMdApi::exit()
     return 1;
 };
 
-int KDMdApi::setOption(int32_t aOptionKey, int32_t aOptionValue)
+int KDMdApi::set_option(int32_t key, int32_t value)
 {
-    return KDMdSetOption(this->api, aOptionKey, &aOptionValue, sizeof(aOptionValue));
+    return KDMdSetOption(this->api, key, &value, sizeof(value));
 }
 
-int KDMdApi::getOption(int32_t aOptionKey, int32_t* aOptionValue)
+int KDMdApi::get_option(int32_t key, int32_t* pvalue)
 {
     uint32_t lValueSize = sizeof(int32_t);
-    return KDMdGetOption(this->api, aOptionKey, aOptionValue, &lValueSize);
+    return KDMdGetOption(this->api, key, pvalue, &lValueSize);
 }
 
-void KDMdApi::registerFront(string pszFrontAddress, uint16_t port)
+void KDMdApi::register_front(string address, uint16_t port)
 {
     kd_md_tcp_info_t lTcpInfo;
     memset(&lTcpInfo, 0, sizeof(lTcpInfo));
-    strncpy(lTcpInfo.m_ServerAddress, pszFrontAddress.c_str(), sizeof(lTcpInfo.m_ServerAddress) - 1);
+    strncpy(lTcpInfo.m_ServerAddress, address.c_str(), sizeof(lTcpInfo.m_ServerAddress) - 1);
     lTcpInfo.m_ServerPort = port;
     KDMdRegisterServer(this->api, &lTcpInfo, 1);
 };
 
-int KDMdApi::subscribeMarketData(dict req)
+int KDMdApi::subscribe_market_data(dict req)
 {
     kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
     memset(&lInstrKeys, 0, sizeof(lInstrKeys));
-    uint32_t lCount = getInstrumentKey(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
+    uint32_t lCount = get_instrument_key(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
     if (lCount == 0) {
         return KD_MD_ERR_RequestMaxCount;
     }
     return KDMdSubscribe(this->api, lInstrKeys, lCount);
 };
 
-int KDMdApi::unSubscribeMarketData(dict req)
+int KDMdApi::unsubscribe_market_data(dict req)
 {
     kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
     memset(&lInstrKeys, 0, sizeof(lInstrKeys));
-    uint32_t lCount = getInstrumentKey(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
+    uint32_t lCount = get_instrument_key(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
     if (lCount == 0) {
         return KD_MD_ERR_RequestMaxCount;
     }
@@ -495,17 +495,17 @@ int KDMdApi::unSubscribeMarketData(dict req)
 };
 
 
-int KDMdApi::unSubscribeAll()
+int KDMdApi::unsubscribe_all()
 {
     return KDMdUnSubscribeAll(this->api);
 }
 
-int KDMdApi::reqQryData(dict req)
+int KDMdApi::req_qry_data(dict req)
 {
     int rv;
     kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
     memset(&lInstrKeys, 0, sizeof(lInstrKeys));
-    uint32_t lCount = getInstrumentKey(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
+    uint32_t lCount = get_instrument_key(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
     if (lCount == 0) {
         return KD_MD_ERR_RequestMaxCount;
     }
@@ -513,12 +513,12 @@ int KDMdApi::reqQryData(dict req)
     return rv;
 }
 
-int KDMdApi::reqGetData(dict req, dict outData, int aTimeoutMS)
+int KDMdApi::req_get_data(dict req, dict out_data, int aTimeoutMS)
 {
     int rv;
     kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
     memset(&lInstrKeys, 0, sizeof(lInstrKeys));
-    uint32_t lCount = getInstrumentKey(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
+    uint32_t lCount = get_instrument_key(req, lInstrKeys, DEFAULT_MAX_REQ_SIZE);
     if (lCount == 0) {
         return KD_MD_ERR_RequestMaxCount;
     }
@@ -529,47 +529,47 @@ int KDMdApi::reqGetData(dict req, dict outData, int aTimeoutMS)
     if (lpData)
     {
         // fprintf(stderr, "[api]reqGetData MI:%d,SI:%d\n", lpData->m_MarketId, lpData->m_ServiceId);
-        extractData(outData, lpData);
+        extract_data(out_data, lpData);
     }
     return rv;
 }
 
-int KDMdApi::isConnected()
+int KDMdApi::is_connected()
 {
     return KDMdIsConnected(this->api);
 }
 
-int KDMdApi::isLogined()
+int KDMdApi::is_logined()
 {
     return KDMdIsLogined(this->api);
 }
 
-int KDMdApi::openDebug(string aLogFile, int aLogLevel)
+int KDMdApi::open_debug(string aLogFile, int aLogLevel)
 {
     return KDMdOpenDebug(this->api, aLogFile.c_str(), aLogLevel);
 }
 
 
-int KDMdApi::reqUserLogin(dict req, int aTimeoutMS)
+int KDMdApi::req_user_login(dict req, int aTimeoutMS)
 {
     char lUserID[32] = "";
     char lPassword[32] = "";
-    getStr(req, "UserID", lUserID);
-    getStr(req, "Password", lPassword);
+    get_str(req, "UserID", lUserID);
+    get_str(req, "Password", lPassword);
     return KDMdReqLogin(this->api, lUserID, lPassword, aTimeoutMS);
 };
 
-int KDMdApi::reqUserLogout(dict req)
+int KDMdApi::req_user_logout(dict req)
 {
     return KDMdReqLogout(this->api);
 };
 
-// void KDMdApi::setUserData(void* apUserData)
+// void KDMdApi::set_user_data(void* udata)
 // {
-//     KDMdSetUserData(this->api, apUserData);
+//     KDMdSetUserData(this->api, udata);
 // }
 // 
-// void* KDMdApi::getUserData()
+// void* KDMdApi::get_user_data()
 // {
 //     return KDMdGetUserData(this->api);
 // }
@@ -687,31 +687,32 @@ BOOST_PYTHON_MODULE(kdmd)
     PyEval_InitThreads();   //导入时运行，保证先创建GIL
 
     class_<KDMdApiWrap, boost::noncopyable>("KDMdApi")
-        .def("createMdApi", &KDMdApiWrap::createMdApi)
-        .def("getApiVersion", &KDMdApiWrap::getApiVersion)
+        .def("create_md_api", &KDMdApiWrap::create_md_api)
+        .def("get_api_version", &KDMdApiWrap::get_api_version)
         .def("release", &KDMdApiWrap::release)
         .def("init", &KDMdApiWrap::init)
         .def("exit", &KDMdApiWrap::exit)
-        .def("setOption", &KDMdApiWrap::setOption)
-        .def("getOption", &KDMdApiWrap::getOption)
-        .def("registerFront", &KDMdApiWrap::registerFront)
-        .def("subscribeMarketData", &KDMdApiWrap::subscribeMarketData)
-        .def("unSubscribeMarketData", &KDMdApiWrap::unSubscribeMarketData)
-        .def("reqQryData", &KDMdApiWrap::reqQryData)
-        .def("reqGetData", &KDMdApiWrap::reqGetData)
-        .def("reqUserLogin", &KDMdApiWrap::reqUserLogin)
-        .def("reqUserLogout", &KDMdApiWrap::reqUserLogout)
-        // .def("setUserData", &KDMdApiWrap::setUserData)
-        // .def("getUserData", &KDMdApiWrap::getUserData)
-        .def("openDebug", &KDMdApiWrap::openDebug)
+        .def("set_option", &KDMdApiWrap::set_option)
+        .def("get_option", &KDMdApiWrap::get_option)
+        .def("register_front", &KDMdApiWrap::register_front)
+        .def("subscribe_market_data", &KDMdApiWrap::subscribe_market_data)
+        .def("unsubscribe_market_data", &KDMdApiWrap::unsubscribe_market_data)
+        .def("unsubscribe_all", &KDMdApiWrap::unsubscribe_all)
+        .def("req_qry_data", &KDMdApiWrap::req_qry_data)
+        .def("req_get_data", &KDMdApiWrap::req_get_data)
+        .def("req_user_login", &KDMdApiWrap::req_user_login)
+        .def("req_user_logout", &KDMdApiWrap::req_user_logout)
+        // .def("set_user_data", &KDMdApiWrap::set_user_data)
+        // .def("get_user_data", &KDMdApiWrap::get_user_data)
+        .def("open_debug", &KDMdApiWrap::open_debug)
 
-        .def("onFrontConnected", pure_virtual(&KDMdApiWrap::onFrontConnected))
-        .def("onFrontDisconnected", pure_virtual(&KDMdApiWrap::onFrontDisconnected))
-        .def("onRspUserLogin", pure_virtual(&KDMdApiWrap::onRspUserLogin))
-        .def("onRspUserLogout", pure_virtual(&KDMdApiWrap::onRspUserLogout))
-        .def("onRspSubMarketData", pure_virtual(&KDMdApiWrap::onRspSubMarketData))
-        .def("onRspUnSubMarketData", pure_virtual(&KDMdApiWrap::onRspUnSubMarketData))
-        .def("onRspQryData", pure_virtual(&KDMdApiWrap::onRspQryData))
-        .def("onRtnMarketData", pure_virtual(&KDMdApiWrap::onRtnMarketData))
+        .def("on_front_connected", pure_virtual(&KDMdApiWrap::on_front_connected))
+        .def("on_front_disconnected", pure_virtual(&KDMdApiWrap::on_front_disconnected))
+        .def("on_rsp_user_login", pure_virtual(&KDMdApiWrap::on_rsp_user_login))
+        .def("on_rsp_user_logout", pure_virtual(&KDMdApiWrap::on_rsp_user_logout))
+        .def("on_rsp_sub_market_data", pure_virtual(&KDMdApiWrap::on_rsp_sub_market_data))
+        .def("on_rsp_unsub_market_data", pure_virtual(&KDMdApiWrap::on_rsp_unsub_market_data))
+        .def("on_rsp_qry_data", pure_virtual(&KDMdApiWrap::on_rsp_qry_data))
+        .def("on_rtn_market_data", pure_virtual(&KDMdApiWrap::on_rtn_market_data))
         ;
 };

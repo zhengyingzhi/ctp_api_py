@@ -116,19 +116,19 @@ public:
 
 
 //从字典中获取某个建值对应的整数，并赋值到请求结构体对象的值上
-void getInt(dict d, string key, int* value);
+void get_int(dict d, string key, int* value);
 
 
 //从字典中获取某个建值对应的浮点数，并赋值到请求结构体对象的值上
-void getDouble(dict d, string key, double* value);
+void get_double(dict d, string key, double* value);
 
 
 //从字典中获取某个建值对应的字符，并赋值到请求结构体对象的值上
-void getChar(dict d, string key, char* value);
+void get_char(dict d, string key, char* value);
 
 
 //从字典中获取某个建值对应的字符串，并赋值到请求结构体对象的值上
-void getStr(dict d, string key, char* value);
+void get_str(dict d, string key, char* value);
 
 
 ///-------------------------------------------------------------------------------------
@@ -149,7 +149,7 @@ public:
     KDMdApi() : api()
     {
 #if MD_ENABLE_WORK_THREAD
-        function0<void> f = boost::bind(&KDMdApi::processTask, this);
+        function0<void> f = boost::bind(&KDMdApi::process_task, this);
         thread t(f);
         this->task_thread = &t;
 #endif//MD_ENABLE_WORK_THREAD
@@ -162,29 +162,29 @@ public:
     //-------------------------------------------------------------------------------------
     //API回调函数
     //-------------------------------------------------------------------------------------
-    static void mdApiHandlerStatic(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData);
-    void mdApiHandler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData);
+    static void md_api_handler_static(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData);
+    void md_api_handler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recved_data_t* apData);
 
     //-------------------------------------------------------------------------------------
     //task：任务
     //-------------------------------------------------------------------------------------
-    void processTask();
+    void process_task();
 
-    void processFrontConnected();
+    void process_front_connected();
 
-    void processFrontDisconnected(kd_md_recved_data_t* apData);
+    void process_front_disconnected(kd_md_recved_data_t* apData);
 
-    void processRspUserLogin(kd_md_recved_data_t* apData);
+    void process_rsp_user_login(kd_md_recved_data_t* apData);
 
-    void processRspUserLogout(kd_md_recved_data_t* apData);
+    void process_rsp_user_logout(kd_md_recved_data_t* apData);
 
-    void processRspSubMarketData(kd_md_recved_data_t* apData);
+    void process_rsp_sub_market_data(kd_md_recved_data_t* apData);
 
-    void processRspUnSubMarketData(kd_md_recved_data_t* apData);
+    void process_rsp_unsub_market_data(kd_md_recved_data_t* apData);
 
-    void processRspQueryData(kd_md_recved_data_t* apData);
+    void process_rsp_qry_data(kd_md_recved_data_t* apData);
 
-    void processRtnData(kd_md_recved_data_t* apData);
+    void process_rtn_data(kd_md_recved_data_t* apData);
 
     //-------------------------------------------------------------------------------------
     //data：回调函数的数据字典
@@ -194,63 +194,63 @@ public:
     //i：整数
     //-------------------------------------------------------------------------------------
 
-    virtual void onFrontConnected() {};
+    virtual void on_front_connected() {};
 
-    virtual void onFrontDisconnected(int i) {};
+    virtual void on_front_disconnected(int i) {};
 
-    virtual void onRspUserLogin(dict data) {};
+    virtual void on_rsp_user_login(dict data) {};
 
-    virtual void onRspUserLogout(dict data) {};
+    virtual void on_rsp_user_logout(dict data) {};
 
-    virtual void onRspSubMarketData(dict data, bool last) {};
+    virtual void on_rsp_sub_market_data(dict data, bool last) {};
 
-    virtual void onRspUnSubMarketData(dict data, bool last) {};
+    virtual void on_rsp_unsub_market_data(dict data, bool last) {};
 
-    virtual void onRspQryData(dict data, dict error, bool last) {};
+    virtual void on_rsp_qry_data(dict data, dict error, bool last) {};
 
-    virtual void onRtnMarketData(uint16_t aMarketId, uint16_t aServiceId, dict data) {};
+    virtual void on_rtn_market_data(uint16_t market_id, uint16_t service_id, dict data) {};
 
     //-------------------------------------------------------------------------------------
     //req:主动函数的请求字典
     //-------------------------------------------------------------------------------------
 
-    void createMdApi(string pszFlowPath = "");
+    void create_md_api(string flow_path = "");
 
-    string getApiVersion();
+    string get_api_version();
 
     void release();
 
-    void init(uint32_t aTimeoutMS = 0);
+    void init(uint32_t timeoutms = 0);
 
     int exit();
 
-    int setOption(int32_t aOptionKey, int32_t aOptionValue);
+    int set_option(int32_t key, int32_t value);
 
-    int getOption(int32_t aOptionKey, int32_t* aOptionValue);
+    int get_option(int32_t key, int32_t* pvalue);
 
-    void registerFront(string pszFrontAddress, uint16_t port);
+    void register_front(string pszFrontAddress, uint16_t port);
 
-    int subscribeMarketData(dict req);
+    int subscribe_market_data(dict req);
 
-    int unSubscribeMarketData(dict req);
+    int unsubscribe_market_data(dict req);
 
-    int unSubscribeAll();
+    int unsubscribe_all();
 
-    int reqQryData(dict req);
+    int req_qry_data(dict req);
 
-    int reqGetData(dict req, dict outData, int aTimeoutMS);
+    int req_get_data(dict req, dict out_data, int timeoutms);
     
-    int isConnected();
+    int is_connected();
 
-    int isLogined();
+    int is_logined();
 
-    int openDebug(string aLogFile, int aLogLevel);
+    int open_debug(string log_file, int log_level);
 
-    int reqUserLogin(dict req, int aTimeoutMS = 0);
+    int req_user_login(dict req, int timeoutms= 0);
 
-    int reqUserLogout(dict req);
+    int req_user_logout(dict req);
 
-    // void  setUserData(void* apUserData);
+    // void  set_user_data(void* udata);
 
-    // void* getUserData();
+    // void* get_user_data();
 };
