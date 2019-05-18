@@ -140,6 +140,7 @@ class KDMdApi
 {
 private:
     kd_md_api_t* api;                   // API对象
+    bool active;
 #if MD_ENABLE_WORK_THREAD
     thread* task_thread;                //工作线程指针（向python中推送数据）
     ConcurrentQueue<Task> task_queue;   //任务队列
@@ -148,15 +149,18 @@ private:
 public:
     KDMdApi() : api()
     {
+        this->active = false;
 #if MD_ENABLE_WORK_THREAD
-        function0<void> f = boost::bind(&KDMdApi::process_task, this);
-        thread t(f);
-        this->task_thread = &t;
+        this->task_thread = NULL;
 #endif//MD_ENABLE_WORK_THREAD
     }
 
     ~KDMdApi()
     {
+        if (this->active)
+        {
+            this->exit();
+        }
     }
 
     //-------------------------------------------------------------------------------------
@@ -220,7 +224,7 @@ public:
 
     void release();
 
-    void init(uint32_t timeoutms = 0);
+    int init(uint32_t timeoutms = 0);
 
     int exit();
 

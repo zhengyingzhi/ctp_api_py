@@ -304,7 +304,7 @@ void KDMdApi::md_api_handler(kd_md_api_t* apMdApi, uint32_t aMsgType, kd_md_recv
 #if MD_ENABLE_WORK_THREAD
 void KDMdApi::process_task()
 {
-    while (1)
+    while (this->active)
     {
         Task task = this->task_queue.wait_and_pop();
         this->md_api_handler(this->api, task.task_name, task.task_data);
@@ -435,20 +435,35 @@ string KDMdApi::get_api_version()
 
 void KDMdApi::release()
 {
-    KDMdRelease(this->api);
+    if (this->api)
+        KDMdRelease(this->api);
 };
 
-void KDMdApi::init(uint32_t timeoutms)
+int KDMdApi::init(uint32_t timeoutms)
 {
-    KDMdInit(this->api, timeoutms);
+    this->active = true;
+#if MD_ENABLE_WORK_THREAD
+    if (!this->task_thread)
+    {
+        function0<void> f = boost::bind(&KDMdApi::process_task, this);
+        thread t(f);
+        this->task_thread = &t;
+    }
+#endif//MD_ENABLE_WORK_THREAD
+
+    return KDMdInit(this->api, timeoutms);
 };
 
 int KDMdApi::exit()
 {
-    //该函数在原生API里没有，用于安全退出API用，原生的join似乎不太稳定
-    KDMdRegisterHandler(this->api, NULL);
-    KDMdRelease(this->api);
-    this->api = NULL;
+    this->active = false;
+
+    if (this->api)
+    {
+        KDMdRegisterHandler(this->api, NULL);
+        KDMdRelease(this->api);
+        this->api = NULL;
+    }
     return 1;
 };
 
