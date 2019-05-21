@@ -596,13 +596,13 @@ int KDMdApi::req_user_logout(dict req)
 
 struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
 {
-    virtual void onFrontConnected()
+    virtual void on_front_connected()
     {
         // fprintf(stderr, "KDMdApiWrap onFrontConnected\n");
         //以下的try...catch...可以实现捕捉python环境中错误的功能，防止C++直接出现原因未知的崩溃
         try
         {
-            this->get_override("onFrontConnected")();
+            this->get_override("on_front_connected")();
         }
         catch (error_already_set const &)
         {
@@ -610,11 +610,11 @@ struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
         }
     };
 
-    virtual void onFrontDisconnected(int i)
+    virtual void on_front_disconnected(int i)
     {
         try
         {
-            this->get_override("onFrontDisconnected")(i);
+            this->get_override("on_front_disconnected")(i);
         }
         catch (error_already_set const &)
         {
@@ -622,11 +622,11 @@ struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
         }
     };
 
-    virtual void onRspUserLogin(dict data)
+    virtual void on_rsp_user_login(dict data)
     {
         try
         {
-            this->get_override("onRspUserLogin")(data);
+            this->get_override("on_rsp_user_login")(data);
         }
         catch (error_already_set const &)
         {
@@ -634,11 +634,11 @@ struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
         }
     };
 
-    virtual void onRspUserLogout(dict data)
+    virtual void on_rsp_user_logout(dict data)
     {
         try
         {
-            this->get_override("onRspUserLogout")(data);
+            this->get_override("on_rsp_user_logout")(data);
         }
         catch (error_already_set const &)
         {
@@ -646,11 +646,11 @@ struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
         }
     };
 
-    virtual void onRspSubMarketData(dict data, bool last)
+    virtual void on_rsp_sub_market_data(dict data, bool last)
     {
         try
         {
-            this->get_override("onRspSubMarketData")(data, last);
+            this->get_override("on_rsp_sub_market_data")(data, last);
         }
         catch (error_already_set const &)
         {
@@ -658,11 +658,11 @@ struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
         }
     };
 
-    virtual void onRspUnSubMarketData(dict data, bool last)
+    virtual void on_rsp_unsub_market_data(dict data, bool last)
     {
         try
         {
-            this->get_override("onRspUnSubMarketData")(data, last);
+            this->get_override("on_rsp_unsub_market_data")(data, last);
         }
         catch (error_already_set const &)
         {
@@ -670,11 +670,11 @@ struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
         }
     };
 
-    virtual void onRspQryData(dict data, dict error, bool last)
+    virtual void on_rsp_qry_data(dict data, dict error, bool last)
     {
         try
         {
-            this->get_override("onRspQryData")(data, error, last);
+            this->get_override("on_rsp_qry_data")(data, error, last);
         }
         catch (error_already_set const &)
         {
@@ -682,11 +682,11 @@ struct KDMdApiWrap : KDMdApi, wrapper < KDMdApi >
         }
     };
 
-    virtual void onRtnMarketData(uint16_t aMarketId, uint16_t aServiceId, dict data)
+    virtual void on_rtn_market_data(uint16_t aMarketId, uint16_t aServiceId, dict data)
     {
         try
         {
-            this->get_override("onRtnMarketData")(aMarketId, aServiceId, data);
+            this->get_override("on_rtn_market_data")(aMarketId, aServiceId, data);
         }
         catch (error_already_set const &)
         {
