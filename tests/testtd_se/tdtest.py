@@ -4,7 +4,7 @@ import sys
 from time import sleep
 
 print('importing ctptd')
-from ctptd import *
+from ctptd_se import *
 
 #----------------------------------------------------------------------
 def print_dict(d):
@@ -119,7 +119,7 @@ def main():
     api.subscribePublicTopic(1)
     
     # 注册前置机地址，测试通过
-    api.registerFront("tcp://180.168.146.187:10000")
+    api.registerFront("tcp://180.168.146.187:13030")
     
     print('td init...')
 
@@ -130,7 +130,7 @@ def main():
     # 登陆，测试通过
     loginReq = {}                           # 创建一个空字典
     loginReq['UserID'] = '038313'           # 参数作为字典键值的方式传入
-    loginReq['Password'] = '111111'         # 键名和C++中的结构体成员名对应
+    loginReq['Password'] = 'qwert123'         # 键名和C++中的结构体成员名对应
     loginReq['BrokerID'] = '9999'    
     reqid = reqid + 1                       # 请求数必须保持唯一性
     i = api.reqUserLogin(loginReq, reqid)

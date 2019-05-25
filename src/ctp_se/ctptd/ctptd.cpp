@@ -8283,6 +8283,12 @@ string TdApi::getTradingDay()
     return day;
 };
 
+string TdApi::getApiVersion()
+{
+    string ver = this->api->GetApiVersion();
+    return ver;
+}
+
 void TdApi::registerFront(string pszFrontAddress)
 {
     this->api->RegisterFront((char*)pszFrontAddress.c_str());
@@ -11158,6 +11164,7 @@ PYBIND11_MODULE(ctptd, m)
         .def("init", &TdApi::init)
         .def("join", &TdApi::join)
         .def("exit", &TdApi::exit)
+        .def("getApiVersion", &TdApi::getApiVersion)
         .def("getTradingDay", &TdApi::getTradingDay)
         .def("registerFront", &TdApi::registerFront)
         .def("subscribePublicTopic", &TdApi::subscribePublicTopic)

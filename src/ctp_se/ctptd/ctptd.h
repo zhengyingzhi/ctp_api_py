@@ -1078,6 +1078,8 @@ public:
 
     int exit();
 
+    string getApiVersion();
+
     string getTradingDay();
 
     void registerFront(string pszFrontAddress);
