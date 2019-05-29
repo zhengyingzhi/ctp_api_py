@@ -436,7 +436,11 @@ string KDMdApi::get_api_version()
 void KDMdApi::release()
 {
     if (this->api)
+    {
+        KDMdRegisterHandler(this->api, NULL);
         KDMdRelease(this->api);
+        this->api = NULL;
+    }
 };
 
 int KDMdApi::init(uint32_t timeoutms)
