@@ -178,6 +178,8 @@ public:
 
 	string getTradingDay();
 
+	string getApiVersion();
+
 	void registerFront(string pszFrontAddress);
 
 	int subscribeMarketData(string instrumentID);
