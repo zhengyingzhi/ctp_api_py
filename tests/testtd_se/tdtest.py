@@ -60,7 +60,8 @@ class TestTdApi(TdApi):
         """登陆回报"""
         print_dict(data)
         print_dict(error)
-        self.max_order_ref = int(data['MaxOrderRef'])
+        if error["ErrorID"] == 0:
+            self.max_order_ref = int(data['MaxOrderRef'])
 
     @simple_log
     def onRspUserLogout(self, data, error, n, last):
@@ -162,7 +163,7 @@ class TestTdApi(TdApi):
 
 #----------------------------------------------------------------------
 def main():
-    print('test py3 ctp td api')
+    print('test py35 x64 ctp td api')
 
     """主测试函数，出现堵塞时可以考虑使用sleep"""
     reqid = 0
