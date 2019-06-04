@@ -3148,7 +3148,12 @@ void TdApi::processRspAuthenticate(Task *task)
 		data["UserID"] = toUtf(task_data->UserID);
 		data["UserProductInfo"] = toUtf(task_data->UserProductInfo);
 		data["AppID"] = toUtf(task_data->AppID);
-		data["AppType"] = task_data->AppType;
+
+        // @20190604 fix since ctp maybe return empty apptype
+        // fprintf(stderr, "##AppType:%c\n", task_data->AppType);
+        char lAppType[2] = "";
+        lAppType[0] = task_data->AppType;
+		data["AppType"] = toUtf(lAppType);
 		delete task_data;
 	}
 	dict error;

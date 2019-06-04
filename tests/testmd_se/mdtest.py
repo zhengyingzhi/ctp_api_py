@@ -122,25 +122,39 @@ def main():
     # 创建API对象
     api = TestMdApi()
 
-    print("md version:{}".format(api.getApiVersion()))
+    print("ctpmd api version:{}".format(api.getApiVersion()))
 
     # 在C++环境中创建MdApi对象，传入参数是希望用来保存.con文件的地址
     api.createFtdcMdApi('')
-    
+
+    # simnow
+    mdAddr = "tcp://180.168.146.187:10010"
+    brokerID = "9999"
+    # 评测系统
+    mdAddr = "tcp://180.166.213.18:35215"
+    brokerID = "3019"
+    # 仿真系统
+    # mdAddr = "tcp://180.166.213.18:42215"
+    # brokerID = "3010"
+
     # 注册前置机地址
-    api.registerFront("tcp://180.168.146.187:10010")
+    api.registerFront(mdAddr)
 
     print('td init...')
 
     # 初始化api，连接前置机
     api.init()
     sleep(0.5)
-    
+
+    # input your userid & password & authcode & appid
+    userID = ""
+    password = ""
+
     # 登陆
     loginReq = {}                           # 创建一个空字典
-    loginReq['UserID'] = '038313'           # 参数作为字典键值的方式传入
-    loginReq['Password'] = '11111'          # 键名和C++中的结构体成员名对应
-    loginReq['BrokerID'] = '9999'    
+    loginReq['UserID'] = userID             # 参数作为字典键值的方式传入
+    loginReq['Password'] = password         # 键名和C++中的结构体成员名对应
+    loginReq['BrokerID'] = brokerID    
     reqid = reqid + 1                       # 请求数必须保持唯一性
     i = api.reqUserLogin(loginReq, 1)
     sleep(0.5)
@@ -173,8 +187,8 @@ def main():
     # 连续运行，用于输出行情
     while (1):
         sleep(1)
-    
-    
-    
+
+    api.release()
+
 if __name__ == '__main__':
     main()
