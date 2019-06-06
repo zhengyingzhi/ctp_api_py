@@ -23,6 +23,7 @@ struct KDStockProductInfo
     uint16_t    MarketId;           //市场代码编号 KD_MI_XXXX
     uint16_t    Padding;            //预留
     uint32_t    PriceTick;          //价格变动
+    int64_t     PublicFloatShare;   //流通股本
 };
 
 
@@ -50,7 +51,7 @@ struct KDStockMarketDataL2
     uint32_t    WeightedAvgAskPrice;//加权平均委卖价格
     uint32_t    YieldToMaturity;    //到期收益率
     uint32_t    IOPV;               //IOPV净值估值
-    uint32_t    PreIOPV;            //基金T-1日收盘时刻IOPV 仅标的为基金时有效
+    uint32_t    PrePrice;           //昨收价 基金时为T-1日收盘时刻IOPV(PreIOPV)
 
     int32_t     TradingDay;         //交易日(YYYYMMDD)
     int32_t     ActionDay;          //业务发生日(自然日)
@@ -83,7 +84,7 @@ struct KDStockMarketDataL1
     uint32_t    AveragePrice;       //当日均价
     uint32_t    ClosePrice;         //今收盘
     uint32_t    IOPV;               //IOPV净值估值
-    uint32_t    PreIOPV;            //基金T-1日收盘时刻IOPV 仅标的为基金时有效
+    uint32_t    PrePrice;           //昨收价 基金时为T-1日收盘时刻IOPV(PreIOPV)
 
     int32_t     TradingDay;         //交易日(YYYYMMDD)
     int32_t     ActionDay;          //业务发生日(自然日)

@@ -195,6 +195,7 @@ void extract_data(dict out_data, kd_md_data_t* apData)
             out_data["UpperLimitPrice"]  = lpStkInfo->UpperLimitPrice;
             out_data["LowerLimitPrice"]  = lpStkInfo->LowerLimitPrice;
             out_data["MarketId"]         = lpStkInfo->MarketId;
+            out_data["PublicFloatShare"] = lpStkInfo->PublicFloatShare;
         }
         else if (lServiceId == KD_SI_STK_MarketDataL1)
         {
@@ -214,7 +215,7 @@ void extract_data(dict out_data, kd_md_data_t* apData)
             out_data["AveragePrice"] = lpStkMD->AveragePrice;
             out_data["ClosePrice"]   = lpStkMD->ClosePrice;
             out_data["IOPV"]         = lpStkMD->IOPV;
-            out_data["PreIOPV"]      = lpStkMD->PreIOPV;
+            out_data["PrePrice"]     = lpStkMD->PrePrice;
             out_data["TradingDay"]   = lpStkMD->TradingDay;
             out_data["ActionDay"]    = lpStkMD->ActionDay;
             out_data["UpdateTime"]   = lpStkMD->UpdateTime;
