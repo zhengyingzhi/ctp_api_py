@@ -30,6 +30,7 @@ struct KDFutureProductInfo
 
     uint32_t    UpperLimitPrice;    //涨停价
     uint32_t    LowerLimitPrice;    //跌停价
+    uint32_t    TradingDay;         //交易日
 };
 
 /// 期货市场数据
@@ -50,6 +51,7 @@ struct KDFutureMarketData
     uint32_t    OpenInterest;       //持仓量 N(4)
     uint32_t    ClosePrice;         //今收盘
     uint32_t    SettlementPrice;    //结算价
+    uint32_t    PrePrice;           //昨收盘价
 
     int32_t     TradingDay;         //交易日
     int32_t     ActionDay;          //业务发生日(自然日)

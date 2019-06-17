@@ -21,9 +21,11 @@ struct KDStockProductInfo
     uint32_t    UpperLimitPrice;    //涨停价
     uint32_t    LowerLimitPrice;    //跌停价
     uint16_t    MarketId;           //市场代码编号 KD_MI_XXXX
-    uint16_t    Padding;            //预留
+    char        StopFlag;           //停牌标志
+    uint8_t     Padding;            //预留
     uint32_t    PriceTick;          //价格变动
     int64_t     PublicFloatShare;   //流通股本
+    uint32_t    TradingDay;         //交易日
 };
 
 
@@ -106,6 +108,7 @@ struct KDIndexProductInfo
     uint16_t    MarketId;           //市场代码编号 KD_MI_XX
     uint16_t    Padding;            //预留
     uint32_t    PriceTick;          //价格变动
+    uint32_t    TradingDay;         //交易日
 };
 
 /// 指数行情数据
@@ -154,6 +157,7 @@ struct KDStockOptionProductInfo
 
     uint32_t    UpperLimitPrice;    //涨停价
     uint32_t    LowerLimitPrice;    //跌停价
+    uint32_t    TradingDay;         //交易日
     int32_t     StartDate;          //首个交易日(YYYYMMDD) C8
     int32_t     EndDate;            //最后交易日
     int32_t     ExerciseDate;       //期权行权日

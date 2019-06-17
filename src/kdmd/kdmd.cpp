@@ -8,6 +8,7 @@
 #include "KDCommonDef.h"
 #include "KDMDApiStruct.h"
 #include "KDStockMarket.h"
+#include "KDFutureMarket.h"
 
 #define DEFAULT_MAX_REQ_SIZE    256
 
@@ -165,6 +166,8 @@ void extract_data(dict out_data, kd_md_data_t* apData)
             out_data["InstrumentName"]  = boost::locale::conv::to_utf<char>(lpIdxInfo->InstrumentName, std::string("GB2312"));
             out_data["DecimalPoint"]    = lpIdxInfo->DecimalPoint;
             out_data["PreCloseIndex"]   = lpIdxInfo->PreCloseIndex;
+            out_data["TradingDay"]      = lpIdxInfo->TradingDay;
+            out_data["PriceTick"]       = lpIdxInfo->PriceTick;
             out_data["MarketId"]        = lpIdxInfo->MarketId;
         }
         else if (lServiceId == KD_SI_IDX_MarketData)
@@ -188,14 +191,17 @@ void extract_data(dict out_data, kd_md_data_t* apData)
         {
             KDStockProductInfo* lpStkInfo;
             lpStkInfo = (KDStockProductInfo*)apData->m_pDataInfo;
-            out_data["InstrumentID"]     = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentID, std::string("GB2312"));
-            out_data["InstrumentName"]   = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentName, std::string("GB2312"));
-            out_data["DecimalPoint"]     = lpStkInfo->DecimalPoint;
-            out_data["PreClosePrice"]    = lpStkInfo->PreClosePrice;
-            out_data["UpperLimitPrice"]  = lpStkInfo->UpperLimitPrice;
-            out_data["LowerLimitPrice"]  = lpStkInfo->LowerLimitPrice;
-            out_data["MarketId"]         = lpStkInfo->MarketId;
-            out_data["PublicFloatShare"] = lpStkInfo->PublicFloatShare;
+            out_data["InstrumentID"]    = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentID, std::string("GB2312"));
+            out_data["InstrumentName"]  = boost::locale::conv::to_utf<char>(lpStkInfo->InstrumentName, std::string("GB2312"));
+            out_data["DecimalPoint"]    = lpStkInfo->DecimalPoint;
+            out_data["PreClosePrice"]   = lpStkInfo->PreClosePrice;
+            out_data["UpperLimitPrice"] = lpStkInfo->UpperLimitPrice;
+            out_data["LowerLimitPrice"] = lpStkInfo->LowerLimitPrice;
+            out_data["TradingDay"]      = lpStkInfo->TradingDay;
+            out_data["StopFlag"]        = lpStkInfo->StopFlag;
+            out_data["PriceTick"]       = lpStkInfo->PriceTick;
+            out_data["MarketId"]        = lpStkInfo->MarketId;
+            out_data["PublicFloatShare"]= lpStkInfo->PublicFloatShare;
         }
         else if (lServiceId == KD_SI_STK_MarketDataL1)
         {
@@ -221,6 +227,52 @@ void extract_data(dict out_data, kd_md_data_t* apData)
             out_data["UpdateTime"]   = lpStkMD->UpdateTime;
             out_data["Status"]       = lpStkMD->Status;
             out_data["StopFlag"]     = lpStkMD->StopFlag;
+        }
+        else if (lServiceId == KD_SI_FUT_ProductInfo)
+        {
+            KDFutureProductInfo* lpFutInfo;
+            lpFutInfo = (KDFutureProductInfo*)apData->m_pDataInfo;
+            out_data["InstrumentID"] = boost::locale::conv::to_utf<char>(lpFutInfo->InstrumentID, std::string("GB2312"));
+            out_data["InstrumentName"] = boost::locale::conv::to_utf<char>(lpFutInfo->InstrumentName, std::string("GB2312"));
+            out_data["MarketId"] = lpFutInfo->MarketId;
+            out_data["ProductClass"] = lpFutInfo->ProductClass;
+            out_data["OptionType"] = lpFutInfo->OptionType;
+            out_data["VolumeMultiple"] = lpFutInfo->VolumeMultiple;
+            out_data["DecimalPoint"] = lpFutInfo->DecimalPoint;
+            out_data["PriceTick"] = lpFutInfo->PriceTick;
+            out_data["StrikePrice"] = lpFutInfo->StrikePrice;
+            out_data["PreClosePrice"] = lpFutInfo->PreClosePrice;
+            out_data["PreSettlementPrice"] = lpFutInfo->PreSettlementPrice;
+            out_data["PreOpenInterest"] = lpFutInfo->PreOpenInterest;
+            out_data["UpperLimitPrice"] = lpFutInfo->UpperLimitPrice;
+            out_data["LowerLimitPrice"] = lpFutInfo->LowerLimitPrice;
+            out_data["TradingDay"] = lpFutInfo->TradingDay;
+        }
+        else if (lServiceId == KD_SI_STK_MarketDataL1)
+        {
+            KDFutureMarketData* lpFutMD;
+            lpFutMD = (KDFutureMarketData*)apData->m_pDataInfo;
+            out_data["InstrumentID"] = boost::locale::conv::to_utf<char>(lpFutMD->InstrumentID, std::string("GB2312"));
+            out_data["OpenPrice"] = lpFutMD->OpenPrice;
+            out_data["HighestPrice"] = lpFutMD->HighestPrice;
+            out_data["LowestPrice"] = lpFutMD->LowestPrice;
+            out_data["LastPrice"] = lpFutMD->LastPrice;
+            out_data["BidPrice"] = lpFutMD->BidPrice[0];
+            out_data["BidVol"] = lpFutMD->BidVol[0];
+            out_data["AskPrice"] = lpFutMD->AskPrice[0];
+            out_data["AdkVol"] = lpFutMD->AskVol[0];
+            out_data["Volume"] = lpFutMD->Volume;
+            out_data["Turnover"] = lpFutMD->Turnover;
+            out_data["AveragePrice"] = lpFutMD->AveragePrice;
+            out_data["OpenInterest"] = lpFutMD->OpenInterest;
+            out_data["ClosePrice"] = lpFutMD->ClosePrice;
+            out_data["SettlementPrice"] = lpFutMD->SettlementPrice;
+            out_data["PrePrice"] = lpFutMD->PrePrice;
+            out_data["TradingDay"] = lpFutMD->TradingDay;
+            out_data["ActionDay"] = lpFutMD->ActionDay;
+            out_data["UpdateTime"] = lpFutMD->UpdateTime;
+            out_data["PreDelta"] = lpFutMD->PreDelta;
+            out_data["CurrDelta"] = lpFutMD->CurrDelta;
         }
         else if (lServiceId == KD_SI_KLineData)
         {

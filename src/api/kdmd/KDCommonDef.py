@@ -11,7 +11,7 @@ KD_FLOAT_Multiple10         = 10
 KD_FLOAT_Multiple100        = 100
 KD_FLOAT_Multiple1000       = 1000
 KD_FLOAT_Multiple10000      = 10000
-                            = 
+
 KD_DEFAULT_DP_AStock        = 2           # A股默认2位小数
 KD_DEFAULT_DP_BStock        = 3           # B股默认3位小数
 KD_DEFAULT_DP_Fund          = 3           # 基金默认3位小数
