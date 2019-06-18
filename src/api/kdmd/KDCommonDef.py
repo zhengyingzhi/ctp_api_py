@@ -246,3 +246,20 @@ KD_MD_PROXYTYPE_NONE            = 0         # 未代理
 KD_MD_PROXYTYPE_SOCKS4          = 1         # SOCKS4类型代理
 KD_MD_PROXYTYPE_SOCKS4A         = 1         # SOCKS4A类型代理
 KD_MD_PROXYTYPE_SOCKS5          = 2         # SOCKS5类型代理
+
+
+class KDMdRequest:
+    """API请求数据类"""
+    def __init__(self, market_id, service_id, instrument_id=""):
+        self.market_id = market_id
+        self.service_id = service_id
+        self.instrument_id = instrument_id
+
+    def to_dict(self):
+        d = {
+            "MarketId": self.market_id,
+            "ServiceId": self.service_id,
+            "InstrumentID": self.instrument_id
+        }
+        return d
+

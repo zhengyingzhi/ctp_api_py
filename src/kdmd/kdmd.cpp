@@ -156,6 +156,9 @@ void extract_data(dict out_data, kd_md_data_t* apData)
 {
     uint16_t lMarketId = apData->m_MarketId;
     uint16_t lServiceId = apData->m_ServiceId;
+    out_data["MarketId"] = lMarketId;
+    out_data["ServiceId"] = lServiceId;
+
     if (lMarketId == KD_MI_SSE || lMarketId == KD_MI_SZSE)
     {
         if (lServiceId == KD_SI_IDX_ProductInfo)
@@ -168,7 +171,6 @@ void extract_data(dict out_data, kd_md_data_t* apData)
             out_data["PreCloseIndex"]   = lpIdxInfo->PreCloseIndex;
             out_data["TradingDay"]      = lpIdxInfo->TradingDay;
             out_data["PriceTick"]       = lpIdxInfo->PriceTick;
-            out_data["MarketId"]        = lpIdxInfo->MarketId;
         }
         else if (lServiceId == KD_SI_IDX_MarketData)
         {
@@ -200,7 +202,6 @@ void extract_data(dict out_data, kd_md_data_t* apData)
             out_data["TradingDay"]      = lpStkInfo->TradingDay;
             out_data["StopFlag"]        = lpStkInfo->StopFlag;
             out_data["PriceTick"]       = lpStkInfo->PriceTick;
-            out_data["MarketId"]        = lpStkInfo->MarketId;
             out_data["PublicFloatShare"]= lpStkInfo->PublicFloatShare;
         }
         else if (lServiceId == KD_SI_STK_MarketDataL1)
@@ -234,7 +235,6 @@ void extract_data(dict out_data, kd_md_data_t* apData)
             lpFutInfo = (KDFutureProductInfo*)apData->m_pDataInfo;
             out_data["InstrumentID"] = boost::locale::conv::to_utf<char>(lpFutInfo->InstrumentID, std::string("GB2312"));
             out_data["InstrumentName"] = boost::locale::conv::to_utf<char>(lpFutInfo->InstrumentName, std::string("GB2312"));
-            out_data["MarketId"] = lpFutInfo->MarketId;
             out_data["ProductClass"] = lpFutInfo->ProductClass;
             out_data["OptionType"] = lpFutInfo->OptionType;
             out_data["VolumeMultiple"] = lpFutInfo->VolumeMultiple;
