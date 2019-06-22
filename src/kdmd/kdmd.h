@@ -7,30 +7,23 @@
 #include <stdint.h>
 #include <string>
 #include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <codecvt>
+#include <locale>
+
+#include <pybind11/pybind11.h>
 
 #define MD_ENABLE_WORK_THREAD   0
 
-//Boost
-#define BOOST_PYTHON_STATIC_LIB
-#include <boost/python/module.hpp>  //python封装
-#include <boost/python/def.hpp>     //python封装
-#include <boost/python/dict.hpp>    //python封装
-#include <boost/python/list.hpp>    //python封装
-#include <boost/python/object.hpp>  //python封装
-#include <boost/python.hpp>         //python封装
-#if MD_ENABLE_WORK_THREAD
-#include <boost/thread.hpp>         //任务队列的线程功能
-#include <boost/bind.hpp>           //任务队列的线程功能
-#include <boost/any.hpp>            //任务队列的任务实现
-#endif//MD_ENABLE_WORK_THREAD
-#include <boost/locale.hpp>         //字符集转换
+
 //API
 #include "KDMdUserApi.h"
 
 //命名空间
 using namespace std;
-using namespace boost::python;
-using namespace boost;
+using namespace pybind11;
 
 
 #if MD_ENABLE_WORK_THREAD
@@ -48,15 +41,15 @@ class ConcurrentQueue
 {
 private:
     queue<Data> the_queue;                              //标准库队列
-    mutable mutex the_mutex;                            //boost互斥锁
-    condition_variable the_condition_variable;          //boost条件变量
+    mutable mutex the_mutex;                            //互斥锁
+    condition_variable the_condition_variable;          //条件变量
 
 public:
 
     //存入新的任务
     void push(Data const& data)
     {
-        mutex::scoped_lock lock(the_mutex);             //获取互斥锁
+        unique_lock<mutex> lock(the_mutex);             //获取互斥锁
         the_queue.push(data);                           //向队列中存入数据
         lock.unlock();                                  //释放锁
         the_condition_variable.notify_one();            //通知正在阻塞等待的线程
@@ -65,14 +58,14 @@ public:
     //检查队列是否为空
     bool empty() const
     {
-        mutex::scoped_lock lock(the_mutex);
+        unique_lock<mutex> lock(the_mutex);
         return the_queue.empty();
     }
 
     //取出
     Data wait_and_pop()
     {
-        mutex::scoped_lock lock(the_mutex);
+        unique_lock<mutex> lock(the_mutex);
 
         while (the_queue.empty())                        //当队列为空时
         {
@@ -88,61 +81,15 @@ public:
 
 #endif// MD_ENABLE_WORK_THREAD
 
-///-------------------------------------------------------------------------------------
-///API中的部分组件
-///-------------------------------------------------------------------------------------
 
-//GIL全局锁简化获取用，
-//用于帮助C++线程获得GIL锁，从而防止python崩溃
-class PyLock
-{
-private:
-    PyGILState_STATE gil_state;
-
-public:
-    //在某个函数方法中创建该对象时，获得GIL锁
-    PyLock()
-    {
-        gil_state = PyGILState_Ensure();
-    }
-
-    //在某个函数完成后销毁该对象时，解放GIL锁
-    ~PyLock()
-    {
-        PyGILState_Release(gil_state);
-    }
-};
-
-
-
-//从字典中获取某个建值对应的整数，并赋值到请求结构体对象的值上
-void get_int(dict d, string key, int* value);
-
-
-//从字典中获取某个建值对应的浮点数，并赋值到请求结构体对象的值上
-void get_double(dict d, string key, double* value);
-
-
-//从字典中获取某个建值对应的字符，并赋值到请求结构体对象的值上
-void get_char(dict d, string key, char* value);
-
-
-//从字典中获取某个建值对应的字符串，并赋值到请求结构体对象的值上
-void get_str(dict d, string key, char* value);
-
-
-///-------------------------------------------------------------------------------------
-///C++ SPI的回调函数方法实现
-///-------------------------------------------------------------------------------------
-
-//API的继承实现
+// Py API的实现
 class KDMdApi
 {
 private:
     kd_md_api_t* api;                   // API对象
     bool active;
 #if MD_ENABLE_WORK_THREAD
-    thread* task_thread;                //工作线程指针（向python中推送数据）
+    thread task_thread;                 //工作线程指针（向python中推送数据）
     ConcurrentQueue<Task> task_queue;   //任务队列
 #endif// MD_ENABLE_WORK_THREAD
 
@@ -150,9 +97,6 @@ public:
     KDMdApi() : api()
     {
         this->active = false;
-#if MD_ENABLE_WORK_THREAD
-        this->task_thread = NULL;
-#endif//MD_ENABLE_WORK_THREAD
     }
 
     ~KDMdApi()
