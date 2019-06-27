@@ -85,6 +85,27 @@ inline string to_utf(const string &gb2312)
     return string();
 }
 
+static const char* _KDGetMarketName(uint16_t aMarketId)
+{
+    switch (aMarketId)
+    {
+    case KD_MI_SSE:     return KD_EXCHANGE_SSE;
+    case KD_MI_SHOP:    return KD_EXCHANGE_SHOP;
+    case KD_MI_SZSE:    return KD_EXCHANGE_SZSE;
+    case KD_MI_SZOP:    return KD_EXCHANGE_SZOP;
+    case KD_MI_SHHK:    return KD_EXCHANGE_SHHK;
+    case KD_MI_SZHK:    return KD_EXCHANGE_SZHK;
+    case KD_MI_NEEQ:    return KD_EXCHANGE_NEEQ;
+    case KD_MI_CFFEX:   return KD_EXCHANGE_CFFEX;
+    case KD_MI_SHFE:    return KD_EXCHANGE_SHFE;
+    case KD_MI_DCE:     return KD_EXCHANGE_DCE;
+    case KD_MI_CZCE:    return KD_EXCHANGE_CZCE;
+    case KD_MI_INE:     return KD_EXCHANGE_INE;
+    case KD_MI_SGE:     return KD_EXCHANGE_SGE;
+    case KD_MI_OTHER:   return KD_EXCHANGE_OTHER;
+    default:            return "";
+    }
+}
 
 typedef struct {
     char* ptr;
@@ -164,6 +185,7 @@ void extract_data(dict out_data, kd_md_data_t* apData)
 {
     uint16_t lMarketId = apData->m_MarketId;
     uint16_t lServiceId = apData->m_ServiceId;
+    out_data["ExchangeID"] = _KDGetMarketName(lMarketId);
     out_data["MarketId"] = lMarketId;
     out_data["ServiceId"] = lServiceId;
 
@@ -265,10 +287,10 @@ void extract_data(dict out_data, kd_md_data_t* apData)
             out_data["HighestPrice"] = lpFutMD->HighestPrice;
             out_data["LowestPrice"] = lpFutMD->LowestPrice;
             out_data["LastPrice"] = lpFutMD->LastPrice;
-            out_data["BidPrice"] = lpFutMD->BidPrice[0];
-            out_data["BidVol"] = lpFutMD->BidVol[0];
-            out_data["AskPrice"] = lpFutMD->AskPrice[0];
-            out_data["AdkVol"] = lpFutMD->AskVol[0];
+            out_data["BidPrice1"] = lpFutMD->BidPrice[0];
+            out_data["BidVol1"] = lpFutMD->BidVol[0];
+            out_data["AskPrice1"] = lpFutMD->AskPrice[0];
+            out_data["AdkVol1"] = lpFutMD->AskVol[0];
             out_data["Volume"] = lpFutMD->Volume;
             out_data["Turnover"] = lpFutMD->Turnover;
             out_data["AveragePrice"] = lpFutMD->AveragePrice;

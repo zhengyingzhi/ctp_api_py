@@ -1,4 +1,4 @@
-﻿# coding: UTF-8
+# coding: UTF-8
 
 """
 浮点数小数位数，在KDXxxxProductInfo.DecimalPoint字段中展示
@@ -263,3 +263,158 @@ class KDMdRequest:
         }
         return d
 
+class KDStockProductInfo:
+    """股票产品信息"""
+    def __init__(self):
+        self.ExchangeID = ""
+        self.InstrumentID = ""
+        self.InstrumentName = ""
+        self.DecimalPoint = 0
+        self.PreClosePrice = 0.0
+        self.UpperLimitPrice = 0.0
+        self.LowerLimitPrice = 0.0
+        self.MarketId = 0
+        self.StopFlag = ''
+        self.PriceTick = 0.0
+        self.PublicFloatShare = 0.0
+        self.TradingDay = 0
+
+    def update(self, data):
+        self.__dict__.update(data)
+
+class KDStockMarketDataL1:
+    """股票5档行情"""
+    def __init__(self):
+        self.ExchangeID = ""
+        self.InstrumentID = ""
+        self.OpenPrice = 0.0          # 开盘价
+        self.HighestPrice = 0.0       # 最高价
+        self.LowestPrice = 0.0        # 最低价
+        self.LastPrice = 0.0          # 最新价
+        self.BidPrice1 = 0.0          # 申买价1
+        self.BidPrice2 = 0.0          # 申买价2
+        self.BidPrice3 = 0.0          # 申买价3
+        self.BidPrice4 = 0.0          # 申买价4
+        self.BidPrice5 = 0.0          # 申买价5
+        self.BidVol1 = 0              # 申买量1
+        self.BidVol2 = 0              # 申买量2
+        self.BidVol3 = 0              # 申买量3
+        self.BidVol4 = 0              # 申买量4
+        self.BidVol5 = 0              # 申买量5
+        self.AskPrice1 = 0.0          # 申卖价1
+        self.AskPrice2 = 0.0          # 申卖价2
+        self.AskPrice3 = 0.0          # 申卖价3
+        self.AskPrice4 = 0.0          # 申卖价4
+        self.AskPrice5 = 0.0          # 申卖价5
+        self.AskVol1 = 0              # 申卖量1
+        self.AskVol2 = 0              # 申卖量2
+        self.AskVol3 = 0              # 申卖量3
+        self.AskVol4 = 0              # 申卖量4
+        self.AskVol5 = 0              # 申卖量5
+        self.Volume = 0               # 成交总量
+        self.Turnover = 0.0           # 成交总金额
+        self.AveragePrice = 0.0
+        self.ClosePrice = 0.0
+        self.IOPV = 0.0
+        self.PrePrice = 0.0
+
+        self.TradingDay = 0
+        self.ActionDay = 0
+        self.UpdateTime = 0
+        self.Status = ''
+        self.StopFlag = ''
+
+    def update(self, data):
+        self.__dict__.update(data)
+
+class KDIndexProductInfo:
+    """指数产品信息"""
+    def __init__(self):
+        self.ExchangeID = ""
+        self.InstrumentID = ""
+        self.InstrumentName = ""
+        self.DecimalPoint = 0
+        self.PreCloseIndex = 0.0
+        self.MarketId = 0
+        self.PriceTick = 0.0
+        self.PublicFloatShare = 0.0
+        self.TradingDay = 0
+
+    def update(self, data):
+        self.__dict__.update(data)
+
+class KDIndexMarketData:
+    """指数行情信息"""
+    def __init__(self):
+        self.ExchangeID = ""
+        self.InstrumentID = ""
+        self.OpenIndex = 0.0
+        self.HighIndex = 0.0
+        self.LowIndex = 0.0
+        self.LastIndex = 0.0
+        self.CloseIndex = 0.0
+        self.PreCloseIndex = 0.0
+        self.Volume = 0
+        self.Turnover = 0.0
+
+        self.TradingDay = 0
+        self.ActionDay = 0
+        self.UpdateTime = 0
+
+    def update(self, data):
+        self.__dict__.update(data)
+
+class KDFutureProductInfo:
+    """期货产品信息"""
+    def __init__(self):
+        self.ExchangeID = ""
+        self.InstrumentID = ""
+        self.InstrumentName = ""
+        self.MarketId = 0               # 市场代码 KD_MI_XXX
+        self.ProductClass = ''          # 产品类型 KD_PC_Xxxx 期货/期权/组合
+        self.OptionType = ''            # 期权类型 KD_CP_Call/PutOptions
+        self.DecimalPoint = 0           # 价格小数位数 如大多商品期货为0或1位
+        self.VolumeMultiple = 0         # 合约乘数 N(0)
+        self.PriceTick = 0.0            # 最小变动价格
+        self.StrikePrice = 0.0          # 执行价
+        self.PreClosePrice = 0.0        # 昨收盘
+        self.PreSettlementPrice = 0.0   # 昨结算
+        self.PreOpenInterest = 0.0      # 昨持仓量
+
+        self.UpperLimitPrice = 0.0      # 涨停价
+        self.LowerLimitPrice = 0.0      # 跌停价
+        self.TradingDay = 0             # 交易日
+
+    def update(self, data):
+        self.__dict__.update(data)
+
+class KDFutureMarketData:
+    """期货行情信息"""
+    def __init__(self):
+        self.ExchangeID = ""
+        self.InstrumentID = ""
+        self.OpenPrice = 0.0            # 开盘价
+        self.HighestPrice = 0.0         # 最高价
+        self.LowestPrice = 0.0          # 最低价
+        self.LastPrice = 0.0            # 最新价
+        self.BidPrice1 = 0.0            # 申买价
+        self.BidVol1 = 0                # 申买量
+        self.AskPrice1 = 0.0            # 申卖价
+        self.AskVol1 = 0                # 申卖量
+        self.Volume = 0                 # 成交总量 N(2)
+        self.Turnover = 0.0             # 成交总金额
+        self.AveragePrice = 0.0         # 当日均价
+        self.OpenInterest = 0           # 持仓量 N(4)
+        self.ClosePrice = 0.0           # 今收盘
+        self.SettlementPrice = 0.0      # 结算价
+        self.PrePrice = 0.0             # 昨收盘价
+
+        self.TradingDay = 0             # 交易日
+        self.ActionDay = 0              # 业务发生日(自然日)
+        self.UpdateTime = 0             # 最后修改时间(HHMMSSmmm)
+
+        self.PreDelta = 0.0             # 昨虚实度
+        self.CurrDelta = 0.0            # 今虚实度
+
+    def update(self, data):
+        self.__dict__.update(data)

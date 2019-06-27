@@ -15,7 +15,7 @@
 
 #include <pybind11/pybind11.h>
 
-#define MD_ENABLE_WORK_THREAD   0
+#define MD_ENABLE_WORK_THREAD   1
 
 
 //API
