@@ -14,8 +14,9 @@
 #include <locale>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
-#define MD_ENABLE_WORK_THREAD   1
+#define MD_ENABLE_WORK_THREAD   0
 
 
 //API
@@ -187,7 +188,9 @@ public:
     int req_qry_data(dict req);
 
     int req_get_data(dict req, dict out_data, int timeoutms);
-    
+
+    vector<dict> req_get_data2(const vector<dict>& reqs, int timeoutms);
+
     int is_connected();
 
     int is_logined();

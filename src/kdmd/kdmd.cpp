@@ -156,19 +156,19 @@ int get_instrument_key(dict req, kd_md_instrument_key_t* apInstruKey, int aSize)
     get_int(req, "MarketId", &lMarketId);
     get_int(req, "ServiceId", &lServiceId);
 
-        zditem_t lItems[1000];
-        int lCount = str_delimiter_ex(lInstrumentIDs, (int)strlen(lInstrumentIDs), lItems, 1000, ",");
-        int lCount2 = 0;
-        for (int i = 0; i < lCount && i < aSize; ++i)
-        {
-            if (lItems[i].len <= 0 || lItems[i].len > 31)
-                continue;
-            ++lCount2;
-            strncpy(apInstruKey[i].m_InstrumentID, lItems[i].ptr, lItems[i].len);
-            apInstruKey[i].m_MarketId = (uint16_t)lMarketId;
-            apInstruKey[i].m_ServiceId = (uint16_t)lServiceId;
-        }
-        return lCount2;
+    zditem_t lItems[1000];
+    int lCount = str_delimiter_ex(lInstrumentIDs, (int)strlen(lInstrumentIDs), lItems, 1000, ",");
+    int lCount2 = 0;
+    for (int i = 0; i < lCount && i < aSize; ++i)
+    {
+        if (lItems[i].len <= 0 || lItems[i].len > 31)
+            continue;
+        ++lCount2;
+        strncpy(apInstruKey[i].m_InstrumentID, lItems[i].ptr, lItems[i].len);
+        apInstruKey[i].m_MarketId = (uint16_t)lMarketId;
+        apInstruKey[i].m_ServiceId = (uint16_t)lServiceId;
+    }
+    return lCount2;
 }
 
 void extract_array_data(dict out_data, const char* apKey, uint32_t src_data[], uint32_t aSize)
@@ -500,6 +500,29 @@ void KDMdApi::process_rtn_data(kd_md_recved_data_t* apData)
 ///-------------------------------------------------------------------------------------
 ///主动函数
 ///-------------------------------------------------------------------------------------
+#if 0
+vector<dict> KDMdApi::req_list(const vector<dict> &in, int reqid)
+{
+    vector<dict> out;
+    for (auto item : in)
+    {
+        // std::cout << item << std::endl;
+#if 1
+        char lInstrumentID[32] = "";
+        int lMarketId = 0;
+        get_str(item, "InstrumentID", lInstrumentID);
+        get_int(item, "MarketId", &lMarketId);
+        std::cout << "req_list: " << lInstrumentID << lMarketId << std::endl;
+
+        dict v;
+        v["Instr"] = lInstrumentID;
+        v["MI"] = lMarketId;
+        out.push_back(v);
+#endif
+    }
+    return out;
+}
+#endif//0
 
 void KDMdApi::create_md_api(string flow_path)
 {
@@ -631,6 +654,39 @@ int KDMdApi::req_get_data(dict req, dict out_data, int aTimeoutMS)
         extract_data(out_data, lpData);
     }
     return rv;
+}
+
+vector<dict> KDMdApi::req_get_data2(const vector<dict>& reqs, int timeoutms)
+{
+    vector<dict> outs;
+
+    int rv;
+    uint32_t lCount = 0;
+    kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
+    memset(&lInstrKeys, 0, sizeof(lInstrKeys));
+
+    for (int32_t i = 0; i < (int32_t)reqs.size(); ++i)
+    {
+        if (get_instrument_key(reqs[i], &lInstrKeys[lCount], 1) == 0) {
+            continue;
+        }
+        ++lCount;
+    }
+    // fprintf(stderr, "reqget2 count:%d\n", lCount);
+
+    kd_md_data_t* lpData = NULL;
+    uint32_t lDataSize = 1;
+    rv = KDMdReqGetData(this->api, lInstrKeys, lCount, &lpData, &lDataSize, timeoutms);
+    if (lpData)
+    {
+        for (uint32_t k = 0; k < lDataSize; ++k)
+        {
+            dict out_data;
+            extract_data(out_data, &lpData[k]);
+            outs.push_back(out_data);
+        }
+    }
+    return outs;
 }
 
 int KDMdApi::is_connected()
@@ -801,6 +857,7 @@ PYBIND11_MODULE(kdmd, m)
         .def("unsubscribe_all", &KDMdApi::unsubscribe_all)
         .def("req_qry_data", &KDMdApi::req_qry_data)
         .def("req_get_data", &KDMdApi::req_get_data)
+        .def("req_get_data2", &KDMdApi::req_get_data2, pybind11::return_value_policy::reference)
         .def("req_user_login", &KDMdApi::req_user_login)
         .def("req_user_logout", &KDMdApi::req_user_logout)
         // .def("set_user_data", &KDMdApi::set_user_data)
