@@ -31,6 +31,8 @@ struct KDFutureProductInfo
     uint32_t    UpperLimitPrice;    //涨停价
     uint32_t    LowerLimitPrice;    //跌停价
     uint32_t    TradingDay;         //交易日
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
+    uint16_t    Padding;
 };
 
 /// 期货市场数据
@@ -59,6 +61,8 @@ struct KDFutureMarketData
 
     uint32_t    PreDelta;           //昨虚实度
     uint32_t    CurrDelta;          //今虚实度
+    uint16_t    MarketId;           //市场代码 KD_MI_XXX
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
 };
 
 
@@ -75,6 +79,8 @@ struct KDForQuoteData
     int32_t     QuoteTime;          //询价时间(HHMMSS)
     int32_t     TradingDay;         //交易日
     int32_t     ActionDay;          //业务发生日(自然日)
+    uint16_t    MarketId;           //市场代码 KD_MI_XXX
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
 };
 
 #pragma pack(pop)

@@ -102,10 +102,22 @@
 #define KD_SI_STK_Transaction       9           //深圳逐笔成交
 #define KD_SI_STK_StepOrder         10          //深圳逐笔委托
 #define KD_SI_KLineData             11          //K线数据
+#define KD_SI_BOND_ProductInfo      12          //债券产品信息
+#define KD_SI_BOND_MarketData       13          //债券行情L1
+#define KD_SI_FUND_ProductInfo      14          //基金产品信息
+#define KD_SI_FUND_MarketData       15          //基金行情L1
 
-#define KD_SI_FUT_ProductInfo       12          //期货产品信息
-#define KD_SI_FUT_MarketData        13          //期货行情数据
-#define KD_SI_FUT_ForQuote          14          //期货期权询价通知
+#define KD_SI_FUT_ProductInfo       18          //期货产品信息
+#define KD_SI_FUT_MarketData        19          //期货行情数据
+#define KD_SI_FUT_ForQuote          20          //期货期权询价通知
+
+
+/// 证券类别 Security Type
+#define KD_SECT_Index                1          //指数
+#define KD_SECT_Stock                2          //股票
+#define KD_SECT_Bond                 3          //债券
+#define KD_SECT_Fund                 4          //基金
+#define KD_SECT_Option               5          //期权
 
 
 /// 停牌标志 Stop Flag

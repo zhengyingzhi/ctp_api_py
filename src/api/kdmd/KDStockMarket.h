@@ -26,6 +26,15 @@ struct KDStockProductInfo
     uint32_t    PriceTick;          //价格变动
     int64_t     PublicFloatShare;   //流通股本
     uint32_t    TradingDay;         //交易日
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
+    uint16_t    Padding2;           //预留
+    int32_t     ListDate;           //上市日期
+    int32_t     SecurityType;       //证券类别
+    uint16_t    CrdUnderlying;      //融资融券标的
+    uint16_t    DRFlag;             //除权除息标志
+    uint32_t    DivShareRate;       //送股比例
+    uint32_t    DivCashRate;        //派息比例
+    uint32_t    StatusFlag;         //0非ST,1-ST,2-*ST,4-退市整理
 };
 
 
@@ -67,6 +76,8 @@ struct KDStockMarketDataL2
     char        Status;             //市场状态
     char        StopFlag;           //停牌标志
     char        Padding[2];         //预留
+    uint16_t    MarketId;           //
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
 };
 
 /// 股票Level-1行情
@@ -94,6 +105,8 @@ struct KDStockMarketDataL1
     char        Status;             //市场状态
     char        StopFlag;           //停牌标志
     char        Padding[2];         //预留
+    uint16_t    MarketId;           //
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
 };
 
 
@@ -106,7 +119,7 @@ struct KDIndexProductInfo
     uint32_t    DecimalPoint;       //价格小数位数 指数默认为4
     uint32_t    PreCloseIndex;      //前盘指数
     uint16_t    MarketId;           //市场代码编号 KD_MI_XX
-    uint16_t    Padding;            //预留
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
     uint32_t    PriceTick;          //价格变动
     uint32_t    TradingDay;         //交易日
 };
@@ -128,7 +141,8 @@ struct KDIndexMarketData
     int32_t     TradingDay;         //交易日YYYYMMDD
     int32_t     ActionDay;          //业务发生日(自然日)
     int32_t     UpdateTime;         //最后修改时间(HHMMSSmmm)
-
+    uint16_t    MarketId;           //
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
 };
 
 
@@ -163,6 +177,8 @@ struct KDStockOptionProductInfo
     int32_t     ExerciseDate;       //期权行权日
     int32_t     DeliveryDate;       //行权交割日
     int32_t     ExpireDate;         //期权到期日
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
+    uint16_t    Padding;
 };
 
 struct KDStockOptionMarketData
@@ -192,6 +208,8 @@ struct KDStockOptionMarketData
     int32_t     TradingDay;         //交易日(YYYYMMDD)
     int32_t     ActionDay;          //业务发生日(自然日)
     int32_t     UpdateTime;         //最后修改时间(HHMMSSmmm)
+    uint16_t    MarketId;           //
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
 };
 
 
@@ -210,7 +228,8 @@ struct KDStockTransaction
     int32_t     TradingDay;         //交易日YYYYMMDD
     int32_t     TransactTime;       //委托时间(HHMMSSmmm)
     uint16_t    ChannelNo;          //频道代码
-    uint16_t    Padding;            //预留
+    uint16_t    MarketId;           //
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
 };
 
 /// 逐笔委托
@@ -226,6 +245,8 @@ struct KDStockStepOrder
     int32_t     TradingDay;         //交易日YYYYMMDD
     int32_t     OrderTime;          //委托时间(HHMMSSmmm)
     uint16_t    ChannelNo;          //频道代码
+    uint16_t    MarketId;           //
+    uint16_t    ServiceId;          //数据类型 KD_SI_XXX_Yyyy
 
     char        ExtendFields[1];    //扩展字段 根据MDStreamID区分 KDStepOrder_ExtendXXX
 };
@@ -266,7 +287,9 @@ struct KDKLine
     int64_t     Turnover;           // 分钟内成交额   单位：元
     uint32_t    ValIncrease;        // 涨跌值         保留
     uint32_t    Reserve;            // 保留字段
-    char        Padding[8];         // 
+    uint16_t    MarketId;           //
+    uint16_t    SecurityType;       // 证券类别 KD_SECT_Xxxx
+    char        Padding[4];         // 
 };
 
 #pragma pack(pop)
