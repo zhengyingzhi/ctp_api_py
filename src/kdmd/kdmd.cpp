@@ -635,6 +635,26 @@ int KDMdApi::req_qry_data(dict req)
     return rv;
 }
 
+int KDMdApi::req_qry_data2(const vector<dict>& reqs)
+{
+    int rv;
+    uint32_t lCount;
+    kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
+    memset(&lInstrKeys, 0, sizeof(lInstrKeys));
+
+    lCount = 0;
+    for (int32_t i = 0; i < (int32_t)reqs.size() && i < DEFAULT_MAX_REQ_SIZE; ++i)
+    {
+        if (get_instrument_key(reqs[i], &lInstrKeys[lCount], 1) == 0) {
+            continue;
+        }
+        ++lCount;
+    }
+
+    rv = KDMdReqQryData(this->api, lInstrKeys, lCount);
+    return rv;
+}
+
 int KDMdApi::req_get_data(dict req, dict out_data, int aTimeoutMS)
 {
     int rv;
@@ -665,7 +685,7 @@ vector<dict> KDMdApi::req_get_data2(const vector<dict>& reqs, int timeoutms)
     kd_md_instrument_key_t lInstrKeys[DEFAULT_MAX_REQ_SIZE];
     memset(&lInstrKeys, 0, sizeof(lInstrKeys));
 
-    for (int32_t i = 0; i < (int32_t)reqs.size(); ++i)
+    for (int32_t i = 0; i < (int32_t)reqs.size() && i < DEFAULT_MAX_REQ_SIZE; ++i)
     {
         if (get_instrument_key(reqs[i], &lInstrKeys[lCount], 1) == 0) {
             continue;
@@ -856,6 +876,7 @@ PYBIND11_MODULE(kdmd, m)
         .def("unsubscribe_market_data", &KDMdApi::unsubscribe_market_data)
         .def("unsubscribe_all", &KDMdApi::unsubscribe_all)
         .def("req_qry_data", &KDMdApi::req_qry_data)
+        .def("req_qry_data2", &KDMdApi::req_qry_data2, pybind11::return_value_policy::reference)
         .def("req_get_data", &KDMdApi::req_get_data)
         .def("req_get_data2", &KDMdApi::req_get_data2, pybind11::return_value_policy::reference)
         .def("req_user_login", &KDMdApi::req_user_login)

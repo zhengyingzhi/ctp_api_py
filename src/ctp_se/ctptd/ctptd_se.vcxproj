@@ -114,6 +114,7 @@
     <OutDir>$(SolutionDir)..\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\objs\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetExt>.pyd</TargetExt>
+    <TargetName>ctptd</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelPy36|Win32'">
     <LinkIncremental>false</LinkIncremental>

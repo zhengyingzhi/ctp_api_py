@@ -187,6 +187,8 @@ public:
 
     int req_qry_data(dict req);
 
+    int req_qry_data2(const vector<dict>& reqs);
+
     int req_get_data(dict req, dict out_data, int timeoutms);
 
     vector<dict> req_get_data2(const vector<dict>& reqs, int timeoutms);
