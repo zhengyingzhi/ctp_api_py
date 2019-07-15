@@ -75,6 +75,7 @@ inline string to_utf(const string &gb2312)
     return boost::locale::conv::to_utf<char>(gb2312, std::string("GB2312"));
 #endif//_MSC_VER
 
+#ifdef _MSC_VER
     vector<wchar_t> wstr(gb2312.size());
     wchar_t* wstrEnd = nullptr;
     const char* gbEnd = nullptr;
@@ -91,6 +92,8 @@ inline string to_utf(const string &gb2312)
     }
 
     return string();
+#endif
+    return "";
 }
 
 static const char* _KDGetMarketName(uint16_t aMarketId)
