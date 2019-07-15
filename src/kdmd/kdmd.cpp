@@ -11,6 +11,11 @@
 #include "KDStockMarket.h"
 #include "KDFutureMarket.h"
 
+#ifndef _MSC_VER
+#include <boost/locale.hpp>         //字符集转换
+#endif//_MSC_VER
+
+
 #define DEFAULT_MAX_REQ_SIZE    256
 
 ///-------------------------------------------------------------------------------------
@@ -64,8 +69,11 @@ inline string to_utf(const string &gb2312)
 #ifdef _MSC_VER
     const static locale loc("zh-CN");
 #else
-    const static locale loc("zh_CN.GB18030");
-#endif
+    // const static locale loc("zh_CN.GB18030");
+
+    // @20190715 some linux platform without zh_CN locale
+    return boost::locale::conv::to_utf<char>(gb2312, std::string("GB2312"));
+#endif//_MSC_VER
 
     vector<wchar_t> wstr(gb2312.size());
     wchar_t* wstrEnd = nullptr;
