@@ -7,6 +7,17 @@
 #include "xctd.h"
 
 
+#define MY_DEBUG 0
+
+#if (MY_DEBUG)
+#define XcDebugInfo(fd,fmt,...) fprintf(fd,fmt,##__VA_ARGS__)
+#else
+static  inline void XcPrintNull(FILE* fd, const char* fmt, ...) { (void)fd; (void)fmt; }
+#define XcDebugInfo(fd,fmt,...) XcPrintNull(fd,fmt,##__VA_ARGS__)
+#endif//MY_DEBUG
+#define XcDbgFd stdout
+
+
 #define XC_OP_BRANCH_NO         "0"
 #define XC_OP_ENTRUST_WAY       "7"     // 网上委托
 #define XC_PASSWORD_TYPE        "2"     // 1-资金密码 2-交易密码
@@ -81,25 +92,25 @@ XcTdApi::~XcTdApi()
 
 void XcTdApi::OnClose()
 {
-    fprintf(stderr, "xctdapi OnClose\n");
+    XcDebugInfo(XcDbgFd, "xctdapi OnClose\n");
     this->on_front_disconnected(-1);
 }
 
 void XcTdApi::OnDisConnect(void)
 {
-    fprintf(stderr, "xctdapi OnDisConnect\n");
+    XcDebugInfo(XcDbgFd, "xctdapi OnDisConnect\n");
     this->on_front_disconnected(-1);
 }
 
 void XcTdApi::OnConnected(void)
 {
-    fprintf(stderr, "xctdapi OnConnected\n");
+    XcDebugInfo(XcDbgFd, "xctdapi OnConnected\n");
     this->on_front_connected();
 }
 
 void XcTdApi::OnRecvJsonMsg(char* pJsonMsg)
 {
-    // fprintf(stderr, pJsonMsg);
+    // XcDebugInfo(XcDbgFd, pJsonMsg);
     write_data(0, pJsonMsg);
 
     std::string msg = to_utf(pJsonMsg);
@@ -128,7 +139,7 @@ void XcTdApi::release()
 int XcTdApi::init(std::string user_id, std::string server_ip, std::string server_port, std::string license)
 {
     int rv;
-    fprintf(stderr, "xctdapi init user_id:%s, server_ip:%s, server_port:%s, liscense:%s\n",
+    XcDebugInfo(XcDbgFd, "xctdapi init user_id:%s, server_ip:%s, server_port:%s, liscense:%s\n",
         user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str());
 
     char server_addr[256] = "";
@@ -145,7 +156,7 @@ int XcTdApi::init(std::string user_id, std::string server_ip, std::string server
         fp = fopen(filename, "a+");
         if (!fp)
         {
-            fprintf(stderr, "open serialize file:%s failed!\n", filename);
+            XcDebugInfo(XcDbgFd, "open serialize file:%s failed!\n", filename);
         }
     }
 
@@ -157,7 +168,7 @@ int XcTdApi::init(std::string user_id, std::string server_ip, std::string server
     rv = this->api->Connect(server_addr, (char*)license.c_str(), System_UFX, (char*)user_id.c_str());
     if (rv < 0)
     {
-        fprintf(stderr, "xctdapi Connect failed:%d\n", rv);
+        XcDebugInfo(XcDbgFd, "xctdapi Connect failed:%d\n", rv);
         write_data(0, "xctdapi %s connect failed rv:%d", user_id.c_str(), rv);
     }
 

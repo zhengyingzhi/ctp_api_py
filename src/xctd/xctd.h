@@ -23,6 +23,7 @@ using namespace pybind11;
 #define XC_TDAPI_VERSION        "0.0.1"
 
 #define XC_FUNC_QRY_SECINFO     330300      // 证券代码信息查询
+#define XC_FUNC_TRADING_ACCOUNT 332254      // 客户资金快速查询
 #define XC_FUNC_PLACE_ORDER     333002      // 普通委托
 #define XC_FUNC_CANCEL_ORDER    333017      // 委托撤单
 #define XC_FUNC_QRY_PRUCHASE    333030      // 新股申购查询
@@ -32,7 +33,7 @@ using namespace pybind11;
 #define XC_FUNC_QRY_POSITION    333104      // 证券持仓查询
 #define XC_FUNC_QRY_MD          400         // 证券行情查询
 #define XC_FUNC_LOGIN           331100      // 客户登录
-#define XC_FUNC_TRADING_ACCOUNT 331155      // 资金账户获取
+#define XC_FUNC_QRY_ACCOUNTINFO 331155      // 账户信息获取
 #define XC_FUNC_SUB_ORDER       620001      // 订阅回报主推
 #define XC_FUNC_RTN_ORDER       620003      // 回报主推
 

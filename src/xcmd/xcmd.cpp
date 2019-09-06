@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <time.h>
 #include <iostream>
 #include <codecvt>
@@ -6,7 +7,20 @@
 
 #include "xcmd.h"
 
-#define PRICE_DIV   1000.0
+
+#define MY_DEBUG 0
+
+#if (MY_DEBUG)
+#define XcDebugInfo(fd,fmt,...) fprintf(fd,fmt,##__VA_ARGS__)
+#else
+static  inline void XcPrintNull(FILE* fd, const char* fmt, ...) { (void)fd; (void)fmt; }
+#define XcDebugInfo(fd,fmt,...) XcPrintNull(fd,fmt,##__VA_ARGS__)
+#endif//MY_DEBUG
+#define XcDbgFd stdout
+
+
+#define PRICE_DIV               1000.0
+#define DEFAULT_MAX_REQ_SIZE    256
 
 static string to_utf(const string &gb2312)
 {
@@ -34,6 +48,51 @@ static string to_utf(const string &gb2312)
     return string();
 }
 
+static bool get_symbol_market(char symbol[], char market[], const std::string& instrument)
+{
+    if (instrument.length() < 6) {
+        return false;
+    }
+
+    strncpy(symbol, instrument.c_str(), 6);
+
+    if (instrument.find("SSE") != string::npos ||
+        instrument.find("SH") != string::npos ||
+        instrument.find("SHA") != string::npos)
+    {
+        strcpy(market, Scdm_SSE);
+    }
+    else if (instrument.find("SZSE") != string::npos ||
+        instrument.find("SZ") != string::npos ||
+        instrument.find("SZA") != string::npos)
+    {
+        strcpy(market, Scdm_SZSE);
+    }
+    else
+    {
+#if 0
+        // unknown market
+        if (strncmp(symbol, "60", 2) == 0 ||
+            strncmp(symbol, "68", 2) == 0)
+        {
+            strcpy(market, Scdm_SSE);
+        }
+        else if (strncmp(symbol, "00", 2) == 0 ||
+            strncmp(symbol, "30", 2) == 0)
+        {
+            strcpy(market, Scdm_SZSE);
+        }
+        else {
+            return false;
+        }
+#else
+        return false;
+#endif
+    }
+    return true;
+}
+
+
 XcMdApi::XcMdApi()
     : api()
     , qidmap()
@@ -51,7 +110,7 @@ void XcMdApi::OnUserLogin(socket_struct_Msg* pMsg)
     cout << "用户登录失败:" << pMsg->Desc << endl;
     */
     // cout << "用户登录返回:" << pMsg->Desc << endl;
-    fprintf(stderr, "OnUserLogin0:%s\n", pMsg->Desc);
+    XcDebugInfo(XcDbgFd, "OnUserLogin:%s\n", pMsg->Desc);
 
     gil_scoped_acquire acquire;
     this->on_front_connected();
@@ -59,7 +118,6 @@ void XcMdApi::OnUserLogin(socket_struct_Msg* pMsg)
     dict data;
     data["MsgID"] = pMsg->Msgid;
     data["Desc"] = to_utf(pMsg->Desc);
-    fprintf(stderr, "OnUserLogin1:%s\n", pMsg->Desc);
 
     this->on_rsp_user_login(data);
 }
@@ -72,13 +130,13 @@ void XcMdApi::OnHeart()
 void XcMdApi::OnClose()
 {
     // cout << "out:" << "通道关闭." << endl;
-    fprintf(stderr, "OnClose\n");
+    XcDebugInfo(XcDbgFd, "OnClose\n");
     this->on_front_disconnected(-1);
 }
 
 void XcMdApi::OnIssueEnd(QWORD qQuoteID)
 {
-    fprintf(stderr, "OnIssueEnd qQuoteID:%ld\n", (long)qQuoteID);
+    XcDebugInfo(XcDbgFd, "OnIssueEnd qQuoteID:%ld\n", (long)qQuoteID);
 
     XcDepthMarketData* pMD;
     if (qidmap.count(qQuoteID) == 0)
@@ -133,12 +191,12 @@ void XcMdApi::OnIssueEnd(QWORD qQuoteID)
 
 void XcMdApi::OnMsg(QWORD qRefID, socket_struct_Msg* pMsg)
 {
-    fprintf(stderr, "OnMsg qRefID:%ld, MsgId:%d, Msg:%s\n", (long)qRefID, pMsg->Msgid, pMsg->Desc);
+    XcDebugInfo(XcDbgFd, "OnMsg qRefID:%ld, MsgId:%d, Msg:%s\n", (long)qRefID, pMsg->Msgid, pMsg->Desc);
 }
 
 void XcMdApi::OnRespMarket(QWORD qQuoteID, socket_struct_Market* pMarket)
 {
-    fprintf(stderr, "OnRespMarket qQuoteID:%ld, Code:%s, Name:%s\n",
+    XcDebugInfo(XcDbgFd, "OnRespMarket qQuoteID:%ld, Code:%s, Name:%s\n",
         (long)qQuoteID, pMarket->MarketCode, pMarket->MarketName);
 }
 
@@ -147,9 +205,8 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
     // 上海A股证券行情响应
     socket_struct_Security* pSecurity = (socket_struct_Security*)pParam;
     socket_struct_Security_Extend* pExtend = (socket_struct_Security_Extend*)pSecurity->Extend_fields;
-    fprintf(stderr, "OnRespSecurity Code:%s,Name:%s,PreClose:%.2lf\n",
+    XcDebugInfo(XcDbgFd, "OnRespSecurity Code:%s,Name:%s,PreClose:%.2lf\n",
         pSecurity->SecCode, pSecurity->SecName, pSecurity->SecurityClosePx);
-    // cout << "OrdMaxFloor: " << pExtend->OrdMaxFloor << " OrdMinFloor: " << pExtend->OrdMinFloor << endl;
 }
 
 void XcMdApi::OnRespSecurity_Opt(QWORD qQuoteID, void* pParam)
@@ -157,7 +214,8 @@ void XcMdApi::OnRespSecurity_Opt(QWORD qQuoteID, void* pParam)
     // 上海期权证券行情响应
     socket_struct_Security_Opt* pSecurity = (socket_struct_Security_Opt*)pParam;
     socket_struct_Security_Opt_Extend* pExtend = (socket_struct_Security_Opt_Extend*)pSecurity->Extend_fields;
-    // cout << "out——Security_Opt:" << pSecurity->SecCode << " Name:" << pSecurity->SecName << endl;
+    (void)pSecurity;
+    (void)pExtend;
 }
 
 void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
@@ -165,11 +223,8 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
     // 深圳A股证券行情响应
     socket_struct_Security_Sz* pSecurity = (socket_struct_Security_Sz*)pParam;
     socket_struct_Security_Sz_Extend* pExtend = (socket_struct_Security_Sz_Extend*)pSecurity->Extend_fields;
-    fprintf(stderr, "OnRespSecurity Code:%s,Name:%s,PreClose:%.2lf\n",
+    XcDebugInfo(XcDbgFd, "OnRespSecurity Code:%s,Name:%s,PreClose:%.2lf\n",
         pSecurity->SecCode, pSecurity->SecName, pSecurity->PrevClosePx);
-    // cout << " O_LimitType: " << pExtend->O_LimitType << " O_HasPriceLimit:" << pExtend->O_HasPriceLimit << " O_ReferPriceType: " << pExtend->O_ReferPriceType << " O_PriceTick: " << pExtend->O_PriceTick << " O_LimitUpRate: " << pExtend->O_LimitUpRate << " O_LimitDownRate: " << pExtend->O_LimitDownRate << " O_LimitUpAbsolute: " << pExtend->O_LimitUpAbsolute << " O_LimitDownAbsolute: " << pExtend->O_LimitDownAbsolute << endl;
-    // cout << " T_LimitType: " << pExtend->T_LimitType << " T_HasPriceLimit:" << pExtend->T_HasPriceLimit << " T_ReferPriceType: " << pExtend->T_ReferPriceType << " T_PriceTick: " << pExtend->T_PriceTick << " T_LimitUpRate: " << pExtend->O_LimitUpRate << " T_LimitDownRate: " << pExtend->T_LimitDownRate << " T_LimitUpAbsolute: " << pExtend->O_LimitUpAbsolute << " T_LimitDownAbsolute: " << pExtend->T_LimitDownAbsolute << endl;
-    // cout << " C_LimitType: " << pExtend->C_LimitType << " C_HasPriceLimit:" << pExtend->C_HasPriceLimit << " C_ReferPriceType: " << pExtend->C_ReferPriceType << " C_PriceTick: " << pExtend->C_PriceTick << " C_LimitUpRate: " << pExtend->O_LimitUpRate << " C_LimitDownRate: " << pExtend->C_LimitDownRate << " C_LimitUpAbsolute: " << pExtend->O_LimitUpAbsolute << " C_LimitDownAbsolute: " << pExtend->C_LimitDownAbsolute << endl;
 }
 
 
@@ -185,7 +240,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     if (mdmap.count(xc_symbol) == 0)
     {
         XcDepthMarketData lMD = { 0 };
-        // fprintf(stderr, "---->>>>%s,%s\n", pDyna->SecCode, pDyna->MarketCode);
+        // XcDebugInfo(XcDbgFd, "---->>>>%s,%s\n", pDyna->SecCode, pDyna->MarketCode);
         strcpy(lMD.InstrumentID, pDyna->SecCode);
         strcpy(lMD.ExchangeID, pDyna->MarketCode);
         mdmap[xc_symbol] = lMD;
@@ -194,7 +249,8 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
 
     qidmap[qQuoteID] = pMD;
 
-    // reset depth field
+#if 0
+    // reset depth field ?
     pMD->BidPrice1 = 0;
     pMD->BidVolume1 = 0;
     pMD->BidPrice2 = 0;
@@ -215,6 +271,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     pMD->AskVolume4 = 0;
     pMD->AskPrice5 = 0;
     pMD->AskVolume5 = 0;
+#endif//0
 
     pMD->PreClosePrice = pDyna->PreClose / PRICE_DIV;
     pMD->LastPrice = pDyna->New / PRICE_DIV;
@@ -264,8 +321,9 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
 void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socket_struct_DepthDetail* pDepth)
 {
     // 动态深度行情响应
-    //if (pDepth->Grade == 1 || pDepth->Grade == -1)
-    // cout << "DEPTH-- Market:" << MarketCode << " SecCode: " << SecCode << " Grade: " << pDepth->Grade << " Price: " << pDepth->Price << " Qty: " << pDepth->Quantity << " NumOrders: " << pDepth->NumOrders << " QuoteID: " << qQuoteID << endl;
+
+    // XcDebugInfo(XcDbgFd, "Depth symbol:%s qid:%ld, grade:%d, px:%d, vol:%d\n",
+    //     SecCode, (long)qQuoteID, pDepth->Grade, pDepth->Price, (int)pDepth->Quantity);
 
     XcDepthMarketData* pMD;
     if (qidmap.count(qQuoteID) == 0)
@@ -285,9 +343,33 @@ void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socke
     case -1:
         pMD->BidPrice1 = price;
         pMD->BidVolume1 = quantity;
+    case -2:
+        pMD->BidPrice2 = price;
+        pMD->BidVolume2 = quantity;
+    case -3:
+        pMD->BidPrice3 = price;
+        pMD->BidVolume3 = quantity;
+    case -4:
+        pMD->BidPrice4 = price;
+        pMD->BidVolume4 = quantity;
+    case -5:
+        pMD->BidPrice5 = price;
+        pMD->BidVolume5 = quantity;
     case 1:
         pMD->AskPrice1 = price;
         pMD->AskVolume1 = quantity;
+    case 2:
+        pMD->AskPrice2 = price;
+        pMD->AskVolume2 = quantity;
+    case 3:
+        pMD->AskPrice3 = price;
+        pMD->AskVolume3 = quantity;
+    case 4:
+        pMD->AskPrice4 = price;
+        pMD->AskVolume4 = quantity;
+    case 5:
+        pMD->AskPrice5 = price;
+        pMD->AskVolume5 = quantity;
     default:
         break;
     }
@@ -333,88 +415,139 @@ void XcMdApi::release()
 int XcMdApi::init(string user_id, string server_ip, string server_port, string license)
 {
     int rv;
-    fprintf(stderr, "init user_id:%s, server_ip:%s, server_port:%s, liscense:%s\n",
+    XcDebugInfo(XcDbgFd, "init user_id:%s, server_ip:%s, server_port:%s, liscense:%s\n",
         user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str());
 
     rv = this->api->Connect(user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str());
     if (rv < 0)
     {
-        fprintf(stderr, "xcmdapi Connect failed:%d\n", rv);
+        XcDebugInfo(XcDbgFd, "xcmdapi Connect failed:%d\n", rv);
     }
     return rv;
 }
 
 
-int XcMdApi::subscribe_market_data(string instrumentID)
+int XcMdApi::subscribe_md(string instrumentID)
 {
     if (instrumentID.length() < 6) {
         return -1;
     }
 
-    interface_struct_Subscribe sSubscribe1;
-    sSubscribe1.Dyna_flag = true;
-    sSubscribe1.DepthOrder_flag = false;
-    sSubscribe1.Depth_flag = true;
-    sSubscribe1.EachDeal_flag = false;
-    sSubscribe1.EachOrder_flag = false;
+    interface_struct_Subscribe sub_flag;
+    sub_flag.Dyna_flag = true;
+    sub_flag.DepthOrder_flag = false;
+    sub_flag.Depth_flag = true;
+    sub_flag.EachDeal_flag = false;
+    sub_flag.EachOrder_flag = false;
 
     char market[16] = "";
     char symbol[16] = "";
-    strncpy(symbol, instrumentID.c_str(), 6);
-
-    if (instrumentID.find("SSE") != string::npos ||
-        instrumentID.find("SH") != string::npos ||
-        instrumentID.find("SHA") != string::npos)
+    if (!get_symbol_market(symbol, market, instrumentID))
     {
-        strcpy(market, Scdm_SSE);
-    }
-    else if (instrumentID.find("SZSE") != string::npos ||
-        instrumentID.find("SZ") != string::npos ||
-        instrumentID.find("SZA") != string::npos)
-    {
-        strcpy(market, Scdm_SZSE);
-    }
-    else
-    {
-#if 0
-        // unknown market
-        if (strncmp(symbol, "60", 2) == 0 ||
-            strncmp(symbol, "68", 2) == 0)
-        {
-            strcpy(market, Scdm_SSE);
-        }
-        else if (strncmp(symbol, "00", 2) == 0 ||
-                strncmp(symbol, "30", 2) == 0)
-        {
-            strcpy(market, Scdm_SZSE);
-        }
-        else {
-            return -1;
-        }
-#else
-        return -1;
-#endif
+        return -2;
     }
 
     // 订阅
-    socket_struct_SubscribeDetail SubList0[MaxSize];
-    strcpy(SubList0[0].MarketCode, market);
-    strcpy(SubList0[0].SecCode, symbol);
-    int SubSize0 = 1;
-    if (this->api->Subscribe(1, &sSubscribe1, SubList0, SubSize0) < 0)
+    socket_struct_SubscribeDetail SubList[MaxSize];
+    strcpy(SubList[0].MarketCode, market);
+    strcpy(SubList[0].SecCode, symbol);
+    int SubSize = 1;
+    if (this->api->Subscribe(1, &sub_flag, SubList, SubSize) < 0)
     {
-        fprintf(stderr, "subscribe failed!\n");
+        XcDebugInfo(XcDbgFd, "xcmdapi Subscribe failed!\n");
         return -1;
     }
 
     return 0;
 }
 
-int XcMdApi::unsubscribe_market_data(string instrumentID)
+int XcMdApi::unsubscribe_md(string instrument)
 {
-    return -1;
+    interface_struct_Subscribe sub_flag;
+    sub_flag.Dyna_flag = false;
+    sub_flag.DepthOrder_flag = false;
+    sub_flag.Depth_flag = false;
+    sub_flag.EachDeal_flag = false;
+    sub_flag.EachOrder_flag = false;
+
+    socket_struct_SubscribeDetail SubList[1];
+    if (!get_symbol_market(SubList[0].SecCode, SubList[0].MarketCode, instrument))
+    {
+        return -1;
+    }
+    return api->Cancel(2, &sub_flag, SubList, 2);
 }
 
+int XcMdApi::subscribe_md_batch(const vector<std::string>& reqs)
+{
+    interface_struct_Subscribe sub_flag;
+    sub_flag.Dyna_flag = true;
+    sub_flag.DepthOrder_flag = false;
+    sub_flag.Depth_flag = true;
+    sub_flag.EachDeal_flag = false;
+    sub_flag.EachOrder_flag = false;
+
+    int32_t count = 0;
+    socket_struct_SubscribeDetail SubList[DEFAULT_MAX_REQ_SIZE];
+    for (int32_t i = 0; i < (int32_t)reqs.size() && i < DEFAULT_MAX_REQ_SIZE; ++i)
+    {
+        std::string instrument = reqs[i];
+        if (!get_symbol_market(SubList[count].SecCode, SubList[count].MarketCode, instrument)) {
+            continue;
+        }
+        ++count;
+    }
+
+    if (count)
+    {
+        return api->Subscribe(3, &sub_flag, SubList, count);
+    }
+    return 0;
+}
+
+int XcMdApi::unsubscribe_md_batch(const vector<std::string>& reqs)
+{
+    interface_struct_Subscribe sub_flag;
+    sub_flag.Dyna_flag = false;
+    sub_flag.DepthOrder_flag = false;
+    sub_flag.Depth_flag = false;
+    sub_flag.EachDeal_flag = false;
+    sub_flag.EachOrder_flag = false;
+
+    int32_t count = 0;
+    socket_struct_SubscribeDetail SubList[DEFAULT_MAX_REQ_SIZE];
+    for (int32_t i = 0; i < (int32_t)reqs.size() && i < DEFAULT_MAX_REQ_SIZE; ++i)
+    {
+        std::string instrument = reqs[i];
+        if (!get_symbol_market(SubList[count].SecCode, SubList[count].MarketCode, instrument)) {
+            continue;
+        }
+        ++count;
+    }
+
+    if (count)
+    {
+        return api->Cancel(4, &sub_flag, SubList, count);
+    }
+    return 0;
+}
+
+int XcMdApi::unsubscribe_all()
+{
+    interface_struct_Subscribe sub_flag;
+    sub_flag.Dyna_flag = false;
+    sub_flag.DepthOrder_flag = false;
+    sub_flag.Depth_flag = false;
+    sub_flag.EachDeal_flag = false;
+    sub_flag.EachOrder_flag = false;
+
+    socket_struct_SubscribeDetail SubList[2];
+    strcpy(SubList[0].MarketCode, Scdm_SSE);
+    strcpy(SubList[0].SecCode, "*");
+    strcpy(SubList[1].MarketCode, Scdm_SZSE);
+    strcpy(SubList[1].SecCode, "*");
+    return api->Cancel(5, &sub_flag, SubList, 2);
+}
 
 string XcMdApi::get_api_version()
 {
@@ -495,8 +628,9 @@ PYBIND11_MODULE(xcmd, m)
         .def("init", &XcMdApi::init)
         .def("get_api_version", &XcMdApi::get_api_version)
         .def("open_debug", &XcMdApi::open_debug)
-        .def("subscribe_market_data", &XcMdApi::subscribe_market_data)
-        .def("unsubscribe_market_data", &XcMdApi::unsubscribe_market_data)
+        .def("subscribe_md", &XcMdApi::subscribe_md)
+        .def("unsubscribe_md", &XcMdApi::unsubscribe_md)
+        .def("unsubscribe_all", &XcMdApi::unsubscribe_all)
         // .def("reqUserLogin", &XcMdApi::reqUserLogin)
 
         .def("on_front_connected", &XcMdApi::on_front_connected)

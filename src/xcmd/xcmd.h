@@ -137,24 +137,31 @@ public:
     void OnClose();
 
 public:
-    virtual void on_front_connected() {};
+    virtual void on_front_connected() {}
 
-    virtual void on_front_disconnected(int reason) {};
+    virtual void on_front_disconnected(int reason) {}
 
-    virtual void on_rsp_user_login(const dict &data) {};
+    // just notify login result
+    virtual void on_rsp_user_login(const dict &data) {}
 
-    virtual void on_rtn_market_data(const dict &data) {};
+    // rtn md fields reference to XcDepthMarketData
+    virtual void on_rtn_market_data(const dict &data) {}
 
 public:
     void create_md_api(string str = "");
 
     void release();
 
+    // connect to server
     int init(string user_id, string server_ip, string server_port, string license);
 
-    int subscribe_market_data(string instrumentID);
+    // subscribe eg. 000001.SZSE or 600000.SSE
+    int subscribe_md(string instrument);
+    int unsubscribe_md(string instrument);
 
-    int unsubscribe_market_data(string instrumentID);
+    int subscribe_md_batch(const vector<std::string>& reqs);
+    int unsubscribe_md_batch(const vector<std::string>& reqs);
+    int unsubscribe_all();
 
     // my extend functions
     string get_api_version();
