@@ -47,6 +47,27 @@ void get_string(const pybind11::dict &d, const char *key, std::string &value)
 };
 #endif//0
 
+static const char* func_id_desc(int func_id)
+{
+    switch (func_id)
+    {
+    case XC_FUNC_QRY_SECINFO:       return "qry_secifo";
+    case XC_FUNC_QRY_CASH_FAST:     return "qry_cash_fast";
+    case XC_FUNC_QRY_CASH:          return "qry_cash";
+    case XC_FUNC_PLACE_ORDER:       return "place_order";
+    case XC_FUNC_CANCEL_ORDER:      return "cancel_order";
+    case XC_FUNC_QRY_PURCHASE:      return "qry_purchase";
+    case XC_FUNC_QRY_ORDER:         return "qry_order";
+    case XC_FUNC_QRY_TRADE:         return "qry_trade";
+    case XC_FUNC_QRY_POSITION:      return "qry_position";
+    case XC_FUNC_QRY_MD:            return "qrt_md";
+    case XC_FUNC_LOGIN:             return "client_login";
+    case XC_FUNC_QRY_ACCOUNTINFO:   return "qry_account_info";
+    case XC_FUNC_SUB_ORDER:         return "subscribe_order";
+    default:                        return "unknown";
+    }
+}
+
 //将GBK编码的字符串转换为UTF8
 static std::string to_utf(const std::string &gb2312)
 {
@@ -111,7 +132,7 @@ void XcTdApi::OnConnected(void)
 void XcTdApi::OnRecvJsonMsg(char* pJsonMsg)
 {
     // XcDebugInfo(XcDbgFd, pJsonMsg);
-    write_data(0, pJsonMsg);
+    // write_data(0, pJsonMsg);
 
     std::string msg = to_utf(pJsonMsg);
     this->on_recv_msg(msg);
@@ -163,13 +184,13 @@ int XcTdApi::init(std::string user_id, std::string server_ip, std::string server
     // keep it
     account_id = user_id;
 
-    write_data(0, "xctdapi connecting to server:%s, liscense:%s, user_id:%s",
-        server_addr, license.c_str(), user_id.c_str());
+    // write_data(0, "xctdapi connecting to server:%s, liscense:%s, user_id:%s",
+    //     server_addr, license.c_str(), user_id.c_str());
     rv = this->api->Connect(server_addr, (char*)license.c_str(), System_UFX, (char*)user_id.c_str());
     if (rv < 0)
     {
-        XcDebugInfo(XcDbgFd, "xctdapi Connect failed:%d\n", rv);
-        write_data(0, "xctdapi %s connect failed rv:%d", user_id.c_str(), rv);
+        XcDebugInfo(XcDbgFd, "xctdapi Connect to %s failed:%d\n", server_addr, rv);
+        write_data(0, "xctdapi %s connect to %s failed rv:%d", user_id.c_str(), server_addr, rv);
     }
 
     return rv;
@@ -177,8 +198,8 @@ int XcTdApi::init(std::string user_id, std::string server_ip, std::string server
 
 int XcTdApi::send_data(int func_id, const std::string& data, int subsystem_no, int branch_no)
 {
-    write_data(0, "send_data func_id:%d,subsystem_no:%d,branch_no:%d,data:\n%s",
-        func_id, subsystem_no, branch_no, data.c_str());
+    // write_data(0, "send_data func_id:%d(%s),subsystem_no:%d,branch_no:%d,data:\n%s",
+    //     func_id, func_id_desc(func_id), subsystem_no, branch_no, data.c_str());
 
     int rv;
     rv = api->SetJsonValue(data.c_str());
@@ -186,7 +207,7 @@ int XcTdApi::send_data(int func_id, const std::string& data, int subsystem_no, i
         return rv;
     }
 
-    rv = api->SendMsg(func_id);
+    rv = api->SendMsg(func_id, subsystem_no, branch_no);
     return rv;
 }
 
@@ -245,6 +266,32 @@ std::string XcTdApi::get_field_exchange_szse()
     return XC_EXCHANGE_TYPE_SZSE;
 }
 
+int XcTdApi::write_line(int reserve, const std::string& line)
+{
+    (void)reserve;
+    if (!fp)
+    {
+        return -1;
+    }
+
+#if 1
+    char buf[1000] = "";
+    int  len = 0;
+
+    time_t now = time(NULL);
+    struct tm* ptm = localtime(&now);
+    len = sprintf(buf + len, "%04d-%02d-%02d %02d:%02d:%02d \n",
+        ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+
+    fwrite(buf, len, 1, fp);
+    fwrite(line.c_str(), line.length(), 1, fp);
+    fwrite("\n", 1, 1, fp);
+    fflush(fp);
+#endif
+    return 0;
+}
+
 int XcTdApi::write_data(int reserve, const char* fmt, ...)
 {
     (void)reserve;
@@ -267,9 +314,8 @@ int XcTdApi::write_data(int reserve, const char* fmt, ...)
     va_start(args, fmt);
     len += vsnprintf(buf + len, sizeof(buf) - len - 2, fmt, args);
     va_end(args);
-    buf[len] = '\r';
-    buf[len + 1] = '\n';
-    len += 2;
+    buf[len++] = '\r';
+    // buf[len++] = '\n';
     buf[len] = '\0';
 
     fwrite(buf, len, 1, fp);
@@ -344,6 +390,7 @@ PYBIND11_MODULE(xctd, m)
         .def("get_field_sell", &XcTdApi::get_field_sell)
         .def("get_field_exchange_sse", &XcTdApi::get_field_exchange_sse)
         .def("get_field_exchange_szse", &XcTdApi::get_field_exchange_szse)
+        .def("write_line", &XcTdApi::write_line)
 
         .def("on_front_connected", &XcTdApi::on_front_connected)
         .def("on_front_disconnected", &XcTdApi::on_front_disconnected)

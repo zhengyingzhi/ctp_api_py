@@ -23,10 +23,11 @@ using namespace pybind11;
 #define XC_TDAPI_VERSION        "0.0.1"
 
 #define XC_FUNC_QRY_SECINFO     330300      // 证券代码信息查询
-#define XC_FUNC_TRADING_ACCOUNT 332254      // 客户资金快速查询
+#define XC_FUNC_QRY_CASH_FAST   332254      // 客户资金快速查询
+#define XC_FUNC_QRY_CASH        332255      // 客户资金精确查询
 #define XC_FUNC_PLACE_ORDER     333002      // 普通委托
 #define XC_FUNC_CANCEL_ORDER    333017      // 委托撤单
-#define XC_FUNC_QRY_PRUCHASE    333030      // 新股申购查询
+#define XC_FUNC_QRY_PURCHASE    333030      // 新股申购查询
 #define XC_FUNC_QRY_ORDER       333101      // 证券委托查询
 #define XC_FUNC_QRY_TRADE       333102      // 证券成交查询
 #define XC_FUNC_QRY_POS_FAST    333103      // 证券持仓快速查询
@@ -93,6 +94,8 @@ public:
     std::string get_field_sell();
     std::string get_field_exchange_sse();
     std::string get_field_exchange_szse();
+
+    int write_line(int reserve, const std::string& line);
 
 private:
     int write_data(int reserve, const char* fmt, ...);
