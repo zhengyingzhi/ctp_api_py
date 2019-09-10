@@ -20,7 +20,7 @@
 using namespace pybind11;
 
 
-#define XC_TDAPI_VERSION        "0.0.1"
+#define XC_TDAPI_VERSION        "0.0.2"
 
 #define XC_FUNC_QRY_SECINFO     330300      // 证券代码信息查询
 #define XC_FUNC_QRY_CASH_FAST   332254      // 客户资金快速查询
@@ -69,13 +69,22 @@ public:
     virtual void on_recv_msg(const std::string& msg) {}
 
 public:
-    void create_td_api(std::string str = "", int reserve=0);
+    void create_td_api(std::string str = "", int async_mode=1);
 
     void release();
 
     int init(std::string user_id, std::string server_ip, std::string server_port, std::string license);
 
     int send_data(int func_id, const std::string& data, int subsystem_no = 0, int branch_no = 0);
+
+    // 发送数据（同步模式下包含接收数据并写入数据队列）
+    int send_msg(int func_id, int subsystem_no = 0, int branch_no = 0);
+
+    // 写入JSON数据
+    int set_json_value(const std::string& json_str);
+
+    // 接收数据
+    std::string recv_data();
 
     // 获取用户间隔值
     int get_space();

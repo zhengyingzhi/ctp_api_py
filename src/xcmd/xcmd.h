@@ -14,7 +14,28 @@ using namespace std;
 using namespace pybind11;
 
 
-#define XC_MDAPI_VERSION    "0.0.1"
+#define XC_MDAPI_VERSION    "0.0.2"
+
+
+// 自定义证券基本信息
+struct XcSecurityInfo
+{
+    char        InstrumentID[31];
+    char        ExchangeID[8];
+    char        SecName[50];            // 简称
+    char        EndDate[20];            // 最后交易日期
+    char        StartDate[10];          // 上市日期
+    int32_t     BuyUnit;                // 买数量单位
+    int32_t     SellUnit;               // 卖数量单位
+    double      PreClosePrice;          // 前收盘价 SecurityClosePx
+    double      PriceTick;              // 最小价格变动量 MinMovement
+    double      UpperLimitPrice;        // 涨幅上限价格 DailyPriceUpLimit
+    double      LowerLimitPrice;        // 跌幅下限价格 DailyPriceDownLimit
+    double      ExRightRatio;           // 除权比例
+    double      DividendAmount;         // 除息金额
+    char        SecurityStatusFlag[50]; // 产品状态标志
+    char        Bz[200];                // 备注
+};
 
 // 自定义行情结构体
 struct XcDepthMarketData
@@ -109,6 +130,8 @@ struct XcDepthMarketData
 typedef map<string, XcDepthMarketData>   MDMapType;
 typedef map<QWORD, XcDepthMarketData*>   QuoteIDMapType;
 
+typedef map<string, XcSecurityInfo>      SecInfoMapType;
+
 
 class XcMdApi :public CXcMarketSpi
 {
@@ -119,6 +142,8 @@ public:
     CXcMarketApi*   api;
     QuoteIDMapType  qidmap;
     MDMapType       mdmap;
+    SecInfoMapType  secmap;
+    QWORD           refid;
 
 public:
     void OnUserLogin(socket_struct_Msg* pMsg);
@@ -144,6 +169,8 @@ public:
     // just notify login result
     virtual void on_rsp_user_login(const dict &data) {}
 
+    virtual void on_rsp_qry_data(const dict& data) {}
+
     // rtn md fields reference to XcDepthMarketData
     virtual void on_rtn_market_data(const dict &data) {}
 
@@ -159,9 +186,13 @@ public:
     int subscribe_md(string instrument);
     int unsubscribe_md(string instrument);
 
-    int subscribe_md_batch(const vector<std::string>& reqs);
-    int unsubscribe_md_batch(const vector<std::string>& reqs);
+    int subscribe_md_batch(const std::vector<std::string>& reqs);
+    int unsubscribe_md_batch(const std::vector<std::string>& reqs);
     int unsubscribe_all();
+
+    // request query data
+    int req_qry_data(string instrument);
+    int req_qry_data_batch(const std::vector<std::string>& reqs);
 
     // my extend functions
     string get_api_version();

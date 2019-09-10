@@ -140,12 +140,12 @@ void XcTdApi::OnRecvJsonMsg(char* pJsonMsg)
 
 
 //////////////////////////////////////////////////////////////////////////
-void XcTdApi::create_td_api(std::string str, int reserve)
+void XcTdApi::create_td_api(std::string str, int async_mode)
 {
     (void)str;
-    (void)reserve;
     this->api = CXcTradeApi::CreateTradeApi();
-    this->api->Register(Trans_Mode_ASY, Data_Proto_Json, this);
+    // async_mode: 0-Trans_Mode_SYN 1-Trans_Mode_ASY
+    this->api->Register(async_mode, Data_Proto_Json, this);
 }
 
 void XcTdApi::release()
@@ -211,6 +211,35 @@ int XcTdApi::send_data(int func_id, const std::string& data, int subsystem_no, i
     return rv;
 }
 
+int XcTdApi::send_msg(int func_id, int subsystem_no, int branch_no)
+{
+    int rv = api->SendMsg(func_id, subsystem_no, branch_no);
+    return rv;
+}
+
+int XcTdApi::set_json_value(const std::string& json_str)
+{
+    return api->SetJsonValue(json_str.c_str());
+}
+
+std::string XcTdApi::recv_data()
+{
+    int ret;
+    ret = api->RecvMsg();
+    if (ret <= 0)
+    {
+        // error
+        return "";
+    }
+
+    char* response = new char[ret + 1];
+    api->GetJsonValue(response);
+    response[ret] = '\0';
+
+    std::string msg = to_utf(response);
+    return msg;
+}
+
 int XcTdApi::get_space()
 {
     if (api)
@@ -233,9 +262,10 @@ std::string XcTdApi::get_last_error_msg()
 {
     if (api)
     {
-        return api->GetLastErrorMsg();
+        std::string errmsg = to_utf(api->GetLastErrorMsg());
+        return errmsg;
     }
-    return "";
+    return std::string("");
 }
 
 std::string XcTdApi::get_api_version()
@@ -383,6 +413,9 @@ PYBIND11_MODULE(xctd, m)
         .def("get_api_version", &XcTdApi::get_api_version)
         .def("open_debug", &XcTdApi::open_debug)
         .def("send_data", &XcTdApi::send_data)
+        .def("send_msg", &XcTdApi::send_msg)
+        .def("set_json_value", &XcTdApi::set_json_value)
+        .def("recv_data", &XcTdApi::recv_data)
         .def("get_space", &XcTdApi::get_space)
         .def("get_frequency", &XcTdApi::get_frequency)
         .def("get_last_error_msg", &XcTdApi::get_last_error_msg)
