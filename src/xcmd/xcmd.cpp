@@ -218,8 +218,8 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
     // 上海A股证券行情响应
     socket_struct_Security* pSecurity = (socket_struct_Security*)pParam;
     socket_struct_Security_Extend* pExtend = (socket_struct_Security_Extend*)pSecurity->Extend_fields;
-    XcDebugInfo(XcDbgFd, "OnRespSecurity Code:%s,Name:%s,PreClose:%.2lf\n",
-        pSecurity->SecCode, pSecurity->SecName, pSecurity->SecurityClosePx);
+    XcDebugInfo(XcDbgFd, "OnRespSecurity Code:%s,Name:%s,PreClose:%.2lf, UpperLimit:%.2lf, LowerLimit:%.2lf\n",
+        pSecurity->SecCode, pSecurity->SecName, pSecurity->SecurityClosePx, pSecurity->DailyPriceUpLimit, pSecurity->DailyPriceDownLimit);
 
     char buf[64] = "";
     sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
@@ -233,6 +233,7 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
     sec_info.LowerLimitPrice = pSecurity->DailyPriceDownLimit;
     secmap[xc_symbol] = sec_info;
 
+    gil_scoped_acquire acquire;
     dict data;
     data["ExchangeID"] = sec_info.ExchangeID;
     data["InstrumentID"] = sec_info.InstrumentID;
