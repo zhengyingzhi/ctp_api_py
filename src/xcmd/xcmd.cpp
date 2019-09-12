@@ -228,15 +228,28 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
     XcSecurityInfo sec_info = { 0 };
     strcpy(sec_info.ExchangeID, pSecurity->MarketCode);
     strcpy(sec_info.InstrumentID, pSecurity->SecCode);
+    strcpy(sec_info.SecName, pSecurity->SecName);
     sec_info.PreClosePrice = pSecurity->SecurityClosePx;
     sec_info.UpperLimitPrice = pSecurity->DailyPriceUpLimit;
     sec_info.LowerLimitPrice = pSecurity->DailyPriceDownLimit;
     secmap[xc_symbol] = sec_info;
 
+    int index = 0;
+    while (sec_info.SecName[index])
+    {
+        if (sec_info.SecName[index] == ' ')
+        {
+            sec_info.SecName[index] = '\0';
+            break;
+        }
+        ++index;
+    }
+
     gil_scoped_acquire acquire;
     dict data;
-    data["ExchangeID"] = sec_info.ExchangeID;
-    data["InstrumentID"] = sec_info.InstrumentID;
+    data["ExchangeID"] = to_utf(sec_info.ExchangeID);
+    data["InstrumentID"] = to_utf(sec_info.InstrumentID);
+    data["SecName"] = to_utf(sec_info.SecName);
     data["PreClosePrice"] = sec_info.PreClosePrice;
     data["UpperLimitPrice"] = sec_info.UpperLimitPrice;
     data["LowerLimitPrice"] = sec_info.LowerLimitPrice;
@@ -257,10 +270,57 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
     // 深圳A股证券行情响应
     socket_struct_Security_Sz* pSecurity = (socket_struct_Security_Sz*)pParam;
     socket_struct_Security_Sz_Extend* pExtend = (socket_struct_Security_Sz_Extend*)pSecurity->Extend_fields;
-    XcDebugInfo(XcDbgFd, "OnRespSecurity Code:%s,Name:%s,PreClose:%.2lf\n",
+    XcDebugInfo(XcDbgFd, "OnRespSecurity_Sz Code:%s,Name:%s,PreClose:%.2lf\n",
         pSecurity->SecCode, pSecurity->SecName, pSecurity->PrevClosePx);
 
-    // TODO: notify on_rsp_qry_data
+    char buf[64] = "";
+    sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
+    string xc_symbol(buf);
+
+    XcSecurityInfo sec_info = { 0 };
+    strcpy(sec_info.ExchangeID, pSecurity->MarketCode);
+    strcpy(sec_info.InstrumentID, pSecurity->SecCode);
+    strcpy(sec_info.SecName, pSecurity->SecName);
+    sec_info.PreClosePrice = pSecurity->PrevClosePx;
+    sec_info.UpperLimitPrice = pExtend->T_LimitUpAbsolute;
+    sec_info.LowerLimitPrice = pExtend->T_LimitUpAbsolute;
+    secmap[xc_symbol] = sec_info;
+
+    int index = 0;
+    while (sec_info.SecName[index])
+    {
+        if (sec_info.SecName[index] == ' ')
+        {
+            sec_info.SecName[index] = '\0';
+            break;
+        }
+        ++index;
+    }
+
+    // for xc test environment
+    if (sec_info.LowerLimitPrice < 0.1)
+    {
+        double limit_rate = 0.1;
+        if (strstr(sec_info.SecName, "ST"))
+            limit_rate = 0.05;
+
+        char buf[200] = "";
+        sprintf(buf, "%.2lf", sec_info.PreClosePrice * (1 + limit_rate));
+        sec_info.UpperLimitPrice = atof(buf);
+
+        sprintf(buf, "%.2lf", sec_info.PreClosePrice * (1 - limit_rate));
+        sec_info.LowerLimitPrice = atof(buf);
+    }
+
+    gil_scoped_acquire acquire;
+    dict data;
+    data["ExchangeID"] = to_utf(sec_info.ExchangeID);
+    data["InstrumentID"] = to_utf(sec_info.InstrumentID);
+    data["SecName"] = to_utf(sec_info.SecName);
+    data["PreClosePrice"] = sec_info.PreClosePrice;
+    data["UpperLimitPrice"] = sec_info.UpperLimitPrice;
+    data["LowerLimitPrice"] = sec_info.LowerLimitPrice;
+    this->on_rsp_qry_data(data);
 }
 
 
@@ -333,11 +393,23 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
 
     if (memcmp(pDyna->MarketCode, "SZSE", 4) == 0)
     {
+        // 注意测试环境 180.169.89.22:2222 没有扩展字段，生产环境有
         socket_struct_Dyna_Extend2* pExtend = (socket_struct_Dyna_Extend2*)pDyna->Extend_fields;
         if (pExtend->DownLimit > 100)
         {
             pMD->UpperLimitPrice = pExtend->UpLimit / PRICE_DIV;
             pMD->LowerLimitPrice = pExtend->DownLimit / PRICE_DIV;
+        }
+        else if (secmap.count(xc_symbol))
+        {
+            XcSecurityInfo* psec_info = &secmap[xc_symbol];
+            pMD->UpperLimitPrice = psec_info->UpperLimitPrice;
+            pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
+        }
+        else
+        {
+            pMD->UpperLimitPrice = 0;
+            pMD->LowerLimitPrice = 0;
         }
     }
     else
@@ -397,33 +469,43 @@ void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socke
     case -1:
         pMD->BidPrice1 = price;
         pMD->BidVolume1 = quantity;
+        break;
     case -2:
         pMD->BidPrice2 = price;
         pMD->BidVolume2 = quantity;
+        break;
     case -3:
         pMD->BidPrice3 = price;
         pMD->BidVolume3 = quantity;
+        break;
     case -4:
         pMD->BidPrice4 = price;
         pMD->BidVolume4 = quantity;
+        break;
     case -5:
         pMD->BidPrice5 = price;
         pMD->BidVolume5 = quantity;
+        break;
     case 1:
         pMD->AskPrice1 = price;
         pMD->AskVolume1 = quantity;
+        break;
     case 2:
         pMD->AskPrice2 = price;
         pMD->AskVolume2 = quantity;
+        break;
     case 3:
         pMD->AskPrice3 = price;
         pMD->AskVolume3 = quantity;
+        break;
     case 4:
         pMD->AskPrice4 = price;
         pMD->AskVolume4 = quantity;
+        break;
     case 5:
         pMD->AskPrice5 = price;
         pMD->AskVolume5 = quantity;
+        break;
     default:
         break;
     }
@@ -501,11 +583,12 @@ int XcMdApi::subscribe_md(string instrumentID)
         return -11;
     }
 
-    if (strcmp(market, Scdm_SSE) == 0)
+    if (strcmp(market, Scdm_SZSE) == 0)
     {
         // do once query for get limit price
-        req_qry_data(instrumentID);
-        sleepms(5);
+        // int rv = req_qry_data(instrumentID);
+        // fprintf(stderr, "auto qry rv:%d\n", rv);
+        // sleepms(50);
     }
 
     // 订阅
