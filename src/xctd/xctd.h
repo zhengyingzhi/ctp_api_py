@@ -20,7 +20,7 @@
 using namespace pybind11;
 
 
-#define XC_TDAPI_VERSION        "0.0.2"
+#define XC_TDAPI_VERSION        "0.1.0"
 
 #define XC_FUNC_QRY_SECINFO     330300      // 证券代码信息查询
 #define XC_FUNC_QRY_CASH_FAST   332254      // 客户资金快速查询
@@ -63,37 +63,84 @@ public:
     /* 反馈JSON模式应答数据（JSON模式）*/
     virtual void OnRecvJsonMsg(char* pJsonMsg);
 
+    /* 反馈数据包模式应答数据（Pack包模式）*/
+    virtual void OnRecvPackMsg(int iFunid, int iRefid, int iIssueType, int iSet, int iRow, int iCol, char* szName, char* szValue);
+
+    /* 反馈数据包模式数据集结束（Pack包模式）*/
+    virtual void OnRecvPackEndSet(int iFunid, int iRefid, int iIssueType, int iSet);
+
+    /* 反馈数据包模式数据行结束（Pack包模式）*/
+    virtual void OnRecvPackEndRow(int iFunid, int iRefid, int iIssueType, int iSet, int iRow);
+
 public:
     virtual void on_front_connected() {}
     virtual void on_front_disconnected(int reason) {}
     virtual void on_recv_msg(const std::string& msg) {}
 
-public:
-    void create_td_api(std::string str = "", int async_mode=1);
+    virtual void on_recv_pack_msg(int iFunid, int iRefid, int iIssueType, int iSet, int iRow, int iCol, const std::string& name, const std::string& value) {}
+    virtual void on_recv_pack_end_set(int iFunid, int iRefid, int iIssueType, int iSet) {}
+    virtual void on_recv_pack_end_row(int iFunid, int iRefid, int iIssueType, int iSet, int iRow) {}
 
+public:
+    // 创建API async_mode：1-asyn, data_proto: 1-json
+    void create_td_api(int async_mode = Trans_Mode_ASY, int data_proto = Data_Proto_Json);
+
+    // 销毁API
     void release();
 
-    int init(std::string user_id, std::string server_ip, std::string server_port, std::string license);
+    // 连接服务器
+    int connect(std::string server_port, std::string license_path, std::string fund_account);
 
-    int send_data(int func_id, const std::string& data, int subsystem_no = 0, int branch_no = 0);
+    // 开始打包
+    void begin_pack(void);
+    // 结束打包
+    void end_pack(void);
 
-    // 发送数据（同步模式下包含接收数据并写入数据队列）
-    int send_msg(int func_id, int subsystem_no = 0, int branch_no = 0);
+    // 写入数据包数据
+    int set_pack_value(const std::string& key_name, const std::string& value);
 
     // 写入JSON数据
     int set_json_value(const std::string& json_str);
 
-    // 接收数据
-    std::string recv_data();
+    // 发送数据（同步模式下包含接收数据并写入数据队列）
+    int send_msg(int func_id, int subsystem_no = 0, int branch_no = 0);
+
+    // 接收数据，返回数据长度
+    int recv_msg();
+
+    // 获取数据集数量
+    int get_data_set_count();
+    // 获取行数
+    int get_cur_row_count();
+    // 获取列数
+    int get_cur_col_count();
+    // 定位当前数据集，返回 true or false
+    int get_cur_data_set(int index);
+    // 获取列名
+    std::string get_col_name(int col);
+    // 获取当前行列值
+    std::string get_col_value(int col);
+    // 指向下一行
+    void get_next_row();
+
+    // 获取JSON数值
+    std::string get_json_value(int len);
 
     // 获取用户间隔值
     int get_space();
     // 获取用户频率值
     int get_frequency();
+
     // 获取最近错误信息
     std::string get_last_error_msg();
 
-    // my extend functions
+    // my extend function
+    // 发送数据
+    int send_json_data(int func_id, const std::string& data, int subsystem_no = 0, int branch_no = 0);
+
+    // 接收数据 RecvMsg & GetJsonValue
+    std::string recv_json_data();
+
     std::string get_api_version();
 
     int open_debug(std::string log_file, int log_level);
@@ -104,6 +151,7 @@ public:
     std::string get_field_exchange_sse();
     std::string get_field_exchange_szse();
 
+    // write msg into log file
     int write_line(int reserve, const std::string& line);
 
 private:
