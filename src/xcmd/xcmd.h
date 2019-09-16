@@ -209,10 +209,6 @@ public:
     // just notify login result
     virtual void on_rsp_user_login(const dict &data) {}
 
-    virtual void on_msg(const dict& data) {}
-
-    virtual void on_rsp_market(const dict& data) {}
-
     virtual void on_rsp_qry_data(const dict& data) {}
 
     // rtn md fields reference to XcDepthMarketData
