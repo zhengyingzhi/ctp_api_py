@@ -14,8 +14,6 @@ using namespace std;
 using namespace pybind11;
 
 
-#define XC_MDAPI_VERSION    "0.0.2"
-
 
 // 自定义证券基本信息
 struct XcSecurityInfo
@@ -168,6 +166,10 @@ public:
 
     // just notify login result
     virtual void on_rsp_user_login(const dict &data) {}
+
+    virtual void on_msg(const dict& data) {}
+
+    virtual void on_rsp_market(const dict& data) {}
 
     virtual void on_rsp_qry_data(const dict& data) {}
 

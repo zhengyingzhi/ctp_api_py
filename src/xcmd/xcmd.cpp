@@ -16,6 +16,9 @@
 #include "xcmd.h"
 
 
+#define XC_MDAPI_VERSION    "0.0.3"
+
+
 #define MY_DEBUG 0
 
 #if (MY_DEBUG)
@@ -58,11 +61,14 @@ static string to_utf(const string &gb2312)
 
 static bool get_symbol_market(char symbol[], char market[], const std::string& instrument)
 {
-    if (instrument.length() < 6) {
+    std::size_t dot_index = instrument.find('.');
+    if (dot_index == std::string::npos || dot_index < 1 || dot_index > 9)
+    {
         return false;
     }
 
-    strncpy(symbol, instrument.c_str(), 6);
+    // 000001.SZSE
+    strncpy(symbol, instrument.c_str(), dot_index);
 
     if (instrument.find("SSE") != string::npos ||
         instrument.find("SH") != string::npos ||
@@ -205,12 +211,27 @@ void XcMdApi::OnIssueEnd(QWORD qQuoteID)
 void XcMdApi::OnMsg(QWORD qRefID, socket_struct_Msg* pMsg)
 {
     XcDebugInfo(XcDbgFd, "OnMsg qRefID:%ld, MsgId:%d, Msg:%s\n", (long)qRefID, pMsg->Msgid, pMsg->Desc);
+
+    gil_scoped_acquire acquire;
+    dict data;
+    data["MsgId"] = pMsg->Msgid;
+    data["Desc"] = to_utf(pMsg->Desc);
+    this->on_msg(data);
 }
 
 void XcMdApi::OnRespMarket(QWORD qQuoteID, socket_struct_Market* pMarket)
 {
     XcDebugInfo(XcDbgFd, "OnRespMarket qQuoteID:%ld, Code:%s, Name:%s\n",
         (long)qQuoteID, pMarket->MarketCode, pMarket->MarketName);
+
+    gil_scoped_acquire acquire;
+    dict data;
+    data["MarketCode"] = to_utf(pMarket->MarketCode);
+    data["MarketName"] = to_utf(pMarket->MarketName);
+    data["TimeZone"] = pMarket->TimeZone;
+    data["OpenTime"] = pMarket->OpenTime;
+    data["CloseTime"] = pMarket->CloseTime;
+    this->on_rsp_market(data);
 }
 
 void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
@@ -794,6 +815,42 @@ public:
         }
     };
 
+    void on_msg(const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, XcMdApi, on_msg, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
+
+    void on_rsp_market(const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, XcMdApi, on_rsp_market, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
+
+    void on_rsp_qry_data(const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, XcMdApi, on_rsp_qry_data, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
+
     void on_rtn_market_data(const dict &data) override
     {
         try
@@ -828,6 +885,9 @@ PYBIND11_MODULE(xcmd, m)
         .def("on_front_connected", &XcMdApi::on_front_connected)
         .def("on_front_disconnected", &XcMdApi::on_front_disconnected)
         .def("on_rsp_user_login", &XcMdApi::on_rsp_user_login)
+        .def("on_msg", &XcMdApi::on_msg)
+        .def("on_rsp_market", &XcMdApi::on_rsp_market)
+        .def("on_rsp_qry_data", &XcMdApi::on_rsp_qry_data)
         .def("on_rtn_market_data", &XcMdApi::on_rtn_market_data)
         ;
 }
