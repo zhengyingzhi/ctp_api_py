@@ -113,6 +113,7 @@ XcMdApi::XcMdApi()
     , mdmap()
 {
     refid = 1;
+    have_level10 = 1;
 }
 
 XcMdApi::~XcMdApi()
@@ -193,6 +194,19 @@ void XcMdApi::OnIssueEnd(QWORD qQuoteID)
     data["BidVolume4"] = pMD->BidVolume4;
     data["BidPrice5"]  = pMD->BidPrice5;
     data["BidVolume5"] = pMD->BidVolume5;
+    if (have_level10)
+    {
+        data["BidPrice6"] = pMD->BidPrice6;
+        data["BidVolume6"] = pMD->BidVolume6;
+        data["BidPrice7"] = pMD->BidPrice7;
+        data["BidVolume7"] = pMD->BidVolume7;
+        data["BidPrice8"] = pMD->BidPrice8;
+        data["BidVolume8"] = pMD->BidVolume8;
+        data["BidPrice9"] = pMD->BidPrice9;
+        data["BidVolume9"] = pMD->BidVolume9;
+        data["BidPrice10"] = pMD->BidPrice10;
+        data["BidVolume10"] = pMD->BidVolume10;
+    }
 
     data["AskPrice1"]  = pMD->AskPrice1;
     data["AskVolume1"] = pMD->AskVolume1;
@@ -204,6 +218,19 @@ void XcMdApi::OnIssueEnd(QWORD qQuoteID)
     data["AskVolume4"] = pMD->AskVolume4;
     data["AskPrice5"]  = pMD->AskPrice5;
     data["AskVolume5"] = pMD->AskVolume5;
+    if (have_level10)
+    {
+        data["AskPrice6"] = pMD->AskPrice6;
+        data["AskVolume6"] = pMD->AskVolume6;
+        data["AskPrice7"] = pMD->AskPrice7;
+        data["AskVolume7"] = pMD->AskVolume7;
+        data["AskPrice8"] = pMD->AskPrice8;
+        data["AskVolume8"] = pMD->AskVolume8;
+        data["AskPrice9"] = pMD->AskPrice9;
+        data["AskVolume9"] = pMD->AskVolume9;
+        data["AskPrice10"] = pMD->AskPrice10;
+        data["AskVolume10"] = pMD->AskVolume10;
+    }
 
     this->on_rtn_market_data(data);
 }
@@ -216,14 +243,13 @@ void XcMdApi::OnMsg(QWORD qRefID, socket_struct_Msg* pMsg)
     dict data;
     data["MsgId"] = pMsg->Msgid;
     data["Desc"] = to_utf(pMsg->Desc);
-    this->on_msg(data);
+    this->on_msg((int)qRefID, data);
 }
 
 void XcMdApi::OnRespMarket(QWORD qQuoteID, socket_struct_Market* pMarket)
 {
     XcDebugInfo(XcDbgFd, "OnRespMarket qQuoteID:%ld, Code:%s, Name:%s\n",
         (long)qQuoteID, pMarket->MarketCode, pMarket->MarketName);
-
     gil_scoped_acquire acquire;
     dict data;
     data["MarketCode"] = to_utf(pMarket->MarketCode);
@@ -231,8 +257,7 @@ void XcMdApi::OnRespMarket(QWORD qQuoteID, socket_struct_Market* pMarket)
     data["TimeZone"] = pMarket->TimeZone;
     data["OpenTime"] = pMarket->OpenTime;
     data["CloseTime"] = pMarket->CloseTime;
-    this->on_rsp_market(data);
-}
+    this->on_rsp_market((int)qQuoteID, data);}
 
 void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
 {
@@ -507,6 +532,26 @@ void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socke
         pMD->BidPrice5 = price;
         pMD->BidVolume5 = quantity;
         break;
+    case -6:
+        pMD->BidPrice6 = price;
+        pMD->BidVolume6 = quantity;
+        break;
+    case -7:
+        pMD->BidPrice7 = price;
+        pMD->BidVolume7 = quantity;
+        break;
+    case -8:
+        pMD->BidPrice8 = price;
+        pMD->BidVolume8 = quantity;
+        break;
+    case -9:
+        pMD->BidPrice9 = price;
+        pMD->BidVolume9 = quantity;
+        break;
+    case -10:
+        pMD->BidPrice10 = price;
+        pMD->BidVolume10 = quantity;
+        break;
     case 1:
         pMD->AskPrice1 = price;
         pMD->AskVolume1 = quantity;
@@ -527,6 +572,26 @@ void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socke
         pMD->AskPrice5 = price;
         pMD->AskVolume5 = quantity;
         break;
+    case 6:
+        pMD->AskPrice6 = price;
+        pMD->AskVolume6 = quantity;
+        break;
+    case 7:
+        pMD->AskPrice7 = price;
+        pMD->AskVolume7 = quantity;
+        break;
+    case 8:
+        pMD->AskPrice8 = price;
+        pMD->AskVolume8 = quantity;
+        break;
+    case 9:
+        pMD->AskPrice9 = price;
+        pMD->AskVolume9 = quantity;
+        break;
+    case 10:
+        pMD->AskPrice10 = price;
+        pMD->AskVolume10 = quantity;
+        break;
     default:
         break;
     }
@@ -536,17 +601,71 @@ void XcMdApi::OnRespDepthOrder(QWORD qQuoteID, char* MarketCode, char* SecCode, 
 {
     //if (Grade == 1)
     // cout << "out——DepthOrder:" << SecCode << " Grade: " << Grade << " OrderID: " << pDepthOrder->OrderID << " Qty: " << pDepthOrder->Quantity << endl;
+
+    gil_scoped_acquire acquire;
+    dict data;
+    data["ExchangeID"] = to_utf(MarketCode);
+    data["InstrumentID"] = to_utf(SecCode);
+    data["Grade"] = Grade;
+    data["Price"] = Price / PRICE_DIV;
+    data["OrderID"] = pDepthOrder->OrderID;
+    data["Quantity"] = pDepthOrder->Quantity;
+    data["Status"] = pDepthOrder->Status;
+
+    this->on_rtn_depth_order(data);
 }
 
 
 void XcMdApi::OnRespEachOrder(QWORD qQuoteID, void* pParam)
 {
     // 逐笔委托
+    socket_struct_EachOrder* pEachOrder = (socket_struct_EachOrder*)pParam;
+
+    gil_scoped_acquire acquire;
+    dict data;
+    data["ExchangeID"] = to_utf(pEachOrder->MarketCode);
+    data["InstrumentID"] = to_utf(pEachOrder->SecCode);
+    data["Price"] = pEachOrder->Price / PRICE_DIV;
+    data["Volume"] = pEachOrder->Volume;
+    data["Amount"] = pEachOrder->Amount / PRICE_DIV;
+    data["OrderNo"] = pEachOrder->OrderNo;
+    data["Side"] = pEachOrder->Side;
+    data["Time"] = pEachOrder->Time;
+    if (strcmp(pEachOrder->MarketCode, Scdm_SZSE) == 0)
+    {
+        socket_struct_EachOrder_Extend2* pExtend2;
+        pExtend2 = (socket_struct_EachOrder_Extend2*)pEachOrder->Extend_fields;
+        data["OrderType"] = pExtend2->OrderType;
+    }
+    this->on_rtn_each_order(data);
 }
 
 void XcMdApi::OnRespEachDeal(QWORD qQuoteID, void* pParam)
 {
     // 逐笔成交
+    socket_struct_EachDeal* pEachDeal = (socket_struct_EachDeal*)pParam;
+
+    gil_scoped_acquire acquire;
+    dict data;
+    data["ExchangeID"] = to_utf(pEachDeal->MarketCode);
+    data["InstrumentID"] = to_utf(pEachDeal->SecCode);
+    data["Price"] = pEachDeal->Price / PRICE_DIV;
+    data["Volume"] = pEachDeal->Volume;
+    data["Amount"] = pEachDeal->Amount / PRICE_DIV;
+    data["BuyNo"] = pEachDeal->BuyNo;
+    data["SellNo"] = pEachDeal->SellNo;
+    data["BuyNo"] = pEachDeal->BuyNo;
+    data["DealNo"] = pEachDeal->DealNo;
+    data["Type"] = pEachDeal->Type;     // 成交类型 F：成交 4：撤销
+    data["Time"] = pEachDeal->Time;
+    if (strcmp(pEachDeal->MarketCode, Scdm_SSE) == 0)
+    {
+        socket_struct_EachDeal_Extend1* pExtend2;
+        pExtend2 = (socket_struct_EachDeal_Extend1*)pEachDeal->Extend_fields;
+        data["BsFlag"] = pExtend2->BsFlag;
+    }
+
+    this->on_rtn_each_deal(data);
 }
 
 
@@ -569,6 +688,11 @@ void XcMdApi::release()
     }
 }
 
+int XcMdApi::set_connect_param(int is_reconnect, int reconnect_ms, int reconect_count)
+{
+    return api->SetConnectParam(is_reconnect ? true : false, reconnect_ms, reconect_count);
+}
+
 int XcMdApi::init(string user_id, string server_ip, string server_port, string license)
 {
     int rv;
@@ -584,7 +708,7 @@ int XcMdApi::init(string user_id, string server_ip, string server_port, string l
 }
 
 
-int XcMdApi::subscribe_md(string instrumentID)
+int XcMdApi::subscribe_md(string instrumentID, int depth_order, int each_flag)
 {
     if (instrumentID.length() < 6) {
         return -1;
@@ -592,10 +716,10 @@ int XcMdApi::subscribe_md(string instrumentID)
 
     interface_struct_Subscribe sub_flag;
     sub_flag.Dyna_flag = true;
-    sub_flag.DepthOrder_flag = false;
+    sub_flag.DepthOrder_flag = depth_order ? true : false;
     sub_flag.Depth_flag = true;
-    sub_flag.EachDeal_flag = false;
-    sub_flag.EachOrder_flag = false;
+    sub_flag.EachDeal_flag = each_flag ? true : false;
+    sub_flag.EachOrder_flag = each_flag ? true : false;
 
     char market[16] = "";
     char symbol[16] = "";
@@ -644,14 +768,14 @@ int XcMdApi::unsubscribe_md(string instrument)
     return api->Cancel(refid++, &sub_flag, SubList, 2);
 }
 
-int XcMdApi::subscribe_md_batch(const std::vector<std::string>& reqs)
+int XcMdApi::subscribe_md_batch(const std::vector<std::string>& reqs, int depth_order, int each_flag)
 {
     interface_struct_Subscribe sub_flag;
     sub_flag.Dyna_flag = true;
-    sub_flag.DepthOrder_flag = false;
+    sub_flag.DepthOrder_flag = depth_order ? true : false;
     sub_flag.Depth_flag = true;
-    sub_flag.EachDeal_flag = false;
-    sub_flag.EachOrder_flag = false;
+    sub_flag.EachDeal_flag = each_flag ? true : false;
+    sub_flag.EachOrder_flag = each_flag ? true : false;
 
     vector<std::string> need_qry_instruments;
 
@@ -815,30 +939,6 @@ public:
         }
     };
 
-    void on_msg(const dict &data) override
-    {
-        try
-        {
-            PYBIND11_OVERLOAD(void, XcMdApi, on_msg, data);
-        }
-        catch (const error_already_set &e)
-        {
-            cout << e.what() << endl;
-        }
-    };
-
-    void on_rsp_market(const dict &data) override
-    {
-        try
-        {
-            PYBIND11_OVERLOAD(void, XcMdApi, on_rsp_market, data);
-        }
-        catch (const error_already_set &e)
-        {
-            cout << e.what() << endl;
-        }
-    };
-
     void on_rsp_qry_data(const dict &data) override
     {
         try
@@ -862,6 +962,66 @@ public:
             cout << e.what() << endl;
         }
     };
+
+    void on_rtn_depth_order(const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, XcMdApi, on_rtn_depth_order, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
+
+    void on_rtn_each_order(const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, XcMdApi, on_rtn_each_order, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
+
+    void on_rtn_each_deal(const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, XcMdApi, on_rtn_each_deal, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
+
+    void on_msg(int ref_id, const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, XcMdApi, on_msg, ref_id, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
+
+    void on_rsp_market(int ref_id, const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, XcMdApi, on_rsp_market, ref_id, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
 };
 
 
@@ -872,6 +1032,7 @@ PYBIND11_MODULE(xcmd, m)
         .def(init<>())
         .def("create_md_api", &XcMdApi::create_md_api)
         .def("release", &XcMdApi::release)
+        .def("set_connect_param", &XcMdApi::set_connect_param)
         .def("init", &XcMdApi::init)
         .def("get_api_version", &XcMdApi::get_api_version)
         .def("open_debug", &XcMdApi::open_debug)
@@ -885,9 +1046,12 @@ PYBIND11_MODULE(xcmd, m)
         .def("on_front_connected", &XcMdApi::on_front_connected)
         .def("on_front_disconnected", &XcMdApi::on_front_disconnected)
         .def("on_rsp_user_login", &XcMdApi::on_rsp_user_login)
-        .def("on_msg", &XcMdApi::on_msg)
-        .def("on_rsp_market", &XcMdApi::on_rsp_market)
         .def("on_rsp_qry_data", &XcMdApi::on_rsp_qry_data)
         .def("on_rtn_market_data", &XcMdApi::on_rtn_market_data)
+        .def("on_rtn_depth_order", &XcMdApi::on_rtn_depth_order)
+        .def("on_rtn_each_order", &XcMdApi::on_rtn_each_order)
+        .def("on_rtn_each_deal", &XcMdApi::on_rtn_each_deal)
+        .def("on_msg", &XcMdApi::on_msg)
+        .def("on_rsp_market", &XcMdApi::on_rsp_market)
         ;
 }

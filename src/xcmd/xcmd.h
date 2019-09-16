@@ -120,6 +120,47 @@ struct XcDepthMarketData
     double  AskPrice5;
     ///申卖量五
     int     AskVolume5;
+    ///申买价六
+    double  BidPrice6;
+    ///申买量六
+    int     BidVolume6;
+    ///申卖价六
+    double  AskPrice6;
+    ///申卖量六
+    int     AskVolume6;
+    ///申买价七
+    double  BidPrice7;
+    ///申买量七
+    int     BidVolume7;
+    ///申卖价七
+    double  AskPrice7;
+    ///申卖量七
+    int     AskVolume7;
+    ///申买价八
+    double  BidPrice8;
+    ///申买量八
+    int     BidVolume8;
+    ///申卖价八
+    double  AskPrice8;
+    ///申卖量八
+    int     AskVolume8;
+    ///申买价九
+    double  BidPrice9;
+    ///申买量九
+    int     BidVolume9;
+    ///申卖价九
+    double  AskPrice9;
+    ///申卖量九
+    int     AskVolume9;
+    ///申买价十
+    double  BidPrice10;
+    ///申买量十
+    int     BidVolume10;
+    ///申卖价十
+    double  AskPrice10;
+    ///申卖量十
+    int     AskVolume10;
+
     ///当日均价
     double  AveragePrice;
     ///业务日期
@@ -142,6 +183,7 @@ public:
     MDMapType       mdmap;
     SecInfoMapType  secmap;
     QWORD           refid;
+    int             have_level10;
 
 public:
     void OnUserLogin(socket_struct_Msg* pMsg);
@@ -176,19 +218,28 @@ public:
     // rtn md fields reference to XcDepthMarketData
     virtual void on_rtn_market_data(const dict &data) {}
 
+    virtual void on_rtn_depth_order(const dict& data) {}
+    virtual void on_rtn_each_order(const dict& data) {}
+    virtual void on_rtn_each_deal(const dict& data) {}
+
+    virtual void on_msg(int ref_id, const dict& data) {}
+    virtual void on_rsp_market(int ref_id, const dict& data) {}
+
 public:
     void create_md_api(string str = "");
 
     void release();
 
+    int set_connect_param(int is_reconnect, int reconnect_ms, int reconect_count);
+
     // connect to server
     int init(string user_id, string server_ip, string server_port, string license);
 
     // subscribe eg. 000001.SZSE or 600000.SSE
-    int subscribe_md(string instrument);
+    int subscribe_md(string instrument, int depth_order = 0, int each_flag = 0);
     int unsubscribe_md(string instrument);
 
-    int subscribe_md_batch(const std::vector<std::string>& reqs);
+    int subscribe_md_batch(const std::vector<std::string>& reqs, int depth_order = 0, int each_flag = 0);
     int unsubscribe_md_batch(const std::vector<std::string>& reqs);
     int unsubscribe_all();
 
