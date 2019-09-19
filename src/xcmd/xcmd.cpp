@@ -16,7 +16,8 @@
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "0.0.3"
+#define XC_MDAPI_VERSION    "0.0.4"
+#define XC_SPEC_LOG_LV      11
 
 
 #define MY_DEBUG 0
@@ -113,11 +114,20 @@ XcMdApi::XcMdApi()
     , mdmap()
 {
     refid = 1;
-    have_level10 = 1;
+    have_level10 = 0;
+    log_level = 0;
+    fp = NULL;
 }
 
 XcMdApi::~XcMdApi()
-{}
+{
+    if (fp)
+    {
+        fflush(fp);
+        fclose(fp);
+        fp = NULL;
+    }
+}
 
 void XcMdApi::OnUserLogin(socket_struct_Msg* pMsg)
 {
@@ -154,6 +164,11 @@ void XcMdApi::OnClose()
 void XcMdApi::OnIssueEnd(QWORD qQuoteID)
 {
     XcDebugInfo(XcDbgFd, "OnIssueEnd qQuoteID:%ld\n", (long)qQuoteID);
+
+    if (log_level == XC_SPEC_LOG_LV)
+    {
+        write_data(log_level, "IssueEnd:%ld\n", (long)qQuoteID);
+    }
 
     XcDepthMarketData* pMD;
     if (qidmap.count(qQuoteID) == 0)
@@ -488,6 +503,14 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         cout << " NAV: " << pExtend->NAV << " IOPV: " << pExtend->IOPV << endl;
     }
 #endif
+
+    if (log_level == XC_SPEC_LOG_LV)
+    {
+        write_data(log_level, "RespDyna:%ld,Symbol:%s,Time:%s,Last:%.2lf,Open:%.2lf,High:%.2lf,Low:%.2lf,"
+            "Turnover:%.2lf,UpperLimit:%.2lf,LowerLimit:%.2lf,PreClose:%.2lf\n", (long)qQuoteID,
+            xc_symbol, pMD->UpdateTime, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
+            pMD->Turnover, pMD->UpperLimitPrice, pMD->LowerLimitPrice, pMD->PreClosePrice);
+    }
 }
 
 void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socket_struct_DepthDetail* pDepth)
@@ -683,8 +706,17 @@ void XcMdApi::release()
 {
     if (this->api)
     {
+        write_data(0, "release");
+
         this->api->Release();
         this->api = NULL;
+
+        if (fp)
+        {
+            fflush(fp);
+            fclose(fp);
+            fp = NULL;
+        }
     }
 }
 
@@ -884,6 +916,11 @@ int XcMdApi::req_qry_data_batch(const std::vector<std::string>& reqs)
     return 0;
 }
 
+void XcMdApi::set_have_level10(int on)
+{
+    have_level10 = on;
+}
+
 string XcMdApi::get_api_version()
 {
     return string(XC_MDAPI_VERSION);
@@ -891,8 +928,85 @@ string XcMdApi::get_api_version()
 
 int XcMdApi::open_debug(string log_file, int log_level)
 {
-    return -1;
+    if (log_file.empty())
+    {
+        return -1;
+    }
+
+    if (fp)
+    {
+        fclose(fp);
+        fp = NULL;
+    }
+
+    fp = fopen(log_file.c_str(), "a+");
+    if (!fp)
+    {
+        return -2;
+    }
+
+    this->log_level = log_level;
+    return 0;
 }
+
+int XcMdApi::write_line(int reserve, const std::string& line)
+{
+    (void)reserve;
+    if (!fp)
+    {
+        return -1;
+    }
+
+#if 1
+    char buf[1000] = "";
+    int  len = 0;
+
+    time_t now = time(NULL);
+    struct tm* ptm = localtime(&now);
+    len = sprintf(buf + len, "%04d-%02d-%02d %02d:%02d:%02d ",
+        ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+
+    fwrite(buf, len, 1, fp);
+    fwrite(line.c_str(), line.length(), 1, fp);
+    fwrite("\n", 1, 1, fp);
+    fflush(fp);
+#endif
+    return 0;
+}
+
+int XcMdApi::write_data(int reserve, const char* fmt, ...)
+{
+    (void)reserve;
+    if (!fp)
+    {
+        return -1;
+    }
+
+#if 1
+    char buf[16300] = "";
+    int  len = 0;
+
+    time_t now = time(NULL);
+    struct tm* ptm = localtime(&now);
+    len = sprintf(buf + len, "%04d-%02d-%02d %02d:%02d:%02d ",
+        ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+
+    va_list args;
+    va_start(args, fmt);
+    len += vsnprintf(buf + len, sizeof(buf) - len - 2, fmt, args);
+    va_end(args);
+    buf[len++] = '\r';
+    // buf[len++] = '\n';
+    buf[len] = '\0';
+
+    fwrite(buf, len, 1, fp);
+    fflush(fp);
+#endif
+    return 0;
+}
+
 
 ///-------------------------------------------------------------------------------------
 ///Boost.Python·â×°
@@ -1034,8 +1148,10 @@ PYBIND11_MODULE(xcmd, m)
         .def("release", &XcMdApi::release)
         .def("set_connect_param", &XcMdApi::set_connect_param)
         .def("init", &XcMdApi::init)
+        .def("set_have_level10", &XcMdApi::set_have_level10)
         .def("get_api_version", &XcMdApi::get_api_version)
         .def("open_debug", &XcMdApi::open_debug)
+        .def("write_line", &XcMdApi::write_line)
         .def("subscribe_md", &XcMdApi::subscribe_md)
         .def("unsubscribe_md", &XcMdApi::unsubscribe_md)
         .def("unsubscribe_all", &XcMdApi::unsubscribe_all)

@@ -184,6 +184,8 @@ public:
     SecInfoMapType  secmap;
     QWORD           refid;
     int             have_level10;
+    int             log_level;
+    FILE*           fp;
 
 public:
     void OnUserLogin(socket_struct_Msg* pMsg);
@@ -243,8 +245,17 @@ public:
     int req_qry_data(string instrument);
     int req_qry_data_batch(const std::vector<std::string>& reqs);
 
+    // set have level10 md
+    void set_have_level10(int on);
+
     // my extend functions
     string get_api_version();
 
     int open_debug(string log_file, int log_level);
+
+    // write msg into log file
+    int write_line(int reserve, const std::string& line);
+
+private:
+    int write_data(int reserve, const char* fmt, ...);
 };
