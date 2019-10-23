@@ -6,6 +6,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 #include <pybind11/pybind11.h>
 #include <XcMarketApi/XcMarketApi.h>
@@ -13,7 +14,16 @@
 using namespace std;
 using namespace pybind11;
 
+#define MAX_UPDOWN_LEVEL 11
 
+typedef enum
+{
+    PS_None = 0,        // 平
+    PS_Up = 1,          // 上涨
+    PS_UpLimit = 2,     // 涨停
+    PS_Down = 3,        // 下跌
+    PS_DownLimit = 4    // 跌停
+}price_status_t;
 
 // 自定义证券基本信息
 struct XcSecurityInfo
@@ -165,6 +175,10 @@ struct XcDepthMarketData
     double  AveragePrice;
     ///业务日期
     char    ActionDay[9];
+
+    price_status_t PriceStatus;        // 涨跌状态
+    price_status_t LimitStatus;        // 涨跌停状态
+    double      UpDownRatio;        // 涨跌比例
 };
 typedef map<string, XcDepthMarketData>   MDMapType;
 typedef map<QWORD, XcDepthMarketData*>   QuoteIDMapType;
@@ -184,8 +198,17 @@ public:
     SecInfoMapType  secmap;
     QWORD           refid;
     int             have_level10;
+    int             statistic_mode;
     int             log_level;
     FILE*           fp;
+
+    uint32_t    m_UpStatistics[MAX_UPDOWN_LEVEL];
+    uint32_t    m_DownStatistics[MAX_UPDOWN_LEVEL];
+    uint32_t    m_UpCount;
+    uint32_t    m_DownCount;
+    uint32_t    m_UpLimitCount;
+    uint32_t    m_DownLimitCount;
+    std::vector<socket_struct_SubscribeDetail> m_SubList;
 
 public:
     void OnUserLogin(socket_struct_Msg* pMsg);
@@ -248,6 +271,9 @@ public:
     // set have level10 md
     void set_have_level10(int on);
 
+    // set statistic mode
+    void set_statistic_mode();
+
     // my extend functions
     string get_api_version();
 
@@ -255,6 +281,12 @@ public:
 
     // write msg into log file
     int write_line(int reserve, const std::string& line);
+
+    // get statistics
+    int get_statistics(dict out);
+
+    void statistic_md(XcDepthMarketData* pMD, int32_t isfirst);
+    int get_ratio_count(double ratio, int cond);
 
 private:
     int write_data(int reserve, const char* fmt, ...);

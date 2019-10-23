@@ -439,8 +439,8 @@ int XcTdApi::write_data(int reserve, const char* fmt, ...)
     va_start(args, fmt);
     len += vsnprintf(buf + len, sizeof(buf) - len - 2, fmt, args);
     va_end(args);
-    buf[len++] = '\r';
-    // buf[len++] = '\n';
+    // [len++] = '\r';
+    buf[len++] = '\n';
     buf[len] = '\0';
 
     fwrite(buf, len, 1, fp);
