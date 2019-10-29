@@ -16,7 +16,7 @@
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "0.1.0"
+#define XC_MDAPI_VERSION    "0.1.1"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -29,7 +29,7 @@
 static  inline void XcPrintNull(FILE* fd, const char* fmt, ...) { (void)fd; (void)fmt; }
 #define XcDebugInfo(fd,fmt,...) XcPrintNull(fd,fmt,##__VA_ARGS__)
 #endif//MY_DEBUG
-#define XcDbgFd stdout
+#define XcDbgFd stderr
 
 
 #define PRICE_DIV               1000.0
@@ -122,6 +122,8 @@ XcMdApi::XcMdApi()
     : api()
     , qidmap()
     , mdmap()
+    , m_SubList()
+    , m_SubListLock()
 {
     refid = 1;
     have_level10 = 0;
@@ -169,13 +171,14 @@ void XcMdApi::OnUserLogin(socket_struct_Msg* pMsg)
 
 void XcMdApi::OnHeart()
 {
-    //cout << "out:" << "Heart........." << endl;
+    // fprintf(stderr, "OnHeart\n");
 }
 
 void XcMdApi::OnClose()
 {
-    // cout << "out:" << "Í¨µÀ¹Ø±Õ." << endl;
     XcDebugInfo(XcDbgFd, "OnClose\n");
+
+    gil_scoped_acquire acquire;
     this->on_front_disconnected(-1);
 }
 
@@ -283,6 +286,7 @@ void XcMdApi::OnRespMarket(QWORD qQuoteID, socket_struct_Market* pMarket)
 {
     XcDebugInfo(XcDbgFd, "OnRespMarket qQuoteID:%ld, Code:%s, Name:%s\n",
         (long)qQuoteID, pMarket->MarketCode, pMarket->MarketName);
+
     gil_scoped_acquire acquire;
     dict data;
     data["MarketCode"] = to_utf(pMarket->MarketCode);
@@ -330,6 +334,8 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
         socket_struct_SubscribeDetail sub;
         strcpy(sub.MarketCode, sec_info.ExchangeID);
         strcpy(sub.SecCode, sec_info.InstrumentID);
+
+        std::lock_guard<std::mutex> lk(m_SubListLock);
         m_SubList.push_back(sub);
     }
 
@@ -406,6 +412,8 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
         socket_struct_SubscribeDetail sub;
         strcpy(sub.MarketCode, sec_info.ExchangeID);
         strcpy(sub.SecCode, sec_info.InstrumentID);
+
+        std::lock_guard<std::mutex> lk(m_SubListLock);
         m_SubList.push_back(sub);
     }
 
@@ -518,27 +526,6 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
             pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
         }
     }
-#if 0
-    GetLocalTime(&sys_time);
-    int Nowtime = sys_time.wHour * 10000 * 1000 + sys_time.wMinute * 100 * 1000 + sys_time.wSecond * 1000 + sys_time.wMilliseconds;
-    cout << "OnRespDyna Sec:" << pDyna->SecCode << " open:" << pDyna->Open << " close:" << pDyna->Close << " High:" << pDyna->High << " Low:" << pDyna->Low << " New:" << pDyna->New << " Time:" << pDyna->Time << " LocalTime: " << Nowtime << endl;
-    if (memcmp(pDyna->MarketCode, "SSE", 3) == 0)
-    {
-        socket_struct_Dyna_Extend1* pExtend = (socket_struct_Dyna_Extend1*)pDyna->Extend_fields;
-        cout << "SSE Extend: IOPV:" << pExtend->IOPV << " EtfBuyNumber: " << pExtend->EtfBuyNumber << " EtfBuyAmount: " << pExtend->EtfBuyAmount << " EtfBuyMoney: " << pExtend->EtfBuyMoney << endl;
-        cout << " EtfSellNumber: " << pExtend->EtfSellNumber << " EtfSellAmount: " << pExtend->EtfSellAmount << " EtfSellMoney: " << pExtend->EtfSellMoney << endl;
-        cout << " WithdrawBuyNumber: " << pExtend->WithdrawBuyNumber << " WithdrawBuyAmount: " << pExtend->WithdrawBuyAmount << " WithdrawBuyMoney: " << pExtend->WithdrawBuyMoney << endl;
-        cout << " WithdrawSellNumber: " << pExtend->WithdrawSellNumber << " WithdrawSellAmount: " << pExtend->WithdrawSellAmount << " WithdrawSellMoney: " << pExtend->WithdrawSellMoney << endl;
-        cout << " TotalBidNumber: " << pExtend->TotalBidNumber << " TotalBidQty: " << pExtend->TotalBidQty << " TotalOfferNumber: " << pExtend->TotalOfferNumber << " TotalOfferQty: " << pExtend->TotalOfferQty << endl;
-        cout << " WeightedAvgBidPx: " << pExtend->WeightedAvgBidPx << " WeightedAvgOfferPx: " << pExtend->WeightedAvgOfferPx << endl;
-    }
-    if (memcmp(pDyna->MarketCode, "SZSE", 4) == 0)
-    {
-        socket_struct_Dyna_Extend2* pExtend = (socket_struct_Dyna_Extend2*)pDyna->Extend_fields;
-        cout << "SZSE Extend: DownLimit:" << pExtend->DownLimit << " UpLimit: " << pExtend->UpLimit << " BidPx: " << pExtend->TotalBidPx << " OfferPx: " << pExtend->TotalOfferPx << " BidQty: " << pExtend->TotalBidQty << " OfferQty: " << pExtend->TotalOfferQty << endl;
-        cout << " NAV: " << pExtend->NAV << " IOPV: " << pExtend->IOPV << endl;
-    }
-#endif
 
     if (!statistic_mode)
     {
@@ -828,43 +815,7 @@ int XcMdApi::subscribe_md(string instrumentID, int depth_order, int each_flag)
 
         int count = 0;
 
-#if 0
-        if (secmap.size() == 0)
-        {
-            fprintf(stderr, "no security info to subsribe!\n");
-            return -1;
-        }
-        fprintf(stderr, "subscribe_md total count:%d\n", (int)secmap.size());
-
-        socket_struct_SubscribeDetail SubList[MaxSize];
-        SecInfoMapType::iterator iter = secmap.begin();
-        for (; iter != secmap.end(); ++iter)
-        {
-            if (count + 1 == MaxSize)
-            {
-                rv = this->api->Subscribe(refid++, &sub_flag, SubList, count);
-                if (rv < 0)
-                {
-                    XcDebugInfo(XcDbgFd, "xcmdapi Subscribe %d failed!\n", count);
-                    return rv;
-                }
-                count = 0;
-            }
-            strcpy(SubList[count].MarketCode, iter->second.ExchangeID);
-            strcpy(SubList[count].SecCode, iter->second.InstrumentID);
-            ++count;
-        }
-
-        if (count > 0)
-        {
-            rv = this->api->Subscribe(refid++, &sub_flag, SubList, count);
-            if (rv < 0)
-            {
-                XcDebugInfo(XcDbgFd, "xcmdapi Subscribe %d failed!\n", count);
-                return rv;
-            }
-        }
-#else
+        std::lock_guard<std::mutex> lk(m_SubListLock);
         if (m_SubList.size() == 0)
         {
             fprintf(stderr, "no security info to subsribe!\n");
@@ -899,7 +850,7 @@ int XcMdApi::subscribe_md(string instrumentID, int depth_order, int each_flag)
                 return rv;
             }
         }
-#endif
+
         return 0;
     }
 
@@ -1030,6 +981,7 @@ int XcMdApi::req_qry_data(string instrument)
 
     if (strcmp(req[0].SecCode, "*") == 0)
     {
+        std::lock_guard<std::mutex> lk(m_SubListLock);
         m_SubList.clear();
     }
 
@@ -1049,6 +1001,7 @@ int XcMdApi::req_qry_data_batch(const std::vector<std::string>& reqs)
 
         if (strcmp(ReqList[count].SecCode, "*") == 0)
         {
+            std::lock_guard<std::mutex> lk(m_SubListLock);
             m_SubList.clear();
         }
 

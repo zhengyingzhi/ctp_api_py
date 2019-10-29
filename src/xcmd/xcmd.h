@@ -7,6 +7,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <mutex>
 
 #include <pybind11/pybind11.h>
 #include <XcMarketApi/XcMarketApi.h>
@@ -209,6 +210,7 @@ public:
     uint32_t    m_UpLimitCount;
     uint32_t    m_DownLimitCount;
     std::vector<socket_struct_SubscribeDetail> m_SubList;
+    std::mutex  m_SubListLock;
 
 public:
     void OnUserLogin(socket_struct_Msg* pMsg);
