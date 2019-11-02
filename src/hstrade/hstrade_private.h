@@ -7,6 +7,8 @@
 #include "hstrade.h"
 
 
+#define HSTRADE_DEFAULT_TIMEOUT     3000
+
 class TradeCallback;
 
 typedef struct hstrade_apidata_s
@@ -26,6 +28,7 @@ struct hstrade_s
     int     desc;
     int     is_async;
     int     debug_mode;
+    int     timeoutms;
     void*   userdata;
 
     // t2sdk api object

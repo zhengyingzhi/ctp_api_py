@@ -78,6 +78,9 @@ HS_TRADE_API void* HS_TRADE_STDCALL hstrade_get_userdata(hstrade_t* hstd);
 /// 调试模式
 HS_TRADE_API void HS_TRADE_STDCALL hstrade_debug_mode(hstrade_t* hstd, int level);
 
+/// 同步模式超时时间
+HS_TRADE_API void HS_TRADE_STDCALL hstrade_set_timeout(hstrade_t* hstd, int timeoutms);
+
 /// 注册回调
 HS_TRADE_API void HS_TRADE_STDCALL hstrade_register_spi(hstrade_t* hstd, hstrade_spi_t* spi);
 
@@ -137,6 +140,7 @@ HS_TRADE_API int HS_TRADE_STDCALL hstrade_qry_order_hist(hstrade_t* hstd, HSReqQ
 /// some raw apis for easily use
 HS_TRADE_API void* HS_TRADE_STDCALL hstrade_begin_pack(hstrade_t* hstd);
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_end_pack(hstrade_t* hstd, void* packer);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_release_pack(hstrade_t* hstd, void* packer);
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func_id);
 
 /// add pack field，field_type: I(Integer), S(String), C(Char), F(Double)

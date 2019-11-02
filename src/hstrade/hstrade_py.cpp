@@ -123,6 +123,12 @@ std::string HSTdApi::get_hstrade_version()
     return std::string(hstrade_version(NULL));
 }
 
+std::string HSTdApi::recv_msg()
+{
+    // TODO: 
+    return "";
+}
+
 void HSTdApi::create_api(int async_mode, int data_proto)
 {
     m_async_mode = async_mode;
@@ -155,6 +161,14 @@ void HSTdApi::set_debug_mode(int level)
     if (m_hstd)
     {
         hstrade_debug_mode(m_hstd, level);
+    }
+}
+
+void HSTdApi::set_timeout(int timeoutms)
+{
+    if (m_hstd)
+    {
+        hstrade_set_timeout(m_hstd, timeoutms);
     }
 }
 
@@ -332,6 +346,7 @@ void HSTdApi::begin_pack(void)
     {
         IF2Packer* lpPacker;
         lpPacker = (IF2Packer*)m_packer;
+        lpPacker->FreeMem(lpPacker->GetPackBuf());
         lpPacker->Release();
     }
 
@@ -352,11 +367,13 @@ int HSTdApi::add_field(const std::string& key, const std::string& field_type, in
 {
     if (!m_packer)
     {
+        fprintf(stderr, "add_field not begin_pack() yet!\n");
         return -1;
     }
 
     if (field_type.length() > 1)
     {
+        fprintf(stderr, "add_field unknown field_type:%s\n", field_type.c_str());
         return -2;
     }
 
@@ -478,7 +495,7 @@ PYBIND11_MODULE(hstrade, m)
         .def("set_debug_mode", &HSTdApi::set_debug_mode)
         .def("set_json_value", &HSTdApi::set_json_value)
         .def("send_msg", &HSTdApi::send_msg)
-        // .def("recv_msg", &XcTdApi::recv_msg)
+        .def("recv_msg", &HSTdApi::recv_msg)
 
         .def("begin_pack", &HSTdApi::begin_pack)
         .def("end_pack", &HSTdApi::end_pack)

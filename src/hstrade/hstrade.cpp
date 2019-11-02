@@ -48,7 +48,7 @@ static IF2Packer* _hstrade_make_if2pakcer(hstrade_t* hstd)
     IF2Packer* lpPacker = NewPacker(2);
     if (!lpPacker)
     {
-        fprintf(stderr, "取打包器失败!\n");
+        fprintf(stderr, "make_if2pakcer NewPacker() failed!\n");
         return lpPacker;
     }
 
@@ -98,12 +98,17 @@ hstrade_t* HS_TRADE_STDCALL hstrade_create(int is_async)
     hstd = (hstrade_t*)malloc(sizeof(hstrade_t));
     memset(hstd, 0, sizeof(hstrade_t));
 
-    hstd->desc = HS_TRADE;
-    hstd->is_async = is_async;
+    hstd->desc      = HS_TRADE;
+    hstd->is_async  = is_async;
+    hstd->debug_mode= 0;
+    hstd->timeoutms = HSTRADE_DEFAULT_TIMEOUT;
+    hstd->userdata  = NULL;
 
     hstd->config = NewConfig();
     hstd->config->AddRef();
     hstd->config->Load("t2sdk.ini");
+
+    hstd->conn = NULL;
 
     hstd->callback = new TradeCallback();
     hstd->callback->SetContextData(hstd);
@@ -122,6 +127,7 @@ void HS_TRADE_STDCALL hstrade_realese(hstrade_t* hstd)
     int* pdesc = (int*)hstd;
     if (*pdesc == HS_TRADE)
     {
+        fprintf(stderr, "hstrade_realese unknown desc:%d!\n", *pdesc);
         return;
     }
 
@@ -153,6 +159,16 @@ void* HS_TRADE_STDCALL hstrade_get_userdata(hstrade_t* hstd)
 void HS_TRADE_STDCALL hstrade_debug_mode(hstrade_t* hstd, int level)
 {
     hstd->debug_mode = level;
+}
+
+void HS_TRADE_STDCALL hstrade_set_timeout(hstrade_t* hstd, int timeoutms)
+{
+    if (timeoutms < 0)
+    {
+        fprintf(stderr, "hstrade_set_timeout timeoutms:%d invalid\n", timeoutms);
+        return;
+    }
+    hstd->timeoutms = timeoutms;
 }
 
 void HS_TRADE_STDCALL hstrade_register_spi(hstrade_t* hstd, hstrade_spi_t* spi)
@@ -197,7 +213,7 @@ int HS_TRADE_STDCALL hstrade_init(hstrade_t* hstd,
     rv = conn->Create2BizMsg(hstd->callback);
     if (0 != rv)
     {
-        fprintf(stderr, "hstrade_init Create2BizMsg() failed iRet=%d, msg:%s\n",
+        fprintf(stderr, "hstrade_init Create2BizMsg() failed rv=%d, msg:%s\n",
             rv, conn->GetErrorMsg(rv));
 
         conn->Release();
@@ -235,13 +251,6 @@ int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type)
     }
     lpPacker->AddRef();
 
-    IBizMessage* lpBizMessage = NewBizMessage();
-    lpBizMessage->AddRef();
-
-    lpBizMessage->SetFunction(UFX_FUNC_SUBSCRIBE);
-    lpBizMessage->SetPacketType(REQUEST_PACKET);
-    lpBizMessage->SetSequeceNo(12);     // FIXME
-
     // 开始打包
     lpPacker->BeginPack();
     lpPacker->AddField("branch_no", 'I', 5);
@@ -267,6 +276,14 @@ int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type)
 
     // 结束打包
     lpPacker->EndPack();
+
+    // 设置打包数据
+    IBizMessage* lpBizMessage = NewBizMessage();
+    lpBizMessage->AddRef();
+
+    lpBizMessage->SetFunction(UFX_FUNC_SUBSCRIBE);
+    lpBizMessage->SetPacketType(REQUEST_PACKET);
+    lpBizMessage->SetSequeceNo(12);     // FIXME
     lpBizMessage->SetBuff(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
 
     // 发送消息
@@ -296,14 +313,11 @@ int HS_TRADE_STDCALL hstrade_user_login(hstrade_t* hstd, HSReqUserLoginField* lo
     // EncodeEx(m_Password,pout);
     // cout<<"pout: "<<pout<<endl;
 
-    IBizMessage* lpBizMessage;
-    lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_LOGIN);
-
     IF2Packer* lpPacker;
     lpPacker = NewPacker(2);
     if (!lpPacker)
     {
-        fprintf(stderr, "hstrade_user_login 取打包器失败！\n");
+        fprintf(stderr, "hstrade_user_login NewPacker() failed!\n");
         return -1;
     }
 
@@ -334,9 +348,9 @@ int HS_TRADE_STDCALL hstrade_user_login(hstrade_t* hstd, HSReqUserLoginField* lo
     lpPacker->AddChar(hstd->apidata.entrust_way);
     lpPacker->AddStr(hstd->apidata.op_station);
     lpPacker->AddInt(hstd->apidata.branch_no);
-    lpPacker->AddChar('1');
+    lpPacker->AddChar('1');     // input content
     lpPacker->AddStr(hstd->client_id);
-    lpPacker->AddStr("0");
+    lpPacker->AddStr("0");      // content type
     lpPacker->AddStr(hstd->password);
     lpPacker->AddChar(hstd->apidata.password_type);
     //lpPacker->AddChar('0');
@@ -345,22 +359,46 @@ int HS_TRADE_STDCALL hstrade_user_login(hstrade_t* hstd, HSReqUserLoginField* lo
     lpPacker->EndPack();
 
     // 设置打包数据
+    IBizMessage* lpBizMessage;
+    lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_LOGIN);
     lpBizMessage->SetContent(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
 
     // 发送请求
     rv = hstd->conn->SendBizMsg(lpBizMessage, hstd->is_async);
     if (!hstrade_is_async(hstd))
     {
+        if (rv < 0)
+        {
+            fprintf(stderr, "hstrade_user_login, rv:%d, err:%s!\n", rv, hstd->conn->GetErrorMsg(rv));
+            goto EXIT;
+        }
+
         // 同步模式
         IBizMessage* lpBizMessageRecv = NULL;
-        rv = hstd->conn->RecvBizMsg(rv, &lpBizMessageRecv, 5000);
-        // fprintf(stderr, "hstrade_user_login RecvBizMsg ret:%d\n", iRet);
+        rv = hstd->conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
+        // fprintf(stderr, "hstrade_user_login RecvBizMsg ret:%d\n", rv);
 
-        const void * lpBuffer = lpBizMessageRecv->GetContent(len);
-        IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
-        ShowPacket(lpUnPacker);
+        int iReturnCode = lpBizMessageRecv->GetReturnCode();
+        if (iReturnCode != 0)
+        {
+            fprintf(stderr, "hstrade_user_login return code error code:%d, msg:%s\n",
+                lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+        }
+        else
+        {
+            const void * lpBuffer = lpBizMessageRecv->GetContent(len);
+            IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
+            lpUnPacker->AddRef();
+
+            if (hstd->debug_mode)
+                ShowPacket(lpUnPacker);
+
+            TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackPositionData);
+            lpUnPacker->Release();
+        }
     }
 
+EXIT:
     if (lpPacker)
     {
         lpPacker->FreeMem(lpPacker->GetPackBuf());
@@ -383,14 +421,11 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
 
     int rv = 0;
 
-    IBizMessage* lpBizMessage;
-    lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_PLACE_ORDER);
-
     ///获取版本为2类型的pack打包器
     IF2Packer *lpPacker = NewPacker(2);
     if (!lpPacker)
     {
-        fprintf(stderr, "hstrade_order_insert 取打包器失败!\n");
+        fprintf(stderr, "hstrade_order_insert NewPacker() failed!\n");
         return -1;
     }
     lpPacker->AddRef();
@@ -418,17 +453,17 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
     lpPacker->AddField("batch_no", 'I', 8);
 
     // 加入对应的字段值
-    lpPacker->AddInt(apidata->op_branch_no);      // op_branch_no
-    lpPacker->AddChar(apidata->entrust_way);     // op_entrust_way
-    lpPacker->AddStr(apidata->op_station);       // op_station
-    lpPacker->AddInt(apidata->branch_no);       // branch_no
-    lpPacker->AddStr(hstd->client_id);          // client_id
-    lpPacker->AddStr(hstd->client_id);          // fund_account
-    lpPacker->AddStr(hstd->password);           // password
-    lpPacker->AddChar(apidata->password_type);   // password_type
-    lpPacker->AddStr(apidata->user_token);      // user_token
+    lpPacker->AddInt(apidata->op_branch_no);        // op_branch_no
+    lpPacker->AddChar(apidata->entrust_way);        // op_entrust_way
+    lpPacker->AddStr(apidata->op_station);          // op_station
+    lpPacker->AddInt(apidata->branch_no);           // branch_no
+    lpPacker->AddStr(hstd->client_id);              // client_id
+    lpPacker->AddStr(hstd->client_id);              // fund_account
+    lpPacker->AddStr(hstd->password);               // password
+    lpPacker->AddChar(apidata->password_type);      // password_type
+    lpPacker->AddStr(apidata->user_token);          // user_token
     lpPacker->AddStr(order_req->exchange_type);     // exchange_type
-    lpPacker->AddStr("");      // stock_account
+    lpPacker->AddStr("");                            // stock_account
     lpPacker->AddStr(order_req->stock_code);        // stock_code
     lpPacker->AddDouble(order_req->entrust_amount); // entrust_amount
     lpPacker->AddDouble(order_req->entrust_price);  // entrust_price
@@ -439,8 +474,12 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
     // 结束打包
     lpPacker->EndPack();
 
+    // 设置打包数据
+    IBizMessage* lpBizMessage;
+    lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_PLACE_ORDER);
     lpBizMessage->SetContent(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
 
+    // 发送请求
     rv = conn->SendBizMsg(lpBizMessage, hstd->is_async);
     if (!hstrade_is_async(hstd))
     {
@@ -452,7 +491,7 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
         }
 
         IBizMessage* lpBizMessageRecv = NULL;
-        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, 1000);
+        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
             fprintf(stderr, "hstrade_order_insert recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
@@ -461,20 +500,23 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
         else
         {
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
-            if (iReturnCode != 0) //错误
+            if (iReturnCode != 0)
             {
                 fprintf(stderr, "hstrade_order_insert return code error code:%d, msg:%s\n",
                     lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
             }
-            else if (iReturnCode == 0) // 正确
+            else
             {
-                fprintf(stderr, "hstrade_order_insert success!\n");
-                int iLen = 0;
-                const void * lpBuffer = lpBizMessageRecv->GetContent(iLen);
-                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
-                ShowPacket(lpUnPacker);
+                int len = 0;
+                const void * lpBuffer = lpBizMessageRecv->GetContent(len);
+                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
+                lpUnPacker->AddRef();
+
+                if (hstd->debug_mode)
+                    ShowPacket(lpUnPacker);
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackRspOrderData);
+                lpUnPacker->Release();
             }
         }
     }
@@ -504,14 +546,11 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
 
     int rv = 0;
 
-    IBizMessage* lpBizMessage;
-    lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_CANCEL_ORDER);
-
     // 获取版本为2类型的pack打包器
     IF2Packer *lpPacker = NewPacker(2);
     if (!lpPacker)
     {
-        fprintf(stderr, "hstrade_order_action 取打包器失败!\n");
+        fprintf(stderr, "hstrade_order_action NewPacker() failed!\n");
         return -1;
     }
     lpPacker->AddRef();
@@ -533,21 +572,23 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
     lpPacker->AddField("entrust_no", 'S', 18);  // FIXME
 
     // 加入对应的字段值
-    lpPacker->AddInt(apidata->op_branch_no);      // op_branch_no	
-    lpPacker->AddChar(apidata->entrust_way);     // op_entrust_way	
-    lpPacker->AddStr(apidata->op_station);       // op_station
-    lpPacker->AddInt(apidata->branch_no);        // branch_no
-    lpPacker->AddStr(hstd->client_id);          // client_id
-    lpPacker->AddStr(hstd->client_id);          // fund_account
-    lpPacker->AddStr(hstd->password);           // password	
-    lpPacker->AddChar(apidata->password_type);   // password_type	
-    lpPacker->AddStr(apidata->user_token);       // user_token
-    lpPacker->AddStr("0");                      // action single order
-    lpPacker->AddStr(order_action->entrust_no);   // entrust_no
+    lpPacker->AddInt(apidata->op_branch_no);        // op_branch_no	
+    lpPacker->AddChar(apidata->entrust_way);        // op_entrust_way	
+    lpPacker->AddStr(apidata->op_station);          // op_station
+    lpPacker->AddInt(apidata->branch_no);           // branch_no
+    lpPacker->AddStr(hstd->client_id);              // client_id
+    lpPacker->AddStr(hstd->client_id);              // fund_account
+    lpPacker->AddStr(hstd->password);               // password	
+    lpPacker->AddChar(apidata->password_type);      // password_type	
+    lpPacker->AddStr(apidata->user_token);          // user_token
+    lpPacker->AddStr("0");                          // action single order
+    lpPacker->AddStr(order_action->entrust_no);    // entrust_no
 
     // 结束打包
     lpPacker->EndPack();
 
+    IBizMessage* lpBizMessage;
+    lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_CANCEL_ORDER);
     lpBizMessage->SetContent(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
 
     rv = conn->SendBizMsg(lpBizMessage, hstd->is_async);
@@ -556,15 +597,15 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
         // 同步模式
         if (rv < 0)
         {
-            fprintf(stderr, "hstrade_order_action failed, 错误号: %d, 原因: %s!\r\n", rv, conn->GetErrorMsg(rv));
+            fprintf(stderr, "hstrade_order_action failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
 
         IBizMessage* lpBizMessageRecv = NULL;
-        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, 1000);
+        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            fprintf(stderr, "hstrade_order_action recvmsg failed, 错误号: %d, 原因: %s!\r\n", rv, conn->GetErrorMsg(rv));
+            fprintf(stderr, "hstrade_order_action recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -572,14 +613,21 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                fprintf(stderr, "hstrade_order_action return code error code:%d, msg:%s\n", lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+                fprintf(stderr, "hstrade_order_action return code error code:%d, msg:%s\n",
+                    lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
             }
-            else if (iReturnCode == 0)
+            else
             {
                 int iLen = 0;
                 const void * lpBuffer = lpBizMessageRecv->GetContent(iLen);
                 IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
-                ShowPacket(lpUnPacker);
+                lpUnPacker->AddRef();
+
+                if (hstd->debug_mode)
+                    ShowPacket(lpUnPacker);
+
+                TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackRspOrderActionData);
+                lpUnPacker->Release();
             }
         }
     }
@@ -608,13 +656,11 @@ int HS_TRADE_STDCALL hstrade_qry_trading_account(hstrade_t* hstd, HSReqQueryFiel
     apidata = &hstd->apidata;
     conn = hstd->conn;
 
-    // 创建业务消息对象
-    IBizMessage* lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_QRY_CASH);
-
     // 获取版本为2类型的pack打包器
     IF2Packer* lpPacker = _hstrade_make_if2pakcer(hstd);
 
     // 设置包内容
+    IBizMessage* lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_QRY_CASH);
     lpBizMessage->SetContent(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
 
     // 发送业务请求
@@ -624,17 +670,17 @@ int HS_TRADE_STDCALL hstrade_qry_trading_account(hstrade_t* hstd, HSReqQueryFiel
         // 同步模式
         if (rv < 0)
         {
-            printf("发送功能332255失败, 错误号: %d, 原因: %s!\r\n", rv, conn->GetErrorMsg(rv));
+            fprintf(stderr, "hstrade_qry_trading_account failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             rv = -2;
             goto EXIT;
         }
 
         IBizMessage* lpBizMessageRecv = NULL;
 
-        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, 1000);
+        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            printf("接收功能332255失败, 错误号: %d, 原因: %s!\r\n", rv, conn->GetErrorMsg(rv));
+            fprintf(stderr, "hstrade_qry_trading_account recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -642,18 +688,21 @@ int HS_TRADE_STDCALL hstrade_qry_trading_account(hstrade_t* hstd, HSReqQueryFiel
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                // 错误
-                printf("接收功能332255失败,errorNo:%d,errorInfo:%s\n", lpBizMessageRecv->GetErrorNo(), lpBizMessageRecv->GetErrorInfo());
+                fprintf(stderr, "hstrade_qry_trading_account return code error code:%d, msg:%s\n",
+                    lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
             }
             else if (iReturnCode == 0)
             {
-                // 正确
-                int iLen = 0;
-                const void * lpBuffer = lpBizMessageRecv->GetContent(iLen);
-                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
-                ShowPacket(lpUnPacker);
+                int len = 0;
+                const void * lpBuffer = lpBizMessageRecv->GetContent(len);
+                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
+                lpUnPacker->AddRef();
+
+                if (hstd->debug_mode)
+                    ShowPacket(lpUnPacker);
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackTradingAccountData);
+                lpUnPacker->Release();
             }
 
         }
@@ -688,13 +737,11 @@ int HS_TRADE_STDCALL hstrade_qry_position(hstrade_t* hstd, HSReqQueryField* qry_
     apidata = &hstd->apidata;
     conn = hstd->conn;
 
-    // 创建业务消息对象
-    IBizMessage* lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_QRY_POSITION);
-
     // 获取版本为2类型的pack打包器
     IF2Packer* lpPacker = _hstrade_make_if2pakcer(hstd);
 
     // 设置包内容
+    IBizMessage* lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_QRY_POSITION);
     lpBizMessage->SetContent(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
 
     // 发送业务请求
@@ -704,19 +751,16 @@ int HS_TRADE_STDCALL hstrade_qry_position(hstrade_t* hstd, HSReqQueryField* qry_
         // 同步模式
         if (rv < 0)
         {
-            printf("发送功能333104失败, 错误号: %d, 原因: %s!\r\n", rv, conn->GetErrorMsg(rv));
+            fprintf(stderr, "hstrade_qry_position failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             rv = -2;
             goto EXIT;
         }
 
-        printf("发送功能333104成功, 返回接收句柄: %d!\r\n", rv);
-
         IBizMessage* lpBizMessageRecv = NULL;
-
-        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, 1000);
+        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            printf("接收功能333104失败, 错误号: %d, 原因: %s!\r\n", rv, conn->GetErrorMsg(rv));
+            fprintf(stderr, "hstrade_qry_position recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -724,50 +768,21 @@ int HS_TRADE_STDCALL hstrade_qry_position(hstrade_t* hstd, HSReqQueryField* qry_
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                // 错误
-                printf("接收功能333104失败,errorNo:%d,errorInfo:%s\n", lpBizMessageRecv->GetErrorNo(), lpBizMessageRecv->GetErrorInfo());
+                fprintf(stderr, "hstrade_qry_position return code error code:%d, msg:%s\n",
+                    lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
             }
-            else if (iReturnCode == 0)
+            else
             {
-                // 正确
-                puts("业务操作成功");
-                int iLen = 0;
-                const void * lpBuffer = lpBizMessageRecv->GetContent(iLen);
-                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
-                ShowPacket(lpUnPacker);
+                int len = 0;
+                const void * lpBuffer = lpBizMessageRecv->GetContent(len);
+                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
+                lpUnPacker->AddRef();
 
-                // 解析持仓数据
-#if 0
-                // int i = 0, t = 0, j = 0, k = 0;
-                for (int i = 0; i < lpUnPacker->GetDatasetCount(); ++i)
-                {
-                    // 设置当前结果集
-                    // printf("记录集：%d/%d\r\n", i + 1, lpUnPacker->GetDatasetCount());
-                    lpUnPacker->SetCurrentDatasetByIndex(i);
+                if (hstd->debug_mode)
+                    ShowPacket(lpUnPacker);
 
-                    int rows = lpUnPacker->GetRowCount();
-                    for (int k = 0; k < rows; ++k)
-                    {
-                        HSPositionField pos = { 0 };
-                        strncpy(pos.client_id, lpUnPacker->GetStr("fund_account"), sizeof(pos.client_id) - 1);
-                        strncpy(pos.stock_code, lpUnPacker->GetStr("stock_code"), sizeof(pos.stock_code) - 1);
-                        strncpy(pos.stock_name, lpUnPacker->GetStr("stock_name"), sizeof(pos.stock_name) - 1);
-                        pos.current_amount = lpUnPacker->GetInt("current_amount");
-                        pos.enable_amount = lpUnPacker->GetInt("enabled_amount");
-                        pos.frozen_amount = lpUnPacker->GetInt("frozen_amount");
-                        pos.cost_price = lpUnPacker->GetDouble("cost_price");
-                        pos.last_price = lpUnPacker->GetDouble("last_price");
-                        pos.market_value = lpUnPacker->GetDouble("market_value");
-                        // hstd->callback->OnResponseQryPosition(lpUnPacker);
-
-                        // also, we could make a json message
-
-                        lpUnPacker->Next();
-                    }
-                }
-#else
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackPositionData);
-#endif
+                lpUnPacker->Release();
             }
 
         }
@@ -813,19 +828,16 @@ int HS_TRADE_STDCALL hstrade_qry_trade(hstrade_t* hstd, HSReqQueryField* qry_fie
         // 同步模式
         if (rv < 0)
         {
-            printf("发送功能333102失败, 错误号: %d, 原因: %s!\r\n", rv, conn->GetErrorMsg(rv));
+            fprintf(stderr, "hstrade_qry_trade failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             rv = -2;
             goto EXIT;
         }
 
-        printf("发送功能333102成功, 返回接收句柄: %d!\r\n", rv);
-
         IBizMessage* lpBizMessageRecv = NULL;
-
-        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, 1000);
+        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            printf("接收功能333102失败, 错误号: %d, 原因: %s!\r\n", rv, conn->GetErrorMsg(rv));
+            fprintf(stderr, "hstrade_qry_trade recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -833,19 +845,21 @@ int HS_TRADE_STDCALL hstrade_qry_trade(hstrade_t* hstd, HSReqQueryField* qry_fie
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                // 错误
-                printf("接收功能333102失败,errorNo:%d,errorInfo:%s\n", lpBizMessageRecv->GetErrorNo(), lpBizMessageRecv->GetErrorInfo());
+                fprintf(stderr, "hstrade_qry_trade return code error code:%d, msg:%s\n",
+                    lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
             }
-            else if (iReturnCode == 0)
+            else
             {
-                // 正确
-                puts("业务操作成功");
-                int iLen = 0;
-                const void * lpBuffer = lpBizMessageRecv->GetContent(iLen);
-                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
-                ShowPacket(lpUnPacker);
+                int len = 0;
+                const void * lpBuffer = lpBizMessageRecv->GetContent(len);
+                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
+                lpUnPacker->AddRef();
+
+                if (hstd->debug_mode)
+                    ShowPacket(lpUnPacker);
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackQryTradeData);
+                lpUnPacker->Release();
             }
 
         }
@@ -875,13 +889,11 @@ int HS_TRADE_STDCALL hstrade_qry_order(hstrade_t* hstd, HSReqQueryField* qry_fie
     apidata = &hstd->apidata;
     conn = hstd->conn;
 
-    // 创建业务消息对象
-    IBizMessage* lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_QRY_ORDER);
-
     // 获取版本为2类型的pack打包器
     IF2Packer* lpPacker = _hstrade_make_if2pakcer(hstd);
 
     // 设置包内容
+    IBizMessage* lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_QRY_ORDER);
     lpBizMessage->SetContent(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
 
     // 发送业务请求
@@ -891,19 +903,16 @@ int HS_TRADE_STDCALL hstrade_qry_order(hstrade_t* hstd, HSReqQueryField* qry_fie
         // 同步模式
         if (rv < 0)
         {
-            printf("发送功能333101失败, 错误号: %d, 原因: %s!\r\n", rv, conn->GetErrorMsg(rv));
+            fprintf(stderr, "hstrade_qry_order failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             rv = -2;
             goto EXIT;
         }
 
-        printf("发送功能333101成功, 返回接收句柄: %d!\r\n", rv);
-
         IBizMessage* lpBizMessageRecv = NULL;
-
-        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, 1000);
+        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            printf("接收功能333101失败, 错误号: %d, 原因: %s!\r\n", rv, conn->GetErrorMsg(rv));
+            fprintf(stderr, "hstrade_qry_order recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -911,19 +920,21 @@ int HS_TRADE_STDCALL hstrade_qry_order(hstrade_t* hstd, HSReqQueryField* qry_fie
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                // 错误
-                printf("接收功能333101失败,errorNo:%d,errorInfo:%s\n", lpBizMessageRecv->GetErrorNo(), lpBizMessageRecv->GetErrorInfo());
+                fprintf(stderr, "hstrade_qry_order return code error code:%d, msg:%s\n",
+                    lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
             }
-            else if (iReturnCode == 0)
+            else
             {
-                // 正确
-                puts("业务操作成功");
-                int iLen = 0;
-                const void * lpBuffer = lpBizMessageRecv->GetContent(iLen);
-                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
-                ShowPacket(lpUnPacker);
+                int len = 0;
+                const void * lpBuffer = lpBizMessageRecv->GetContent(len);
+                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
+                lpUnPacker->AddRef();
+
+                if (hstd->debug_mode)
+                    ShowPacket(lpUnPacker);
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackQryOrderData);
+                lpUnPacker->Release();
             }
 
         }
@@ -991,10 +1002,24 @@ int HS_TRADE_STDCALL hstrade_end_pack(hstrade_t* hstd, void* packer)
     return 0;
 }
 
-int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func_id)
+int HS_TRADE_STDCALL hstrade_release_pack(hstrade_t* hstd, void* packer)
 {
     IF2Packer* lpPacker;
     lpPacker = (IF2Packer*)packer;
+    lpPacker->FreeMem(lpPacker->GetPackBuf());
+    lpPacker->Release();
+    return 0;
+}
+
+int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func_id)
+{
+    int rv;
+    IF2Packer* lpPacker;
+    CConnectionInterface* conn;
+
+    rv = 0;
+    lpPacker = (IF2Packer*)packer;
+    conn = (CConnectionInterface*)hstd->conn;
 
     IBizMessage* lpBizMessage;
     lpBizMessage = NewBizMessage();
@@ -1004,23 +1029,50 @@ int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func
 
     lpBizMessage->SetContent(lpPacker->GetPackBuf(), lpPacker->GetPackBufSize());
 
-    // 发送请求
-    int hSend;
-    hSend = hstd->conn->SendBizMsg(lpBizMessage, hstd->is_async);
+    // 发送请求, FIXME: maybe we should not support sync mode here.
+    rv = conn->SendBizMsg(lpBizMessage, hstd->is_async);
     if (!hstrade_is_async(hstd))
     {
         // 同步模式
-        IBizMessage* lpBizMessageRecv = NULL;
-        int iRet = hstd->conn->RecvBizMsg(hSend, &lpBizMessageRecv, 5000);
-        // fprintf(stderr, "hstrade_user_login RecvBizMsg ret:%d\n", iRet);
+        if (rv < 0)
+        {
+            fprintf(stderr, "hstrade_send_bizmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            goto EXIT;
+        }
 
-        int iLen = 0;
-        const void * lpBuffer = lpBizMessageRecv->GetContent(iLen);
-        IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
-        ShowPacket(lpUnPacker);
-        lpUnPacker->Release();
+        IBizMessage* lpBizMessageRecv = NULL;
+        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
+        if (rv != 0)
+        {
+            fprintf(stderr, "hstrade_send_bizmsg recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            goto EXIT;
+        }
+        else
+        {
+            int iReturnCode = lpBizMessageRecv->GetReturnCode();
+            if (iReturnCode != 0)
+            {
+                fprintf(stderr, "hstrade_send_bizmsg return code error code:%d, msg:%s\n",
+                    lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+            }
+            else
+            {
+                int len = 0;
+                const void * lpBuffer = lpBizMessageRecv->GetContent(len);
+                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
+                lpUnPacker->AddRef();
+
+                if (hstd->debug_mode)
+                    ShowPacket(lpUnPacker);
+
+                // TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackXXX);
+                lpUnPacker->Release();
+            }
+
+        }
     }
 
+EXIT:
     if (lpPacker)
     {
         lpPacker->FreeMem(lpPacker->GetPackBuf());
@@ -1030,7 +1082,7 @@ int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func
     {
         lpBizMessage->Release();
     }
-    return 0;
+    return rv;
 }
 
 /// add pack fields

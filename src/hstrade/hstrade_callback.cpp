@@ -115,29 +115,35 @@ void TradeCallback::OnClose(CConnectionInterface *lpConnection)
 
 void TradeCallback::OnSent(CConnectionInterface *lpConnection, int hSend, void *reserved1, void *reserved2, int nQueuingData)
 {
-    puts("TradeCallback::Onsent");
+    if (m_hstd->debug_mode)
+        puts("TradeCallback::Onsent");
 }
 
 void TradeCallback::Reserved1(void *a, void *b, void *c, void *d)
 {
-    puts("TradeCallback::Reserved1");
+    if (m_hstd->debug_mode)
+        puts("TradeCallback::Reserved1");
 }
 
 
 void TradeCallback::Reserved2(void *a, void *b, void *c, void *d)
 {
-    puts("TradeCallback::Reserved2");
+    if (m_hstd->debug_mode)
+        puts("TradeCallback::Reserved2");
 }
 
 void TradeCallback::OnReceivedBizEx(CConnectionInterface *lpConnection, int hSend, LPRET_DATA lpRetData, const void *lpUnpackerOrStr, int nResult)
 {
-    puts("TradeCallback::OnReceivedBizEx");
+    if (m_hstd->debug_mode)
+        puts("TradeCallback::OnReceivedBizEx");
 }
 
 void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSend, IBizMessage* lpMsg)
 {
-    printf("TradeCallback::OnReceivedBizMsg hSend:%d", hSend);
-    if (lpMsg == NULL)
+    if (m_hstd->debug_mode)
+        fprintf(stderr, "TradeCallback::OnReceivedBizMsg hSend:%d", hSend);
+
+    if (!lpMsg)
     {
         return;
     }
@@ -149,7 +155,8 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
     {
         int error_no = lpMsg->GetErrorNo();
         const char* error_info = lpMsg->GetErrorInfo();
-        printf("业务包是空包，功能号：%d，错误代码：%d，错误信息:%s\n", lpMsg->GetFunction(), error_no, error_info);
+        fprintf(stderr, "OnReceivedBizMsg empty packet，功能号：%d，错误代码：%d，错误信息:%s\n",
+            lpMsg->GetFunction(), error_no, error_info);
         return;
     }
 
@@ -281,7 +288,6 @@ int TradeCallback::GenJsonData(cJSON* json_data, IF2UnPacker* lpUnPacker)
             break;
         case 'S':
         {
-            // TODO: string should convert to UTF-8
             const char* val = lpUnPacker->GetStrByIndex(k);
             if (val)
             {
@@ -360,7 +366,9 @@ void TradeCallback::GetErrorField(HSRspInfoField* rsp_info, IF2UnPacker* lpUnPac
 
     const char* error_info = lpUnPacker->GetStr("error_info");
     if (error_info)
+    {
         strncpy(rsp_info->error_info, error_info, sizeof(rsp_info->error_info) - 1);
+    }
 }
 
 void TradeCallback::OnResponseUserLogin(IF2UnPacker *lpUnPacker)
@@ -372,7 +380,6 @@ void TradeCallback::OnResponseUserLogin(IF2UnPacker *lpUnPacker)
     }
 
     int iSystemNo = -1;
-    puts("TradeCallBack::331100");
 
     HSRspUserLoginField rsp_login = { 0 };
     HSRspInfoField rsp_info = { 0 };
@@ -424,6 +431,7 @@ void TradeCallback::OnResponseQryPosition(IF2UnPacker *lpUnPacker)
     TradeCallback::UnpackBizMessage(lpUnPacker, m_hstd, TradeCallback::UnpackPositionData);
     return;
 
+#if 0
     if (lpUnPacker->GetInt("error_no") != 0)
     {
         fprintf(stderr, lpUnPacker->GetStr("error_info"));
@@ -459,6 +467,7 @@ void TradeCallback::OnResponseQryPosition(IF2UnPacker *lpUnPacker)
     {
         spi->on_qry_position(m_hstd, &rsp_pos, &rsp_info, 1);
     }
+#endif//0
 }
 
 void TradeCallback::OnResponseQryOrder(IF2UnPacker* lpUnPacker)
@@ -512,6 +521,8 @@ void TradeCallback::OnRtnOrder(IF2UnPacker* lpUnPacker)
         GenJsonDatas(lpUnPacker, UFX_FUNC_RTN_DATA, UFX_ISSUE_TYPE_ORDER);
         return;
     }
+
+    // TODO: 
 }
 
 void TradeCallback::OnRtnTrade(IF2UnPacker* lpUnPacker)
@@ -521,8 +532,36 @@ void TradeCallback::OnRtnTrade(IF2UnPacker* lpUnPacker)
         GenJsonDatas(lpUnPacker, UFX_FUNC_RTN_DATA, UFX_ISSUE_TYPE_TRADE);
         return;
     }
+
+    // TODO: 
 }
 
+
+int TradeCallback::UnpackLoginData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata)
+{
+    hstrade_t* hstd;
+    hstrade_spi_t* spi;
+    hstd = (hstrade_t*)ctxdata;
+    spi = hstd->spi;
+
+    HSRspInfoField rsp_info = { 0 };
+    TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
+
+    int rows = lpUnPacker->GetRowCount();
+    for (int row = 0; row < rows; ++row)
+    {
+        HSRspUserLoginField login_data = { 0 };
+        // TODO:
+
+        if (spi && spi->on_user_login)
+            spi->on_user_login(hstd, &login_data, &rsp_info);
+
+        // 下一行记录
+        lpUnPacker->Next();
+    }
+
+    return 0;
+}
 
 int TradeCallback::UnpackRspOrderData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata)
 {

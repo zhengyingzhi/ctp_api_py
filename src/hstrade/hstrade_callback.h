@@ -45,6 +45,7 @@ public:
 public:
     static int UnpackBizMessage(IF2UnPacker* lpUnPacker, void* ctxdata, int(*data_proc_pt)(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata));
 
+    static int UnpackLoginData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
     static int UnpackRspOrderData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
     static int UnpackRspOrderActionData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
     static int UnpackTradingAccountData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);

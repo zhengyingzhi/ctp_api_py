@@ -48,14 +48,20 @@ public:
     // 调试模式
     void set_debug_mode(int level);
 
+    // 设置同步模式超时时间
+    void set_timeout(int timeoutms);
+
     // 连接服务器
     int connect(std::string server_port, std::string license_file, std::string fund_account, int timeoutms);
 
     // 写入JSON数据
     int set_json_value(const std::string& json_str);
 
-    // 发送数据（同步模式下包含接收数据并写入数据队列）
+    // 发送数据
     int send_msg(int func_id, int subsystem_no = 0, int branch_no = 0);
+
+    // 接收数据
+    std::string recv_msg();
 
     // 开始打包
     void begin_pack(void);
