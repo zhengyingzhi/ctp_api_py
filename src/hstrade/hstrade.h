@@ -35,8 +35,8 @@ typedef struct hstrade_spi_s
     void (*on_disconnected)(hstrade_t*, int reason);
     void (*on_rsp_subscribe)(hstrade_t*, HSRspSubscribeField* rsp_sub);
     void (*on_user_login)(hstrade_t*, HSRspUserLoginField* rsp_login, HSRspInfoField* rsp_info);
-    void (*on_order_insert)(hstrade_t*, HSReqOrderInsertField*, HSRspInfoField* rsp_info, int islast);
-    void (*on_order_action)(hstrade_t*, HSReqOrderInsertField*, HSRspInfoField* rsp_info, int islast);
+    void (*on_order_insert)(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
+    void (*on_order_action)(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
 
     void (*on_qry_trading_account)(hstrade_t*, HSTradingAccountField*, HSRspInfoField* rsp_info, int islast);
     void (*on_qry_position)(hstrade_t*, HSPositionField*, HSRspInfoField* rsp_info, int islast);

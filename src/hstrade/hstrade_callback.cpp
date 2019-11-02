@@ -324,6 +324,18 @@ cJSON* TradeCallback::GenJsonDatas(IF2UnPacker* lpUnPacker, int func_id, int iss
     cJSON_AddNumberToObject(root, "function_id", func_id);
     cJSON_AddNumberToObject(root, "issue_type", issue_type);
 
+    cJSON_AddNumberToObject(root, "error_no", lpUnPacker->GetInt("error_no"));
+    const char* error_info = lpUnPacker->GetStr("error_info");
+    if (error_info && error_info[0])
+    {
+        std::string _error_info = to_utf(error_info);
+        cJSON_AddStringToObject(root, "error_info", _error_info.c_str());
+    }
+    else
+    {
+        cJSON_AddStringToObject(root, "error_info", "");
+    }
+
     cJSON* array = cJSON_AddArrayToObject(root, "json");
     cJSON* json_data;
 
@@ -344,18 +356,39 @@ cJSON* TradeCallback::GenJsonDatas(IF2UnPacker* lpUnPacker, int func_id, int iss
         }
     }
 
-#if 1
-    char* json_str;
-    json_str = cJSON_Print(root);
+    return root;
+}
+
+int TradeCallback::NotifyJsonData(cJSON* json, int func_id, int issue_type)
+{
+    /* json data like:
+    {
+        "error_no": 0,
+        "error_info": "",
+        "function_id": 331100,
+        "issue_type": 0,
+        "ref_id": 0,
+        "json": [
+            { ... },
+            { ... }
+        ]
+    }
+     */
+
+    char* json_str = "";
+    if (json)
+    {
+        json_str = cJSON_Print(json);
+    }
+
     if (m_hstd->spi && m_hstd->spi->on_json_msg)
     {
         m_hstd->spi->on_json_msg(m_hstd, func_id, issue_type, json_str);
     }
 
     cJSON_free(json_str);
-    cJSON_Delete(root);
+    cJSON_Delete(json);
     // FIXME: whether need delete each json_data of root
-#endif
 
     return 0;
 }
@@ -375,11 +408,12 @@ void TradeCallback::OnResponseUserLogin(IF2UnPacker *lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker, UFX_FUNC_LOGIN, 0);
+        cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_LOGIN, 0);
+        NotifyJsonData(json, UFX_FUNC_LOGIN, 0);
         return;
     }
 
-    int iSystemNo = -1;
+    hstrade_apidata_t* apidata = &m_hstd->apidata;
 
     HSRspUserLoginField rsp_login = { 0 };
     HSRspInfoField rsp_info = { 0 };
@@ -388,19 +422,20 @@ void TradeCallback::OnResponseUserLogin(IF2UnPacker *lpUnPacker)
     int branch_no = lpUnPacker->GetInt("branch_no");
     int sysnode_id = lpUnPacker->GetInt("sysnode_id");
     int init_date = lpUnPacker->GetInt("init_date");
-
-    m_hstd->apidata.branch_no = branch_no;
-    rsp_login.branch_no = branch_no;
-    rsp_login.system_no = sysnode_id;
-    m_hstd->apidata.system_no = sysnode_id;
+    int op_branch_no = lpUnPacker->GetInt("op_branch_no");
 
     extract_str_field(rsp_login.company_name, "company_name");
     extract_str_field(rsp_login.client_id, "client_id");
     extract_str_field(rsp_login.user_token, "user_token");
 
-    rsp_login.trading_date = init_date;
+    strncpy(apidata->user_token, rsp_login.user_token, sizeof(apidata->user_token));
+    apidata->branch_no = branch_no;
+    apidata->system_no = sysnode_id;
+    apidata->op_branch_no = op_branch_no;
 
-    // int op_branch_no = lpUnPacker->GetInt("op_branch_no");
+    rsp_login.branch_no = branch_no;
+    rsp_login.system_no = sysnode_id;
+    rsp_login.trading_date = init_date;
 
     hstrade_spi_t* spi = m_hstd->spi;
     if (spi && spi->on_user_login)
@@ -413,7 +448,8 @@ void TradeCallback::OnResponseQryTradingAccount(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_CASH, 0);
+        cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_CASH, 0);
+        NotifyJsonData(json, UFX_FUNC_QRY_CASH, 0);
         return;
     }
 
@@ -424,7 +460,8 @@ void TradeCallback::OnResponseQryPosition(IF2UnPacker *lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_POSITION, 0);
+        cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_POSITION, 0);
+        NotifyJsonData(json, UFX_FUNC_QRY_POSITION, 0);
         return;
     }
 
@@ -474,7 +511,8 @@ void TradeCallback::OnResponseQryOrder(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_ORDER, 0);
+        cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_ORDER, 0);
+        NotifyJsonData(json, UFX_FUNC_QRY_ORDER, 0);
         return;
     }
 
@@ -485,7 +523,8 @@ void TradeCallback::OnResponseQryTrade(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_TRADE, 0);
+        cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_TRADE, 0);
+        NotifyJsonData(json, UFX_FUNC_QRY_TRADE, 0);
         return;
     }
 
@@ -496,7 +535,8 @@ void TradeCallback::OnResponseQrySecurityInfo(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_SECINFO, 0);
+        cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_SECINFO, 0);
+        NotifyJsonData(json, UFX_FUNC_QRY_SECINFO, 0);
         return;
     }
 }
@@ -518,25 +558,28 @@ void TradeCallback::OnRtnOrder(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker, UFX_FUNC_RTN_DATA, UFX_ISSUE_TYPE_ORDER);
+        cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_RTN_DATA, UFX_ISSUE_TYPE_ORDER);
+        NotifyJsonData(json, UFX_FUNC_RTN_DATA, UFX_ISSUE_TYPE_ORDER);
         return;
     }
 
-    // TODO: 
+    TradeCallback::UnpackBizMessage(lpUnPacker, m_hstd, TradeCallback::UnpackRtnOrderData);
 }
 
 void TradeCallback::OnRtnTrade(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker, UFX_FUNC_RTN_DATA, UFX_ISSUE_TYPE_TRADE);
+        cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_RTN_DATA, UFX_ISSUE_TYPE_TRADE);
+        NotifyJsonData(json, UFX_FUNC_RTN_DATA, UFX_ISSUE_TYPE_TRADE);
         return;
     }
 
-    // TODO: 
+    TradeCallback::UnpackBizMessage(lpUnPacker, m_hstd, TradeCallback::UnpackRtnTradeData);
 }
 
 
+//////////////////////////////////////////////////////////////////////////
 int TradeCallback::UnpackLoginData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata)
 {
     hstrade_t* hstd;
@@ -548,6 +591,12 @@ int TradeCallback::UnpackLoginData(IF2UnPacker* lpUnPacker, int ds_index, void* 
     TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
 
     int rows = lpUnPacker->GetRowCount();
+    if (rows == 0)
+    {
+        if (spi && spi->on_user_login)
+            spi->on_user_login(hstd, NULL, &rsp_info);
+    }
+
     for (int row = 0; row < rows; ++row)
     {
         HSRspUserLoginField login_data = { 0 };
@@ -565,11 +614,98 @@ int TradeCallback::UnpackLoginData(IF2UnPacker* lpUnPacker, int ds_index, void* 
 
 int TradeCallback::UnpackRspOrderData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata)
 {
+    hstrade_t* hstd;
+    hstrade_spi_t* spi;
+    hstd = (hstrade_t*)ctxdata;
+    spi = hstd->spi;
+
+    HSRspInfoField rsp_info = { 0 };
+    TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
+
+    int islast = 0;
+    int rows = lpUnPacker->GetRowCount();
+    if (rows == 0)
+    {
+        if (spi && spi->on_order_insert)
+            spi->on_order_insert(hstd, NULL, &rsp_info, 1);
+    }
+
+    for (int row = 0; row < rows; ++row)
+    {
+        HSOrderField order = { 0 };
+        strncpy(order.client_id, hstd->client_id, sizeof(order.client_id) - 1);
+        extract_str_field(order.entrust_no, "entrust_no");
+
+        order.business_price = lpUnPacker->GetDouble("business_price");
+        order.batch_no = lpUnPacker->GetInt("batch_no");
+        int order_time = lpUnPacker->GetInt("entrust_time");
+
+        order.init_date = lpUnPacker->GetInt("init_date");
+        order.entrust_date = order.init_date;
+        order.entrust_time = order_time;
+
+        // TODO: loss many order fields
+
+        if (row == rows - 1)
+            islast = 1;
+
+        if (spi && spi->on_order_insert)
+            spi->on_order_insert(hstd, &order, &rsp_info, islast);
+
+        // 下一行记录
+        lpUnPacker->Next();
+    }
+
     return 0;
 }
 
 int TradeCallback::UnpackRspOrderActionData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata)
 {
+    hstrade_t* hstd;
+    hstrade_spi_t* spi;
+    hstd = (hstrade_t*)ctxdata;
+    spi = hstd->spi;
+
+    HSRspInfoField rsp_info = { 0 };
+    TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
+
+    int islast = 0;
+    int rows = lpUnPacker->GetRowCount();
+    if (rows == 0)
+    {
+        if (spi && spi->on_order_action)
+            spi->on_order_action(hstd, NULL, &rsp_info, 1);
+    }
+
+    for (int row = 0; row < rows; ++row)
+    {
+        HSOrderField order = { 0 };
+        strncpy(order.client_id, hstd->client_id, sizeof(order.client_id) - 1);
+        extract_str_field(order.entrust_no, "entrust_no_old");
+        extract_str_field(order.exchange_type, "exchange_type");
+        extract_str_field(order.stock_code, "stock_code");
+        order.entrust_status = lpUnPacker->GetChar("entrust_status_old");
+
+        order.business_price = lpUnPacker->GetDouble("business_price");
+        order.batch_no = lpUnPacker->GetInt("batch_no");
+        int order_time = lpUnPacker->GetInt("entrust_time");
+
+        order.init_date = lpUnPacker->GetInt("init_date");
+        order.entrust_date = order.init_date;
+        order.entrust_time = order_time;
+
+        // TODO: loss many order fields
+
+        if (row == rows - 1)
+            islast = 1;
+
+        if (spi && spi->on_order_action)
+            spi->on_order_action(hstd, &order, &rsp_info, islast);
+
+        // 下一行记录
+        lpUnPacker->Next();
+    }
+
     return 0;
 }
 
@@ -585,6 +721,12 @@ int TradeCallback::UnpackTradingAccountData(IF2UnPacker* lpUnPacker, int ds_inde
 
     int islast = 0;
     int rows = lpUnPacker->GetRowCount();
+    if (rows == 0)
+    {
+        if (spi && spi->on_qry_trading_account)
+            spi->on_qry_trading_account(hstd, NULL, &rsp_info, 1);
+    }
+
     for (int row = 0; row < rows; ++row)
     {
         HSTradingAccountField ta = { 0 };
@@ -627,6 +769,12 @@ int TradeCallback::UnpackPositionData(IF2UnPacker* lpUnPacker, int ds_index, voi
 
     int islast = 0;
     int rows = lpUnPacker->GetRowCount();
+    if (rows == 0)
+    {
+        if (spi && spi->on_qry_position)
+            spi->on_qry_position(hstd, NULL, &rsp_info, 1);
+    }
+
     for (int row = 0; row < rows; ++row)
     {
         HSPositionField pos = { 0 };
@@ -679,6 +827,12 @@ int TradeCallback::UnpackQryOrderData(IF2UnPacker* lpUnPacker, int ds_index, voi
 
     int islast = 0;
     int rows = lpUnPacker->GetRowCount();
+    if (rows == 0)
+    {
+        if (spi && spi->on_qry_order)
+            spi->on_qry_order(hstd, NULL, &rsp_info, 1);
+    }
+
     for (int row = 0; row < rows; ++row)
     {
         HSOrderField order = { 0 };
@@ -732,6 +886,12 @@ int TradeCallback::UnpackQryTradeData(IF2UnPacker* lpUnPacker, int ds_index, voi
 
     int islast = 0;
     int rows = lpUnPacker->GetRowCount();
+    if (rows == 0)
+    {
+        if (spi && spi->on_qry_trade)
+            spi->on_qry_trade(hstd, NULL, &rsp_info, 1);
+    }
+
     for (int row = 0; row < rows; ++row)
     {
         HSTradeField trade = { 0 };
@@ -782,9 +942,6 @@ int TradeCallback::UnpackRtnOrderData(IF2UnPacker* lpUnPacker, int ds_index, voi
     hstd = (hstrade_t*)ctxdata;
     spi = hstd->spi;
 
-    HSRspInfoField rsp_info = { 0 };
-    TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
-
     int islast = 0;
     int rows = lpUnPacker->GetRowCount();
     for (int row = 0; row < rows; ++row)
@@ -817,8 +974,8 @@ int TradeCallback::UnpackRtnOrderData(IF2UnPacker* lpUnPacker, int ds_index, voi
         if (row == rows - 1)
             islast = 1;
 
-        if (spi && spi->on_qry_order)
-            spi->on_qry_order(hstd, &order, &rsp_info, islast);
+        if (spi && spi->on_rtn_order)
+            spi->on_rtn_order(hstd, &order);
 
         // 下一行记录
         lpUnPacker->Next();
@@ -872,8 +1029,8 @@ int TradeCallback::UnpackRtnTradeData(IF2UnPacker* lpUnPacker, int ds_index, voi
         if (row == rows - 1)
             islast = 1;
 
-        if (spi && spi->on_qry_trade)
-            spi->on_qry_trade(hstd, &trade, NULL, islast);
+        if (spi && spi->on_rtn_trade)
+            spi->on_rtn_trade(hstd, &trade);
 
         // 下一行记录
         lpUnPacker->Next();

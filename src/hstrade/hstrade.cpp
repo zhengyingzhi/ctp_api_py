@@ -962,7 +962,98 @@ int HS_TRADE_STDCALL hstrade_qry_security_info(hstrade_t* hstd, HSReqQueryField*
 
 int HS_TRADE_STDCALL hstrade_qry_md(hstrade_t* hstd, HSReqQueryField* qry_field)
 {
-    return 0;
+    hstrade_apidata_t*      apidata;
+    CConnectionInterface*   conn;
+    int rv;
+
+    apidata = &hstd->apidata;
+    conn = hstd->conn;
+
+    // 获取版本为2类型的pack打包器
+    
+    // 获取版本为2类型的pack打包器
+    IF2Packer* lpPacker = NewPacker(2);
+    if (!lpPacker)
+    {
+        fprintf(stderr, "hstrade_qry_md NewPacker() failed!\n");
+        return -1;
+    }
+
+    lpPacker->AddRef();
+    lpPacker->BeginPack();
+
+    //加入字段名
+    lpPacker->AddField("exchange_type", 'S');
+    lpPacker->AddField("stock_code", 'S');
+
+    //加入字段值
+    lpPacker->AddStr(qry_field->exchange_type);
+    lpPacker->AddStr(qry_field->stock_code);
+
+    // 结束打包
+    lpPacker->EndPack();
+
+    // 设置包内容
+    IBizMessage* lpBizMessage = _hstrade_make_bizmsg(hstd, UFX_FUNC_QRY_SECMD);
+    lpBizMessage->SetContent(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
+
+    // 发送业务请求
+    rv = conn->SendBizMsg(lpBizMessage, hstd->is_async);
+    if (!hstrade_is_async(hstd))
+    {
+        // 同步模式
+        if (rv < 0)
+        {
+            fprintf(stderr, "hstrade_qry_md failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            rv = -2;
+            goto EXIT;
+        }
+
+        IBizMessage* lpBizMessageRecv = NULL;
+        rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
+        if (rv != 0)
+        {
+            fprintf(stderr, "hstrade_qry_md recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            goto EXIT;
+        }
+        else
+        {
+            int iReturnCode = lpBizMessageRecv->GetReturnCode();
+            if (iReturnCode != 0)
+            {
+                fprintf(stderr, "hstrade_qry_md return code error code:%d, msg:%s\n",
+                    lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+            }
+            else
+            {
+                int len = 0;
+                const void * lpBuffer = lpBizMessageRecv->GetContent(len);
+                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
+                lpUnPacker->AddRef();
+
+                if (hstd->debug_mode)
+                    ShowPacket(lpUnPacker);
+
+                TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackQryOrderData);
+                lpUnPacker->Release();
+            }
+
+        }
+    }
+
+EXIT:
+    // 释放pack中申请的内存
+    if (lpPacker)
+    {
+        lpPacker->FreeMem(lpPacker->GetPackBuf());
+        lpPacker->Release();
+    }
+    if (lpBizMessage)
+    {
+        lpBizMessage->Release();
+    }
+
+    return rv;
 }
 
 int HS_TRADE_STDCALL hstrade_qry_cash_hist(hstrade_t* hstd, HSReqQueryField* qry_field)

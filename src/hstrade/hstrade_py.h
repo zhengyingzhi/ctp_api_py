@@ -61,7 +61,7 @@ public:
     int send_msg(int func_id, int subsystem_no = 0, int branch_no = 0);
 
     // 接收数据
-    std::string recv_msg();
+    std::string recv_msg(int hsend);
 
     // 开始打包
     void begin_pack(void);
@@ -92,6 +92,8 @@ private:
     hstrade_t*      m_hstd;
     hstrade_spi_t   m_spi;
 
+    int             m_hsend;
+    int             m_last_error_code;
     int             m_async_mode;
     int             m_data_proto;
 };

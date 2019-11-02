@@ -43,6 +43,8 @@
     } while (0);
 
 
+extern void ShowPacket(IF2UnPacker *lpUnPacker);
+
 // 从原始api获取数据的回调
 
 static void _on_connected_static(hstrade_t* hstd)
@@ -90,6 +92,8 @@ HSTdApi::HSTdApi()
     m_spi.on_disconnected = _on_disconnected_static;
     m_spi.on_json_msg = _on_recv_msg_static;
 
+    m_hsend = 0;
+    m_last_error_code = 0;
     m_async_mode = 0;
     m_data_proto = 0;
 }
@@ -123,9 +127,53 @@ std::string HSTdApi::get_hstrade_version()
     return std::string(hstrade_version(NULL));
 }
 
-std::string HSTdApi::recv_msg()
+std::string HSTdApi::recv_msg(int hsend)
 {
-    // TODO: 
+    int rv;
+    hstrade_t* hstd = m_hstd;
+    IBizMessage* lpBizMessageRecv = NULL;
+
+    rv = hstd->conn->RecvBizMsg(hsend, &lpBizMessageRecv, hstd->timeoutms);
+    if (rv != 0)
+    {
+        fprintf(stderr, "recv_msg() recv failed, rv:%d, err:%s!\n", rv, hstd->conn->GetErrorMsg(rv));
+        m_last_error_code = rv;
+    }
+    else
+    {
+        int iReturnCode = lpBizMessageRecv->GetReturnCode();
+        if (iReturnCode != 0)
+        {
+            fprintf(stderr, "hstrade_order_insert return code error code:%d, msg:%s\n",
+                lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+        }
+        else
+        {
+            int len = 0;
+            const void * lpBuffer = lpBizMessageRecv->GetContent(len);
+            IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
+            lpUnPacker->AddRef();
+
+            if (hstd->debug_mode)
+                ShowPacket(lpUnPacker);
+
+            // make json msg
+            cJSON* json = TradeCallback::GenJsonDatas(lpUnPacker, lpBizMessageRecv->GetFunction(), lpBizMessageRecv->GetIssueType());
+            char* json_str = "";
+            if (json)
+            {
+                json_str = cJSON_Print(json);
+            }
+            std::string ret_msg(json_str);
+            cJSON_free(json_str);
+            cJSON_Delete(json);
+
+            lpUnPacker->Release();
+
+            return ret_msg;
+        }
+    }
+
     return "";
 }
 
@@ -196,10 +244,19 @@ int HSTdApi::send_pack_msg(int func_id, int subsystem_no, int branch_no)
     lpBizMessage = NewBizMessage();
     lpBizMessage->AddRef();
 
+    lpBizMessage->SetFunction(func_id);
+    lpBizMessage->SetPacketType(REQUEST_PACKET);
+
+    lpBizMessage->SetBranchNo(branch_no);
+    lpBizMessage->SetSystemNo(subsystem_no);
+    // lpBizMessage->SetCompanyID(91000);
+    // lpBizMessage->SetSenderCompanyID(91000);
+
+    // 设置打包数据
     lpBizMessage->SetBuff(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
 
     // 发送消息
-    rv = m_hstd->conn->SendBizMsg(lpBizMessage, 1);
+    rv = m_hstd->conn->SendBizMsg(lpBizMessage, m_hstd->is_async);
 
     if (lpPacker)
     {
@@ -214,11 +271,15 @@ int HSTdApi::send_pack_msg(int func_id, int subsystem_no, int branch_no)
         lpBizMessage->Release();
     }
 
+    m_hsend = rv;
     return rv;
 }
 
 int HSTdApi::send_msg(int func_id, int subsystem_no, int branch_no)
 {
+    m_hsend = 0;
+    m_last_error_code = 0;
+
     if (m_packer)
     {
         return send_pack_msg(func_id, subsystem_no, branch_no);
@@ -337,11 +398,13 @@ int HSTdApi::send_msg(int func_id, int subsystem_no, int branch_no)
 
     m_json_str.clear();
 
-    return 0;
+    return rv;
 }
 
 void HSTdApi::begin_pack(void)
 {
+    m_last_error_code = 0;
+
     if (m_packer)
     {
         IF2Packer* lpPacker;

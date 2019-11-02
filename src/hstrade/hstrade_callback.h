@@ -57,6 +57,9 @@ public:
 
     static void GetErrorField(HSRspInfoField* rsp_info, IF2UnPacker* lpUnPacker);
 
+    static int GenJsonData(cJSON* json_data, IF2UnPacker* lpUnPacker);
+    static cJSON* GenJsonDatas(IF2UnPacker* lpUnPacker, int func_id, int issue_type);
+
 public:
     void SetContextData(hstrade_t* hstd);
 
@@ -64,8 +67,7 @@ public:
 
     int  IsJsonMode();
 
-    int GenJsonData(cJSON* json_data, IF2UnPacker* lpUnPacker);
-    cJSON* GenJsonDatas(IF2UnPacker* lpUnPacker, int func_id, int issue_type);
+    int NotifyJsonData(cJSON* json, int func_id, int issue_type);
 
     // 331100 µ«»Î
     void OnResponseUserLogin(IF2UnPacker* lpUnPacker);
