@@ -1,4 +1,7 @@
 #include <string>
+#include <vector>
+#include <codecvt>
+#include <locale>
 
 #include "hstrade_struct.h"
 #include "hstrade_callback.h"
@@ -23,13 +26,40 @@ int convert_int_time(char buf[], int int_time)
 }
 
 
+static string to_utf(const string &gb2312)
+{
+#ifdef _MSC_VER
+    const static locale loc("zh-CN");
+#else
+    const static locale loc("zh_CN.GB18030");
+#endif
+
+    std::vector<wchar_t> wstr(gb2312.size());
+    wchar_t* wstrEnd = nullptr;
+    const char* gbEnd = nullptr;
+    mbstate_t state = {};
+    int res = use_facet<codecvt<wchar_t, char, mbstate_t> >
+        (loc).in(state,
+            gb2312.data(), gb2312.data() + gb2312.size(), gbEnd,
+            wstr.data(), wstr.data() + wstr.size(), wstrEnd);
+
+    if (codecvt_base::ok == res)
+    {
+        wstring_convert<codecvt_utf8<wchar_t>> cutf8;
+        return cutf8.to_bytes(wstring(wstr.data(), wstrEnd));
+    }
+
+    return string();
+}
+
+
 void ShowPacket(IF2UnPacker *lpUnPacker);
 
 
 TradeCallback::TradeCallback()
 {
-    m_client_data = NULL;
-    m_on_recv_msg = NULL;
+    m_hstd = NULL;
+    m_data_proto = 0;
 }
 
 TradeCallback::~TradeCallback()
@@ -54,23 +84,33 @@ unsigned long TradeCallback::Release()
 
 void TradeCallback::OnConnect(CConnectionInterface *lpConnection)
 {
-    puts("TradeCallback::OnConnect");
+    if (m_hstd->debug_mode)
+        fprintf(stderr, "TradeCallback::OnConnect\n");
+
+    if (m_hstd->spi && m_hstd->spi->on_connected)
+        m_hstd->spi->on_connected(m_hstd);
 }
 
 void TradeCallback::OnSafeConnect(CConnectionInterface *lpConnection)
 {
-    puts("TradeCallback::OnSafeConnect");
+    if (m_hstd->debug_mode)
+        puts("TradeCallback::OnSafeConnect");
 }
 
 void TradeCallback::OnRegister(CConnectionInterface *lpConnection)
 {
-    puts("TradeCallback::OnRegister");
+    if (m_hstd->debug_mode)
+        puts("TradeCallback::OnRegister");
 }
 
 //断开连接后会调用Onclose函数，提示连接断开
 void TradeCallback::OnClose(CConnectionInterface *lpConnection)
 {
-    puts("TradeCallback::OnClose");
+    if (m_hstd->debug_mode)
+        fprintf(stderr, "TradeCallback::OnClose\n");
+
+    if (m_hstd->spi && m_hstd->spi->on_disconnected)
+        m_hstd->spi->on_disconnected(m_hstd, -0x1001);
 }
 
 void TradeCallback::OnSent(CConnectionInterface *lpConnection, int hSend, void *reserved1, void *reserved2, int nQueuingData)
@@ -114,7 +154,9 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
     }
 
     lpUnPacker->AddRef();
-    ShowPacket(lpUnPacker);
+
+    if (m_hstd->debug_mode)
+        ShowPacket(lpUnPacker);
 
     //成功,应用程序不能释放lpBizMessageRecv消息
     if (lpMsg->GetReturnCode() == 0)
@@ -199,22 +241,18 @@ void TradeCallback::SetContextData(hstrade_t* hstd)
     m_hstd = hstd;
 }
 
-void TradeCallback::SetOnRecvMsg(void* clientd, on_recv_msg_pt func)
+void TradeCallback::SetJsonMode(int data_proto)
 {
-    m_client_data = clientd;
-    m_on_recv_msg = func;
+    m_data_proto = data_proto;
 }
 
 int TradeCallback::IsJsonMode()
 {
-    return m_on_recv_msg != NULL;
+    return m_data_proto == 1;    // HS_DATA_PROTO_JSON
 }
 
-cJSON* TradeCallback::GenJsonData(IF2UnPacker* lpUnPacker)
+int TradeCallback::GenJsonData(cJSON* json_data, IF2UnPacker* lpUnPacker)
 {
-    cJSON* json_data;
-    json_data = cJSON_CreateObject();
-
     int cols = lpUnPacker->GetColCount();
 
     for (int k = 0; k < cols; ++k)
@@ -243,11 +281,17 @@ cJSON* TradeCallback::GenJsonData(IF2UnPacker* lpUnPacker)
             break;
         case 'S':
         {
+            // TODO: string should convert to UTF-8
             const char* val = lpUnPacker->GetStrByIndex(k);
             if (val)
-                cJSON_AddStringToObject(json_data, col_name, val);
+            {
+                std::string _val = to_utf(val);
+                cJSON_AddStringToObject(json_data, col_name, _val.c_str());
+            }
             else
+            {
                 cJSON_AddNullToObject(json_data, col_name);
+            }
         }
             break;
         case 'F':
@@ -260,15 +304,22 @@ cJSON* TradeCallback::GenJsonData(IF2UnPacker* lpUnPacker)
             break;
         }
     }
-    return json_data;
+    return 0;
 }
 
-cJSON* TradeCallback::GenJsonDatas(IF2UnPacker* lpUnPacker)
+cJSON* TradeCallback::GenJsonDatas(IF2UnPacker* lpUnPacker, int func_id, int issue_type)
 {
     int i = 0, j = 0;
 
     cJSON* root;
-    root = cJSON_CreateArray();
+    root = cJSON_CreateObject();
+
+    cJSON_AddNumberToObject(root, "ref_id", 0);
+    cJSON_AddNumberToObject(root, "function_id", func_id);
+    cJSON_AddNumberToObject(root, "issue_type", issue_type);
+
+    cJSON* array = cJSON_AddArrayToObject(root, "json");
+    cJSON* json_data;
 
     for (i = 0; i < lpUnPacker->GetDatasetCount(); ++i)
     {
@@ -276,12 +327,12 @@ cJSON* TradeCallback::GenJsonDatas(IF2UnPacker* lpUnPacker)
         lpUnPacker->SetCurrentDatasetByIndex(i);
 
         // 多条记录 list
-        cJSON* json_data;
         for (j = 0; j < (int)lpUnPacker->GetRowCount(); ++j)
         {
             // 每条记录
-            json_data = GenJsonData(lpUnPacker);
-            cJSON_AddItemToArray(root, json_data);
+            json_data = cJSON_CreateObject();
+            GenJsonData(json_data, lpUnPacker);
+            cJSON_AddItemToArray(array, json_data);
 
             lpUnPacker->Next();
         }
@@ -290,9 +341,9 @@ cJSON* TradeCallback::GenJsonDatas(IF2UnPacker* lpUnPacker)
 #if 1
     char* json_str;
     json_str = cJSON_Print(root);
-    if (m_on_recv_msg)
+    if (m_hstd->spi && m_hstd->spi->on_json_msg)
     {
-        m_on_recv_msg(m_client_data, 0, 0, std::string(json_str));
+        m_hstd->spi->on_json_msg(m_hstd, func_id, issue_type, json_str);
     }
 
     cJSON_free(json_str);
@@ -316,7 +367,7 @@ void TradeCallback::OnResponseUserLogin(IF2UnPacker *lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker);
+        GenJsonDatas(lpUnPacker, UFX_FUNC_LOGIN, 0);
         return;
     }
 
@@ -355,7 +406,7 @@ void TradeCallback::OnResponseQryTradingAccount(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker);
+        GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_CASH, 0);
         return;
     }
 
@@ -366,7 +417,7 @@ void TradeCallback::OnResponseQryPosition(IF2UnPacker *lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker);
+        GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_POSITION, 0);
         return;
     }
 
@@ -395,7 +446,8 @@ void TradeCallback::OnResponseQryPosition(IF2UnPacker *lpUnPacker)
 
         if (pos.length() != 0)
         {
-            ShowPacket(lpUnPacker);
+            if (m_hstd->debug_mode)
+                ShowPacket(lpUnPacker);
             // lpReqMode->ReqFunction333104(pos.c_str());
         }
     }
@@ -413,7 +465,7 @@ void TradeCallback::OnResponseQryOrder(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker);
+        GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_ORDER, 0);
         return;
     }
 
@@ -424,7 +476,7 @@ void TradeCallback::OnResponseQryTrade(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker);
+        GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_TRADE, 0);
         return;
     }
 
@@ -435,7 +487,7 @@ void TradeCallback::OnResponseQrySecurityInfo(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker);
+        GenJsonDatas(lpUnPacker, UFX_FUNC_QRY_SECINFO, 0);
         return;
     }
 }
@@ -457,7 +509,7 @@ void TradeCallback::OnRtnOrder(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker);
+        GenJsonDatas(lpUnPacker, UFX_FUNC_RTN_DATA, UFX_ISSUE_TYPE_ORDER);
         return;
     }
 }
@@ -466,7 +518,7 @@ void TradeCallback::OnRtnTrade(IF2UnPacker* lpUnPacker)
 {
     if (IsJsonMode())
     {
-        GenJsonDatas(lpUnPacker);
+        GenJsonDatas(lpUnPacker, UFX_FUNC_RTN_DATA, UFX_ISSUE_TYPE_TRADE);
         return;
     }
 }

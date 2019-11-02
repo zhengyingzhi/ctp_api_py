@@ -52,6 +52,9 @@ typedef struct hstrade_spi_s
     void (*on_rtn_order)(hstrade_t*, HSOrderField*);
     void (*on_rtn_trade)(hstrade_t*, HSTradeField*);
 
+    // on json msg only when json mode
+    void (*on_json_msg)(hstrade_t*, int func_id, int issue_type, const char* json_msg);
+
     // on raw api bizmsg IBizMessage* object
     void (*on_raw_bizmsg)(hstrade_t*, void* pmsg);
 }hstrade_spi_t;
@@ -72,20 +75,26 @@ HS_TRADE_API void HS_TRADE_STDCALL hstrade_realese(hstrade_t* hstd);
 HS_TRADE_API void  HS_TRADE_STDCALL hstrade_set_userdata(hstrade_t* hstd, void* userdata);
 HS_TRADE_API void* HS_TRADE_STDCALL hstrade_get_userdata(hstrade_t* hstd);
 
+/// 调试模式
+HS_TRADE_API void HS_TRADE_STDCALL hstrade_debug_mode(hstrade_t* hstd, int level);
+
 /// 注册回调
 HS_TRADE_API void HS_TRADE_STDCALL hstrade_register_spi(hstrade_t* hstd, hstrade_spi_t* spi);
 
+/// 设置API选项
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_set_option(hstrade_t* hstd, const char* option_name, const void* option_value, int value_size);
+
 /// 发起连接
-HS_TRADE_API int HS_TRADE_STDCALL hstrade_init(hstrade_t* hstd);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_init(hstrade_t* hstd, const char* server_addr, const char* license_file, const char* fund_account, int timeoutms);
 
-/// 注册订阅回报
-HS_TRADE_API int HS_TRADE_STDCALL hstrade_subscribe_topic(hstrade_t* hstd, int issue_type);
+/// 订阅主推回报
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type);
 
-/// 获取交易日
+/// 获取交易日 yyyymmdd
 HS_TRADE_API const char* HS_TRADE_STDCALL hstrade_get_trading_day(hstrade_t* hstd);
 
 /// 请求登录
-HS_TRADE_API int HS_TRADE_STDCALL hstrade_user_login(hstrade_t* hstd, HSReqUserLoginField* login);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_user_login(hstrade_t* hstd, HSReqUserLoginField* login_req);
 
 /// 请求报单
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField* order_req);

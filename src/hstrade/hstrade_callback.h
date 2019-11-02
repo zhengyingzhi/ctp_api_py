@@ -59,12 +59,12 @@ public:
 public:
     void SetContextData(hstrade_t* hstd);
 
-    void SetOnRecvMsg(void* clientd, on_recv_msg_pt func);
+    void SetJsonMode(int data_proto);
 
     int  IsJsonMode();
 
-    cJSON* GenJsonData(IF2UnPacker* lpUnPacker);
-    cJSON* GenJsonDatas(IF2UnPacker* lpUnPacker);
+    int GenJsonData(cJSON* json_data, IF2UnPacker* lpUnPacker);
+    cJSON* GenJsonDatas(IF2UnPacker* lpUnPacker, int func_id, int issue_type);
 
     // 331100 µ«»Î
     void OnResponseUserLogin(IF2UnPacker* lpUnPacker);
@@ -92,9 +92,8 @@ public:
     void OnRtnTrade(IF2UnPacker* lpUnPacker);
 
 private:
-    void* m_client_data;
-    on_recv_msg_pt m_on_recv_msg;
-    hstrade_t* m_hstd;
+    hstrade_t*  m_hstd;
+    int         m_data_proto;
 };
 
 

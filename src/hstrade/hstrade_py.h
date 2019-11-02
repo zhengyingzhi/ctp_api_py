@@ -34,14 +34,22 @@ public:
     ~HSTdApi();
 
 public:
+    // 获取API版本号
+    int get_api_version();
+
+    std::string get_hstrade_version();
+
     // 创建API async_mode：1-asyn, data_proto: 1-json
     void create_api(int async_mode = 0, int data_proto = 0);
 
     // 销毁API
     void release();
 
+    // 调试模式
+    void set_debug_mode(int level);
+
     // 连接服务器
-    int connect(std::string server_port, std::string license_path, std::string fund_account);
+    int connect(std::string server_port, std::string license_file, std::string fund_account, int timeoutms);
 
     // 写入JSON数据
     int set_json_value(const std::string& json_str);
@@ -63,12 +71,9 @@ public:
     int pack_int(const int value);
     int pack_double(const double value);
 
-    // 收到异步消息通知
-    void on_api_msg(int func_id, int issue_type, const std::string& msg);
-
 private:
     // 发送已打好包的数据
-    int send_pack_msg(int func_id);
+    int send_pack_msg(int func_id, int subsystem_no, int branch_no);
 
 public:
     virtual void on_front_connected() {}
@@ -76,9 +81,13 @@ public:
     virtual void on_recv_msg(int func_id, int issue_type, const std::string& msg) {}
 
 private:
-    std::string m_json_str;
-    hstrade_t*  m_hstd;
-    void*       m_packer;
+    std::string     m_json_str;
+    void*           m_packer;
+    hstrade_t*      m_hstd;
+    hstrade_spi_t   m_spi;
+
+    int             m_async_mode;
+    int             m_data_proto;
 };
 
 #endif//HAVE_WRPPAER_PYTHON

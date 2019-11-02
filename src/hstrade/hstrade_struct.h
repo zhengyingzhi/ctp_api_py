@@ -15,7 +15,7 @@
 #define UFX_FUNC_QRY_TRADE          333102      // 证券成交查询
 #define UFX_FUNC_QRY_POS_FAST       333103      // 证券持仓快速查询
 #define UFX_FUNC_QRY_POSITION       333104      // 证券持仓查询
-#define UFX_FUNC_QRY_MD             400         // 证券行情查询
+#define UFX_FUNC_QRY_SECMD          400         // 证券行情查询
 #define UFX_FUNC_LOGIN              331100      // 客户登录
 #define UFX_FUNC_QRY_ACCOUNTINFO    331155      // 账户信息获取
 #define UFX_FUNC_PWD_UPDATE         331101      // 账户密码更改
@@ -43,7 +43,7 @@
 #define HS_ENTRUST_PROP_LEN         4
 #define HS_STOCK_TYPE_LEN           4
 #define HS_ENTRUST_NO_LEN           16
-#define HS_BUSINESS_NO_LEN          16
+#define HS_BUSINESS_NO_LEN          32
 
 
 /// 交易类别 exchange_type C4
@@ -91,6 +91,10 @@
 #define HS_ET_EntrustCancel     '2'     // 撤单
 #define HS_ET_EntrustAgain      '3'     // 补单
 
+
+/// 密码类别
+#define HS_PWD_TYPE_FUND        '1'     // 资金密码
+#define HS_PWD_TYPE_TRADE       '2'     // 交易密码
 
 
 #pragma pack(push,4)
@@ -152,9 +156,11 @@ struct HSReqOrderInsertField
     int         branch_no;          // 营业部号
     char        client_id[18];      // 账号 client_id/fund_account
     char        exchange_type[4];   // 交易类别 0-资金 1-上海 2-深圳
-    char        stock_code[24];     // 证券代码
+    char        stock_code[24];     // 证券代码 or option_code
     char        entrust_prop[4];    // 委托属性 0-买卖 R-市转限 U-市价即成剩撤
     char        entrust_bs;         // 买卖方向 1-买入 2-卖出
+    char        entrust_oc;         // 开平标志 O-开仓 C-平仓 X-行权 A-自动行权
+    char        covered_flag;       // 备兑标志 
     int         entrust_amount;     // 委托数量
     double      entrust_price;      // 委托价格
     int         batch_no;           // 批次号
@@ -197,7 +203,7 @@ struct HSPositionField
     char        exchange_type[4];   // 交易所
     char        stock_code[24];     // 证券代码
     char        stock_name[16];     // 名称
-    int         trading_date;       // 交易日
+    int         init_date;          // 交易日
     char        stock_type[4];      // 证券类别
     int         current_amount;     // 当前数量
     int         enable_amount;      // 可用数量
@@ -229,6 +235,8 @@ struct HSOrderField
     int         entrust_date;       // 委托日期
     int         entrust_time;       // 委托时间
     char        entrust_bs;         // 委托方向
+    char        entrust_oc;         // 开平标志
+    char        covered_flag;       // 备兑标志
     char        entrust_type;       // 委托类别
     char        entrust_status;     // 委托状态
     int         entrust_amount;     // 委托数量
@@ -257,10 +265,14 @@ struct HSTradeField
     char        entrust_type;       // 委托类别 0-委托 1-查询 2-撤单 3-补单 4-确认
     char        entrust_status;     // 委托状态 0-未报 1-待报 2-已报 3-已报待撤 4-部成待撤 5-部撤 6-已撤 7-部成 8-已成 9-废单
     char        entrust_bs;         // 委托方向 1-买入 2-卖出
+    char        entrust_oc;         // 开平标志 O-开仓 C-平仓 X-行权 A-自动行权
+    char        covered_flag;       // 备兑标志 
+    char        opt_hold_type;      // 期权持仓类别 0-权利方 1-义务方 2-备兑方
+    char        option_type;        // 期权种类 C/P
     int         business_amount;    // 成交数量
-    double      business_price;     // 成交价格
+    double      business_price;     // 成交价格 or opt_business_price
     double      business_balance;   // 成交金额
-    double      entrust_price;      // 委托价格
+    double      entrust_price;      // 委托价格 or opt_entrust_price
     int         entrust_amount;     // 委托数量
     int         batch_no;           // 批次号
 };

@@ -25,8 +25,7 @@ struct hstrade_s
 {
     int     desc;
     int     is_async;
-    int     topic;
-    int     running;
+    int     debug_mode;
     void*   userdata;
 
     // t2sdk api object
@@ -37,7 +36,9 @@ struct hstrade_s
     hstrade_spi_t*          spi;
     hstrade_apidata_t       apidata;
 
-    char    trading_date[9];
+    char    server_addr[32];
+
+    char    trading_day[9];
     char    client_name[24];
     char    client_id[24];
     char    password[24];

@@ -45,7 +45,6 @@ int showmenu1()
 
 }
 
-
 int main(int argc, char* argv[])
 {
     fprintf(stderr, "hello hstrade v%s test!\n", hstrade_version(NULL));
@@ -78,10 +77,11 @@ int main(int argc, char* argv[])
     hstrade_register_spi(hstd, &spi);
 
     // do connect
-    rv = hstrade_init(hstd);
+    const char* server_addr = "120.55.176.113:9359";
+    const char* license_file = "(20130524)HSSBCS-HSTZYJ20-0000_3rd.dat";
+    const char* fund_account = "70960013";
+    rv = hstrade_init(hstd, server_addr, license_file, fund_account, 3000);
     fprintf(stderr, "hstrade_init rv:%d\n", rv);
-
-    const char* account_id = "70960013";
 
     while (1)
     {
@@ -94,13 +94,13 @@ int main(int argc, char* argv[])
         }
         else if (strcmp(buf, "sub") == 0)
         {
-            hstrade_subscribe_topic(hstd, UFX_ISSUE_TYPE_TRADE);
-            hstrade_subscribe_topic(hstd, UFX_ISSUE_TYPE_ORDER);
+            hstrade_subscribe(hstd, UFX_ISSUE_TYPE_TRADE);
+            hstrade_subscribe(hstd, UFX_ISSUE_TYPE_ORDER);
         }
         else if (strcmp(buf, "1") == 0)
         {
             HSReqUserLoginField login_field = { 0 };
-            strcpy(login_field.client_id, account_id);
+            strcpy(login_field.client_id, fund_account);
             strcpy(login_field.password, "111111");
             rv = hstrade_user_login(hstd, &login_field);
             fprintf(stderr, "hstrade_user_login rv:%d\n", rv);
@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
         else if (strcmp(buf, "3") == 0)
         {
             HSReqOrderInsertField order_field = { 0 };
-            strcpy(order_field.client_id, account_id);
+            strcpy(order_field.client_id, fund_account);
             strcpy(order_field.exchange_type, "1");
             strcpy(order_field.stock_code, "600030");
             strcpy(order_field.entrust_prop, "0");
@@ -121,28 +121,28 @@ int main(int argc, char* argv[])
         else if (strcmp(buf, "4") == 0)
         {
             HSReqQueryField qry_field = { 0 };
-            strcpy(qry_field.client_id, account_id);
+            strcpy(qry_field.client_id, fund_account);
             rv = hstrade_qry_position(hstd, &qry_field);
             fprintf(stderr, "hstrade_qry_position rv:%d\n", rv);
         }
         else if (strcmp(buf, "6") == 0)
         {
             HSReqQueryField qry_field = { 0 };
-            strcpy(qry_field.client_id, account_id);
+            strcpy(qry_field.client_id, fund_account);
             rv = hstrade_qry_order(hstd, &qry_field);
             fprintf(stderr, "hstrade_qry_order rv:%d\n", rv);
         }
         else if (strcmp(buf, "7") == 0)
         {
             HSReqQueryField qry_field = { 0 };
-            strcpy(qry_field.client_id, account_id);
+            strcpy(qry_field.client_id, fund_account);
             rv = hstrade_qry_trade(hstd, &qry_field);
             fprintf(stderr, "hstrade_qry_trade rv:%d\n", rv);
         }
         else if (strcmp(buf, "8") == 0)
         {
             HSReqQueryField qry_field = { 0 };
-            strcpy(qry_field.client_id, account_id);
+            strcpy(qry_field.client_id, fund_account);
             rv = hstrade_qry_trading_account(hstd, &qry_field);
             fprintf(stderr, "hstrade_qry_trading_account rv:%d\n", rv);
         }
