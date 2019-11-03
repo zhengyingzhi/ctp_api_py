@@ -137,6 +137,7 @@ HS_TRADE_API int HS_TRADE_STDCALL hstrade_qry_trade_hist(hstrade_t* hstd, HSReqQ
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_qry_order_hist(hstrade_t* hstd, HSReqQueryField* qry_field);
 
 
+//////////////////////////////////////////////////////////////////////////
 /// some raw apis for easily use
 HS_TRADE_API void* HS_TRADE_STDCALL hstrade_begin_pack(hstrade_t* hstd);
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_end_pack(hstrade_t* hstd, void* packer);
@@ -147,10 +148,13 @@ HS_TRADE_API int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* pac
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_field(hstrade_t* hstd, void* packer, const char* key, char field_type, int field_width);
 
 /// add pack values
-HS_TRADE_API int HS_TRADE_STDCALL hstrade_pack_char(hstrade_t* hstd, void* packer, const char value);
-HS_TRADE_API int HS_TRADE_STDCALL hstrade_pack_string(hstrade_t* hstd, void* packer, const char* value);
-HS_TRADE_API int HS_TRADE_STDCALL hstrade_pack_int(hstrade_t* hstd, void* packer, const int value);
-HS_TRADE_API int HS_TRADE_STDCALL hstrade_pack_double(hstrade_t* hstd, void* packer, const double value);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_char(hstrade_t* hstd, void* packer, const char value);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_str(hstrade_t* hstd, void* packer, const char* value);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_int(hstrade_t* hstd, void* packer, const int value);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_double(hstrade_t* hstd, void* packer, const double value);
+
+/// sync recv msg, got IBizMessage* object
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_recv_msg(hstrade_t* hstd, int hsend, int timeoutms, void** ppmsg);
 
 
 #ifdef __cplusplus

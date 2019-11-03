@@ -10,8 +10,8 @@ void on_connected(hstrade_t*);
 void on_disconnected(hstrade_t*, int reason);
 void on_rsp_subscribe(hstrade_t*, HSRspSubscribeField* rsp_sub);
 void on_user_login(hstrade_t*, HSRspUserLoginField* rsp_login, HSRspInfoField* rsp_info);
-void on_order_insert(hstrade_t*, HSReqOrderInsertField*, HSRspInfoField* rsp_info, int islast);
-void on_order_action(hstrade_t*, HSReqOrderInsertField*, HSRspInfoField* rsp_info, int islast);
+void on_order_insert(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
+void on_order_action(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
 
 void on_qry_trading_account(hstrade_t*, HSTradingAccountField*, HSRspInfoField* rsp_info, int islast);
 void on_qry_position(hstrade_t*, HSPositionField*, HSRspInfoField* rsp_info, int islast);
@@ -72,6 +72,9 @@ int main(int argc, char* argv[])
     int rv;
     hstrade_t* hstd;
     hstd = hstrade_create(is_async);
+
+    // set debug
+    hstrade_debug_mode(hstd, 1);
 
     // set callbacks
     hstrade_register_spi(hstd, &spi);
@@ -179,12 +182,12 @@ void on_user_login(hstrade_t* hstd, HSRspUserLoginField* rsp_login, HSRspInfoFie
         rsp_login->client_id, rsp_login->branch_no, rsp_login->trading_date);
 }
 
-void on_order_insert(hstrade_t* hstd, HSReqOrderInsertField* order, HSRspInfoField* rsp_info, int islast)
+void on_order_insert(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int islast)
 {
     fprintf(stderr, "<on_order_insert>\n");
 }
 
-void on_order_action(hstrade_t* hstd, HSReqOrderInsertField* order, HSRspInfoField* rsp_info, int islast)
+void on_order_action(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int islast)
 {
     fprintf(stderr, "<on_order_action>\n");
 }

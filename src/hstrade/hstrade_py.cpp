@@ -49,10 +49,12 @@ extern void ShowPacket(IF2UnPacker *lpUnPacker);
 
 static void _on_connected_static(hstrade_t* hstd)
 {
-    fprintf(stderr, "<_on_connected_static>\n");
+    // fprintf(stderr, "<_on_connected_static>\n");
 
     HSTdApi* obj;
     obj = (HSTdApi*)hstrade_get_userdata(hstd);
+    if (!obj)
+        return;
 
     gil_scoped_acquire acquire;
     obj->on_front_connected();
@@ -60,10 +62,12 @@ static void _on_connected_static(hstrade_t* hstd)
 
 static void _on_disconnected_static(hstrade_t* hstd, int reason)
 {
-    fprintf(stderr, "<_on_disconnected_static>\n");
+    // fprintf(stderr, "<_on_disconnected_static>\n");
 
     HSTdApi* obj;
     obj = (HSTdApi*)hstrade_get_userdata(hstd);
+    if (!obj)
+        return;
 
     gil_scoped_acquire acquire;
     obj->on_front_disconnected(reason);
@@ -71,11 +75,13 @@ static void _on_disconnected_static(hstrade_t* hstd, int reason)
 
 static void _on_recv_msg_static(hstrade_t* hstd, int func_id, int issue_type, const char* msg)
 {
-    fprintf(stderr, "#<_on_recv_msg_static> func_id:%d, issue_type:%d\n", func_id, issue_type);
-    fprintf(stderr, msg);
+    // fprintf(stderr, "#<_on_recv_msg_static> func_id:%d, issue_type:%d\n", func_id, issue_type);
+    // fprintf(stderr, msg);
 
     HSTdApi* obj;
     obj = (HSTdApi*)hstrade_get_userdata(hstd);
+    if (!obj)
+        return;
 
     gil_scoped_acquire acquire;
     obj->on_recv_msg(func_id, issue_type, std::string(msg));
@@ -86,8 +92,8 @@ HSTdApi::HSTdApi()
 {
     m_packer = NULL;
     m_hstd = NULL;
-    memset(&m_spi, 0, sizeof(m_spi));
 
+    memset(&m_spi, 0, sizeof(m_spi));
     m_spi.on_connected = _on_connected_static;
     m_spi.on_disconnected = _on_disconnected_static;
     m_spi.on_json_msg = _on_recv_msg_static;
@@ -96,15 +102,16 @@ HSTdApi::HSTdApi()
     m_last_error_code = 0;
     m_async_mode = 0;
     m_data_proto = 0;
+
+    m_sequece_no = 0;
 }
 
 HSTdApi::~HSTdApi()
 {
     if (m_packer)
     {
-        IF2Packer* lpPacker;
-        lpPacker = (IF2Packer*)m_packer;
-        lpPacker->Release();
+        m_packer->FreeMem(m_packer->GetPackBuf());
+        m_packer->Release();
         m_packer = NULL;
     }
 
@@ -190,8 +197,8 @@ void HSTdApi::create_api(int async_mode, int data_proto)
     if (data_proto == HS_DATA_PROTO_JSON)
     {
         // json mode
-        fprintf(stderr, "HSTdApi set json mode!!!\n");
-        m_hstd->callback->SetJsonMode(1);
+        // fprintf(stderr, "HSTdApi set json mode!!!\n");
+        m_hstd->callback->SetJsonMode(data_proto);
     }
 }
 
@@ -227,6 +234,11 @@ int HSTdApi::connect(std::string server_port, std::string license_file, std::str
     return rv;
 }
 
+int HSTdApi::set_sequece_no(int sequence_no)
+{
+    m_sequece_no = sequence_no;
+}
+
 int HSTdApi::set_json_value(const std::string& json_str)
 {
     m_json_str = json_str;
@@ -246,6 +258,8 @@ int HSTdApi::send_pack_msg(int func_id, int subsystem_no, int branch_no)
 
     lpBizMessage->SetFunction(func_id);
     lpBizMessage->SetPacketType(REQUEST_PACKET);
+    if (m_sequece_no)
+        lpBizMessage->SetSequeceNo(m_sequece_no);
 
     lpBizMessage->SetBranchNo(branch_no);
     lpBizMessage->SetSystemNo(subsystem_no);
@@ -253,23 +267,23 @@ int HSTdApi::send_pack_msg(int func_id, int subsystem_no, int branch_no)
     // lpBizMessage->SetSenderCompanyID(91000);
 
     // 设置打包数据
-    lpBizMessage->SetBuff(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
+    if (func_id == UFX_FUNC_SUBSCRIBE)
+        lpBizMessage->SetKeyInfo(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
+    else
+        lpBizMessage->SetContent(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
 
     // 发送消息
     rv = m_hstd->conn->SendBizMsg(lpBizMessage, m_hstd->is_async);
+    // fprintf(stderr, "send_pack_msg(%d) async:%d rv:%d\n", func_id, m_hstd->is_async, rv);
 
-    if (lpPacker)
-    {
-        lpPacker->FreeMem(lpPacker->GetPackBuf());
-        lpPacker->Release();
+    // 释放内存
+    lpPacker->FreeMem(lpPacker->GetPackBuf());
+    lpPacker->Release();
 
-        // set as NULL
-        m_packer = NULL;
-    }
-    if (lpBizMessage)
-    {
-        lpBizMessage->Release();
-    }
+    // set as NULL
+    m_packer = NULL;
+
+    lpBizMessage->Release();
 
     m_hsend = rv;
     return rv;
@@ -289,7 +303,7 @@ int HSTdApi::send_msg(int func_id, int subsystem_no, int branch_no)
         return -1;
     }
 
-    // TODO: convert m_json_str data to HSReqOrderField/HSQueryField/...
+    // fprintf(stderr, "## send_msg json:%s\n", m_json_str.c_str());
 
     int rv = -1;
     cJSON* item;
@@ -405,24 +419,25 @@ void HSTdApi::begin_pack(void)
 {
     m_last_error_code = 0;
 
-    if (m_packer)
+    IF2Packer* lpPacker;
+    lpPacker = (IF2Packer*)m_packer;
+    if (lpPacker)
     {
-        IF2Packer* lpPacker;
-        lpPacker = (IF2Packer*)m_packer;
         lpPacker->FreeMem(lpPacker->GetPackBuf());
         lpPacker->Release();
     }
 
-    m_packer = NewPacker(2);
+    lpPacker = NewPacker(2);
+    lpPacker->AddRef();
+    lpPacker->BeginPack();
+    m_packer = lpPacker;
 }
 
 void HSTdApi::end_pack(void)
 {
     if (m_packer)
     {
-        IF2Packer* lpPacker;
-        lpPacker = (IF2Packer*)m_packer;
-        lpPacker->EndPack();
+        m_packer->EndPack();
     }
 }
 
@@ -440,63 +455,58 @@ int HSTdApi::add_field(const std::string& key, const std::string& field_type, in
         return -2;
     }
 
+    if (field_width == 0)
+    {
+        field_width = 255;
+    }
+
     char ft = field_type[0];
 
-    IF2Packer* lpPacker;
-    lpPacker = (IF2Packer*)m_packer;
-    return lpPacker->AddField(key.c_str(), ft, field_width);
+    // fprintf(stderr, "add_field key:%s, field_type:%c, field_width:%d\n", key.c_str(), ft, field_width);
+    return m_packer->AddField(key.c_str(), ft, field_width);
 }
 
-int HSTdApi::pack_char(const std::string& value)
+int HSTdApi::add_char(const std::string& value)
 {
-    if (!m_packer)
+    if (m_packer)
     {
-        return -1;
+        // fprintf(stderr, "add_char value:%s\n", value.c_str());
+        if (!value.empty())
+            m_packer->AddChar(value[0]);
+        else
+            m_packer->AddChar(0);
     }
-
-    IF2Packer* lpPacker;
-    lpPacker = (IF2Packer*)m_packer;
-    if (!value.empty())
-        lpPacker->AddChar(value[0]);
-    else
-        lpPacker->AddChar(0);
-    return 0;
+    return -1;
 }
 
-int HSTdApi::pack_string(const std::string& value)
+int HSTdApi::add_str(const std::string& value)
 {
-    if (!m_packer)
+    if (m_packer)
     {
-        return -1;
+        // fprintf(stderr, "add_str value:%s\n", value.c_str());
+        return m_packer->AddStr(value.c_str());
     }
-
-    IF2Packer* lpPacker;
-    lpPacker = (IF2Packer*)m_packer;
-    return lpPacker->AddStr(value.c_str());
+    return -1;
 }
 
-int HSTdApi::pack_int(const int value)
+int HSTdApi::add_int(const int value)
 {
-    if (!m_packer)
+    if (m_packer)
     {
-        return -1;
+        // fprintf(stderr, "add_int value:%d\n", value);
+        return m_packer->AddInt(value);
     }
-
-    IF2Packer* lpPacker;
-    lpPacker = (IF2Packer*)m_packer;
-    return lpPacker->AddInt(value);
+    return -1;
 }
 
-int HSTdApi::pack_double(const double value)
+int HSTdApi::add_double(const double value)
 {
-    if (!m_packer)
+    if (m_packer)
     {
-        return -1;
+        // fprintf(stderr, "add_double value:%f\n", value);
+        return m_packer->AddDouble(value);
     }
-
-    IF2Packer* lpPacker;
-    lpPacker = (IF2Packer*)m_packer;
-    return lpPacker->AddDouble(value);
+    return -1;
 }
 
 
@@ -562,12 +572,20 @@ PYBIND11_MODULE(hstrade, m)
 
         .def("begin_pack", &HSTdApi::begin_pack)
         .def("end_pack", &HSTdApi::end_pack)
-
         .def("add_field", &HSTdApi::add_field)
-        .def("pack_char", &HSTdApi::pack_char)
-        .def("pack_string", &HSTdApi::pack_string)
-        .def("pack_int", &HSTdApi::pack_int)
-        .def("pack_double", &HSTdApi::pack_double)
+        .def("add_char", &HSTdApi::add_char)
+        .def("add_str", &HSTdApi::add_str)
+        .def("add_int", &HSTdApi::add_int)
+        .def("add_double", &HSTdApi::add_double)
+
+        // some raw t2sdk api names
+        .def("BeginPack", &HSTdApi::begin_pack)
+        .def("EndPack", &HSTdApi::end_pack)
+        .def("AddField", &HSTdApi::add_field)
+        .def("AddChar", &HSTdApi::add_char)
+        .def("AddStr", &HSTdApi::add_str)
+        .def("AddInt", &HSTdApi::add_int)
+        .def("AddDouble", &HSTdApi::add_double)
 
         .def("on_front_connected", &HSTdApi::on_front_connected)
         .def("on_front_disconnected", &HSTdApi::on_front_disconnected)

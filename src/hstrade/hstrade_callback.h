@@ -97,6 +97,9 @@ public:
 private:
     hstrade_t*  m_hstd;
     int         m_data_proto;
+
+    int         m_return_code;
+    const char* m_return_msg;
 };
 
 

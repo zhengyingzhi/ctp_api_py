@@ -13,6 +13,8 @@
 
 #ifdef HAVE_WRPPAER_PYTHON
 
+#include <t2sdk_interface.h>
+
 #include <pybind11/pybind11.h>
 using namespace pybind11;
 
@@ -54,6 +56,9 @@ public:
     // 连接服务器
     int connect(std::string server_port, std::string license_file, std::string fund_account, int timeoutms);
 
+    // 设置序列号
+    int set_sequece_no(int sequence_no);
+
     // 写入JSON数据
     int set_json_value(const std::string& json_str);
 
@@ -72,10 +77,10 @@ public:
     int add_field(const std::string& key, const std::string& field_type, int field_width);
 
     // 添加包数据
-    int pack_char(const std::string& value);
-    int pack_string(const std::string& value);
-    int pack_int(const int value);
-    int pack_double(const double value);
+    int add_char(const std::string& value);
+    int add_str(const std::string& value);
+    int add_int(const int value);
+    int add_double(const double value);
 
 private:
     // 发送已打好包的数据
@@ -88,7 +93,7 @@ public:
 
 private:
     std::string     m_json_str;
-    void*           m_packer;
+    IF2Packer*      m_packer;
     hstrade_t*      m_hstd;
     hstrade_spi_t   m_spi;
 
@@ -96,6 +101,7 @@ private:
     int             m_last_error_code;
     int             m_async_mode;
     int             m_data_proto;
+    int             m_sequece_no;
 };
 
 #endif//HAVE_WRPPAER_PYTHON

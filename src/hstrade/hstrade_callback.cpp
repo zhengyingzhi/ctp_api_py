@@ -145,8 +145,14 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
 
     if (!lpMsg)
     {
+        fprintf(stderr, "TradeCallback::OnReceivedBizMsg lpMsg is null!\n");
+        m_return_code = 0;
+        m_return_msg = NULL;
         return;
     }
+
+    m_return_code = lpMsg->GetReturnCode();
+    m_return_msg = lpMsg->GetErrorInfo();
 
     int iLen = 0;
     const void * lpBuffer = lpMsg->GetContent(iLen);
@@ -187,12 +193,10 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
             OnResponseQryPosition(lpUnPacker);
             break;
         case UFX_FUNC_QRY_ORDER:
-            TradeCallback::UnpackBizMessage(lpUnPacker, m_hstd, TradeCallback::UnpackQryOrderData);
-            // OnResponseQryOrder(lpUnPacker);
+            OnResponseQryOrder(lpUnPacker);
             break;
         case UFX_FUNC_QRY_TRADE:
-            TradeCallback::UnpackBizMessage(lpUnPacker, m_hstd, TradeCallback::UnpackQryTradeData);
-            // OnResponseQryTrade(lpUnPacker);
+            OnResponseQryTrade(lpUnPacker);
             break;
         case UFX_FUNC_RTN_DATA:
         {
@@ -212,6 +216,7 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
     }
     else
     {
+        fprintf(stderr, "OnReceivedBizMsg(%d) error code:%d, msg:%s\n", lpMsg->GetFunction(), m_return_code, m_return_msg);
     }
 
     lpUnPacker->Release();
@@ -406,6 +411,18 @@ void TradeCallback::GetErrorField(HSRspInfoField* rsp_info, IF2UnPacker* lpUnPac
 
 void TradeCallback::OnResponseUserLogin(IF2UnPacker *lpUnPacker)
 {
+    hstrade_apidata_t* apidata = &m_hstd->apidata;
+
+    int branch_no = lpUnPacker->GetInt("branch_no");
+    int sysnode_id = lpUnPacker->GetInt("sysnode_id");
+    int init_date = lpUnPacker->GetInt("init_date");
+    int op_branch_no = lpUnPacker->GetInt("op_branch_no");
+    extract_str_field(apidata->user_token, "user_token");
+
+    apidata->branch_no = branch_no;
+    apidata->sysnode_id = sysnode_id;
+    apidata->op_branch_no = op_branch_no;
+
     if (IsJsonMode())
     {
         cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_LOGIN, 0);
@@ -413,28 +430,16 @@ void TradeCallback::OnResponseUserLogin(IF2UnPacker *lpUnPacker)
         return;
     }
 
-    hstrade_apidata_t* apidata = &m_hstd->apidata;
-
     HSRspUserLoginField rsp_login = { 0 };
     HSRspInfoField rsp_info = { 0 };
     TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
-
-    int branch_no = lpUnPacker->GetInt("branch_no");
-    int sysnode_id = lpUnPacker->GetInt("sysnode_id");
-    int init_date = lpUnPacker->GetInt("init_date");
-    int op_branch_no = lpUnPacker->GetInt("op_branch_no");
 
     extract_str_field(rsp_login.company_name, "company_name");
     extract_str_field(rsp_login.client_id, "client_id");
     extract_str_field(rsp_login.user_token, "user_token");
 
-    strncpy(apidata->user_token, rsp_login.user_token, sizeof(apidata->user_token));
-    apidata->branch_no = branch_no;
-    apidata->system_no = sysnode_id;
-    apidata->op_branch_no = op_branch_no;
-
     rsp_login.branch_no = branch_no;
-    rsp_login.system_no = sysnode_id;
+    rsp_login.system_id = sysnode_id;
     rsp_login.trading_date = init_date;
 
     hstrade_spi_t* spi = m_hstd->spi;

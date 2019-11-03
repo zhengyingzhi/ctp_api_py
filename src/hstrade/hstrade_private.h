@@ -20,7 +20,7 @@ typedef struct hstrade_apidata_s
     char    password_type;
     int     op_branch_no;
     int     branch_no;
-    int     system_no;
+    int     sysnode_id;
 }hstrade_apidata_t;
 
 struct hstrade_s
@@ -29,6 +29,7 @@ struct hstrade_s
     int     is_async;
     int     debug_mode;
     int     timeoutms;
+    int     sequence_no;
     void*   userdata;
 
     // t2sdk api object

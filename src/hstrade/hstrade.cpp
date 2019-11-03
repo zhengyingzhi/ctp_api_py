@@ -125,7 +125,7 @@ void HS_TRADE_STDCALL hstrade_realese(hstrade_t* hstd)
 
     // dummy
     int* pdesc = (int*)hstd;
-    if (*pdesc == HS_TRADE)
+    if (*pdesc != HS_TRADE)
     {
         fprintf(stderr, "hstrade_realese unknown desc:%d!\n", *pdesc);
         return;
@@ -255,23 +255,31 @@ int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type)
     lpPacker->BeginPack();
     lpPacker->AddField("branch_no", 'I', 5);
     lpPacker->AddField("fund_account", 'S', 18);
+#if 0
     lpPacker->AddField("op_branch_no", 'I', 5);
     lpPacker->AddField("op_entrust_way", 'C', 1);
     lpPacker->AddField("op_station", 'S', 255);
     lpPacker->AddField("client_id", 'S', 18);
     lpPacker->AddField("password", 'S', 10);
+    lpPacker->AddField("password_type", 'C', 1);
     lpPacker->AddField("user_token", 'S', 40);
+    lpPacker->AddField("sysnode_id", 'I', 4);
+#endif//0
     lpPacker->AddField("issue_type", 'I', 8);
 
     // 加入对应的字段值
     lpPacker->AddInt(apidata->branch_no);
     lpPacker->AddStr(hstd->client_id);
+#if 0
     lpPacker->AddInt(apidata->op_branch_no);
     lpPacker->AddChar(apidata->entrust_way);
     lpPacker->AddStr(apidata->op_station);
     lpPacker->AddStr(hstd->client_id);
     lpPacker->AddStr(hstd->password);
+    lpPacker->AddChar(apidata->password_type);
     lpPacker->AddStr(apidata->user_token);
+    lpPacker->AddInt(apidata->sysnode_id);
+#endif
     lpPacker->AddInt(issue_type);
 
     // 结束打包
@@ -283,11 +291,12 @@ int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type)
 
     lpBizMessage->SetFunction(UFX_FUNC_SUBSCRIBE);
     lpBizMessage->SetPacketType(REQUEST_PACKET);
-    lpBizMessage->SetSequeceNo(12);     // FIXME
-    lpBizMessage->SetBuff(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
+    lpBizMessage->SetSequeceNo(hstd->sequence_no++);
+    lpBizMessage->SetIssueType(issue_type);     // FIXME
+    lpBizMessage->SetKeyInfo(lpPacker->GetPackBuf(), lpPacker->GetPackLen());
 
     // 发送消息
-    int rv = conn->SendBizMsg(lpBizMessage, hstd->is_async);
+    int rv = conn->SendBizMsg(lpBizMessage, 1);
     if (rv != 0)
     {
         fprintf(stderr, "hstrade_subscribe SendBizMsg() failed rv:%d, err:%s\n",
@@ -1081,6 +1090,7 @@ void* HS_TRADE_STDCALL hstrade_begin_pack(hstrade_t* hstd)
         return NULL;
 
     lpPacker->AddRef();
+    lpPacker->BeginPack();
 
     return lpPacker;
 }
@@ -1186,7 +1196,7 @@ int HS_TRADE_STDCALL hstrade_add_field(hstrade_t* hstd, void* packer, const char
 
 
 /// add pack values
-int HS_TRADE_STDCALL hstrade_pack_char(hstrade_t* hstd, void* packer, const char value)
+int HS_TRADE_STDCALL hstrade_add_char(hstrade_t* hstd, void* packer, const char value)
 {
     IF2Packer* lpPacker;
     lpPacker = (IF2Packer*)packer;
@@ -1194,7 +1204,7 @@ int HS_TRADE_STDCALL hstrade_pack_char(hstrade_t* hstd, void* packer, const char
     return 0;
 }
 
-int HS_TRADE_STDCALL hstrade_pack_string(hstrade_t* hstd, void* packer, const char* value)
+int HS_TRADE_STDCALL hstrade_add_str(hstrade_t* hstd, void* packer, const char* value)
 {
     IF2Packer* lpPacker;
     lpPacker = (IF2Packer*)packer;
@@ -1202,7 +1212,7 @@ int HS_TRADE_STDCALL hstrade_pack_string(hstrade_t* hstd, void* packer, const ch
     return 0;
 }
 
-int HS_TRADE_STDCALL hstrade_pack_int(hstrade_t* hstd, void* packer, const int value)
+int HS_TRADE_STDCALL hstrade_add_int(hstrade_t* hstd, void* packer, const int value)
 {
     IF2Packer* lpPacker;
     lpPacker = (IF2Packer*)packer;
@@ -1210,7 +1220,7 @@ int HS_TRADE_STDCALL hstrade_pack_int(hstrade_t* hstd, void* packer, const int v
     return 0;
 }
 
-int HS_TRADE_STDCALL hstrade_pack_double(hstrade_t* hstd, void* packer, const double value)
+int HS_TRADE_STDCALL hstrade_add_double(hstrade_t* hstd, void* packer, const double value)
 {
     IF2Packer* lpPacker;
     lpPacker = (IF2Packer*)packer;
@@ -1218,4 +1228,16 @@ int HS_TRADE_STDCALL hstrade_pack_double(hstrade_t* hstd, void* packer, const do
     return 0;
 }
 
+int HS_TRADE_STDCALL hstrade_recv_msg(hstrade_t* hstd, int hsend, int timeoutms, void** ppmsg)
+{
+    IBizMessage* lpBizMessageRecv = NULL;
+    int rv = hstd->conn->RecvBizMsg(hsend, &lpBizMessageRecv, timeoutms);
+
+    if (rv == 0)
+    {
+        *ppmsg = lpBizMessageRecv;
+    }
+
+    return rv;
+}
 

@@ -144,7 +144,7 @@ struct HSRspUserLoginField
     int         trading_date;           // 交易日
     int         pre_trading_date;       // 上个交易日
     int         bill_confirm_flag;      // 账单确认标志
-    int         system_no;              // 系统号
+    int         system_id;              // 系统号
     char        asset_prop;             // 资产属性 0-普通客户 1-信用账户 B-衍生品账户
     char        last_op_station[256];   // 上次登录站点
     char        user_token[512];        // 用户口令
