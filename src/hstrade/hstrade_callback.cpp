@@ -141,7 +141,7 @@ void TradeCallback::OnReceivedBizEx(CConnectionInterface *lpConnection, int hSen
 void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSend, IBizMessage* lpMsg)
 {
     if (m_hstd->debug_mode)
-        fprintf(stderr, "TradeCallback::OnReceivedBizMsg hSend:%d", hSend);
+        fprintf(stderr, "TradeCallback::OnReceivedBizMsg hSend:%d\n", hSend);
 
     if (!lpMsg)
     {
@@ -153,16 +153,27 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
 
     m_return_code = lpMsg->GetReturnCode();
     m_return_msg = lpMsg->GetErrorInfo();
+    int func_id = lpMsg->GetFunction();
 
     int iLen = 0;
-    const void * lpBuffer = lpMsg->GetContent(iLen);
-    IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
+    const void* lpBuffer;
+    IF2UnPacker* lpUnPacker;
+    if (func_id >= UFX_FUNC_SUBSCRIBE && func_id <= UFX_FUNC_RTN_DATA)
+    {
+        lpBuffer = lpMsg->GetKeyInfo(iLen);
+    }
+    else
+    {
+        lpBuffer = lpMsg->GetContent(iLen);
+    }
+
+    lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
     if (!lpUnPacker)
     {
         int error_no = lpMsg->GetErrorNo();
         const char* error_info = lpMsg->GetErrorInfo();
         fprintf(stderr, "OnReceivedBizMsg empty packet，功能号：%d，错误代码：%d，错误信息:%s\n",
-            lpMsg->GetFunction(), error_no, error_info);
+            func_id, error_no, error_info);
         return;
     }
 
@@ -181,7 +192,7 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
         //lpBizMessageRecv->SetBuff(lpMsgBuffer,iMsgLen);
         //没有错误信息
 
-        switch (lpMsg->GetFunction())
+        switch (func_id)
         {
         case UFX_FUNC_LOGIN:
             OnResponseUserLogin(lpUnPacker);
