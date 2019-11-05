@@ -79,11 +79,19 @@ int main(int argc, char* argv[])
     // set callbacks
     hstrade_register_spi(hstd, &spi);
 
-    // do connect
+    // load config and set some items
+    hstrade_config_load(hstd, "t2sdk.ini");
+
     const char* server_addr = "120.55.176.113:9359";
     const char* license_file = "(20130524)HSSBCS-HSTZYJ20-0000_3rd.dat";
     const char* fund_account = "70960013";
-    rv = hstrade_init(hstd, server_addr, license_file, fund_account, 3000);
+    hstrade_config_set_string(hstd, "t2sdk", "servers", server_addr);
+    hstrade_config_set_string(hstd, "t2sdk", "license_file", license_file);
+    hstrade_config_set_string(hstd, "t2sdk", "license_pwd", "888888");
+    hstrade_config_set_string(hstd, "ufx", "fund_account", fund_account);
+
+    // do connect
+    rv = hstrade_init(hstd, 3000);
     fprintf(stderr, "hstrade_init rv:%d\n", rv);
 
     while (1)
@@ -98,7 +106,7 @@ int main(int argc, char* argv[])
         else if (strcmp(buf, "sub") == 0)
         {
             hstrade_subscribe(hstd, UFX_ISSUE_TYPE_TRADE);
-            hstrade_subscribe(hstd, UFX_ISSUE_TYPE_ORDER);
+            // hstrade_subscribe(hstd, UFX_ISSUE_TYPE_ORDER);
         }
         else if (strcmp(buf, "1") == 0)
         {
@@ -195,28 +203,48 @@ void on_order_action(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_i
 
 void on_qry_trading_account(hstrade_t* hstd, HSTradingAccountField* ta, HSRspInfoField* rsp_info, int islast)
 {
-    fprintf(stderr, "<on_qry_trading_account>\n");
+    fprintf(stderr, "<on_qry_trading_account> %p\n", ta);
+    if (!ta)
+    {
+        return;
+    }
+
     fprintf(stderr, "asset:%.2lf, balance:%.2lf, avail:%.2lf, frozen:%.2lf, market_value:%.2lf\n",
         ta->asset_balance, ta->current_balance, ta->enable_balance, ta->frozen_balance, ta->market_value);
 }
 
 void on_qry_position(hstrade_t* hstd, HSPositionField* pos, HSRspInfoField* rsp_info, int islast)
 {
-    fprintf(stderr, "<on_qry_position>\n");
+    fprintf(stderr, "<on_qry_position> %p\n", pos);
+    if (!pos)
+    {
+        return;
+    }
+
     fprintf(stderr, "symbol:%s,cur_qty:%d,avail_qty:%d,frozen_qty:%d,cost_price:%.3lf,market_value:%.2lf,profit:%.2lf\n",
         pos->stock_code, pos->current_amount, pos->enable_amount, pos->frozen_amount, pos->cost_price, pos->market_value, pos->income_balance);
 }
 
 void on_qry_order(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int islast)
 {
-    fprintf(stderr, "<on_qry_order>\n");
+    fprintf(stderr, "<on_qry_order> %p\n", order);
+    if (!order)
+    {
+        return;
+    }
+
     fprintf(stderr, "symbol:%s,qty:%d,price:%.2lf,orderid:%s,status:%c\n",
         order->stock_code, order->entrust_amount, order->entrust_price, order->entrust_no, order->entrust_status);
 }
 
 void on_qry_trade(hstrade_t* hstd, HSTradeField* trade, HSRspInfoField* rsp_info, int islast)
 {
-    fprintf(stderr, "<on_qry_trade>\n");
+    fprintf(stderr, "<on_qry_trade> %p\n", trade);
+    if (!trade)
+    {
+        return;
+    }
+
     fprintf(stderr, "symbol:%s,qty:%d,price:%.2lf,orderid:%s,tradeid:%s,tradetime:%d\n",
         trade->stock_code, trade->business_amount, trade->business_price, trade->entrust_no, trade->business_no, trade->business_time);
 }

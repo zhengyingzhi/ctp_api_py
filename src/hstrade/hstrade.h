@@ -84,11 +84,19 @@ HS_TRADE_API void HS_TRADE_STDCALL hstrade_set_timeout(hstrade_t* hstd, int time
 /// 注册回调
 HS_TRADE_API void HS_TRADE_STDCALL hstrade_register_spi(hstrade_t* hstd, hstrade_spi_t* spi);
 
-/// 设置API选项
-HS_TRADE_API int HS_TRADE_STDCALL hstrade_set_option(hstrade_t* hstd, const char* option_name, const void* option_value, int value_size);
+/// 加载配置文件 t2sdk.ini
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_config_load(hstrade_t* hstd, const char* config_file);
+
+/// 设置API配置选项: [t2sdk]servers, [t2sdk]license_file, [ufx]fund_account etc.
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_config_set_string(hstrade_t* hstd, const char* section, const char* entry_name, const char* value);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_config_set_int(hstrade_t* hstd, const char* section, const char* entry_name, const int value);
+
+/// 获取API配置选项
+HS_TRADE_API const char* HS_TRADE_STDCALL hstrade_config_get_string(hstrade_t* hstd, const char* section, const char* entry_name, const char* default_value);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_config_get_int(hstrade_t* hstd, const char* section, const char* entry_name, const int default_value);
 
 /// 发起连接
-HS_TRADE_API int HS_TRADE_STDCALL hstrade_init(hstrade_t* hstd, const char* server_addr, const char* license_file, const char* fund_account, int timeoutms);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_init(hstrade_t* hstd, int timeoutms);
 
 /// 订阅主推回报
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type);

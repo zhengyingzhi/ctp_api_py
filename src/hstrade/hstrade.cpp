@@ -106,7 +106,6 @@ hstrade_t* HS_TRADE_STDCALL hstrade_create(int is_async)
 
     hstd->config = NewConfig();
     hstd->config->AddRef();
-    hstd->config->Load("t2sdk.ini");
 
     hstd->conn = NULL;
 
@@ -176,16 +175,88 @@ void HS_TRADE_STDCALL hstrade_register_spi(hstrade_t* hstd, hstrade_spi_t* spi)
     hstd->spi = spi;
 }
 
-int HS_TRADE_STDCALL hstrade_set_option(hstrade_t* hstd, const char* option_name, const void* option_value, int value_size)
+int HS_TRADE_STDCALL hstrade_config_load(hstrade_t* hstd, const char* config_file)
 {
-    return 0;
+    if (!config_file || !config_file[0])
+    {
+        return -1;
+    }
+
+    if (!hstd->config)
+    {
+        hstd->config = NewConfig();
+        hstd->config->AddRef();
+    }
+
+    return hstd->config->Load(config_file);
 }
 
-int HS_TRADE_STDCALL hstrade_init(hstrade_t* hstd,
-    const char* server_addr,
-    const char* license_file,
-    const char* fund_account,
-    int timeoutms)
+int HS_TRADE_STDCALL hstrade_config_set_string(hstrade_t* hstd, const char* section, const char* entry_name, const char* value)
+{
+    if (!section || !entry_name || !value)
+    {
+        return -1;
+    }
+
+    if (!hstd->config)
+    {
+        return -2;
+    }
+
+    if (strcmp(section, "t2sdk") == 0)
+    {
+        if (strcmp(entry_name, "servers") == 0)
+            strncpy(hstd->server_addr, value, sizeof(hstd->server_addr) - 1);
+    }
+    if (strcmp(section, "ufx") == 0)
+    {
+        if (strcmp(entry_name, "fund_account") == 0)
+            strncpy(hstd->client_id, value, sizeof(hstd->client_id) - 1);
+    }
+
+    // fprintf(stderr, "hstrade_config_set_string section:%s, entry:%s, value:%s\n", section, entry_name, value);
+
+    return hstd->config->SetString(section, entry_name, value);
+}
+
+int HS_TRADE_STDCALL hstrade_config_set_int(hstrade_t* hstd, const char* section, const char* entry_name, const int value)
+{
+    if (!section || !entry_name || !value)
+    {
+        return -1;
+    }
+
+    if (!hstd->config)
+    {
+        return -2;
+    }
+
+    // fprintf(stderr, "hstrade_config_set_int section:%s, entry:%s, value:%d\n", section, entry_name, value);
+
+    return hstd->config->SetInt(section, entry_name, value);
+}
+
+const char* HS_TRADE_STDCALL hstrade_config_get_string(hstrade_t* hstd, const char* section, const char* entry_name, const char* default_value)
+{
+    if (!hstd->config)
+    {
+        return NULL;
+    }
+
+    return hstd->config->GetString(section, entry_name, default_value);
+}
+
+int HS_TRADE_STDCALL hstrade_config_get_int(hstrade_t* hstd, const char* section, const char* entry_name, const int default_value)
+{
+    if (!hstd->config)
+    {
+        return default_value;
+    }
+
+    return hstd->config->GetInt(section, entry_name, default_value);
+}
+
+int HS_TRADE_STDCALL hstrade_init(hstrade_t* hstd, int timeoutms)
 {
     int rv = 0;
 
@@ -193,14 +264,6 @@ int HS_TRADE_STDCALL hstrade_init(hstrade_t* hstd,
     CConnectionInterface* conn;
 
     config = hstd->config;
-
-    // set some config items
-    config->SetString("t2sdk", "servers", server_addr);
-    config->SetString("t2sdk", "license_file", license_file);
-    config->SetString("ufx", "fund_account", fund_account);
-
-    strncpy(hstd->server_addr, server_addr, sizeof(hstd->server_addr) - 1);
-    strncpy(hstd->client_id, fund_account, sizeof(hstd->client_id) - 1);
 
     hstd->apidata.entrust_way = '7';
     hstd->apidata.op_branch_no = 0;
@@ -255,30 +318,30 @@ int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type)
     lpPacker->BeginPack();
     lpPacker->AddField("branch_no", 'I', 5);
     lpPacker->AddField("fund_account", 'S', 18);
-#if 0
+#if 1
     lpPacker->AddField("op_branch_no", 'I', 5);
     lpPacker->AddField("op_entrust_way", 'C', 1);
     lpPacker->AddField("op_station", 'S', 255);
     lpPacker->AddField("client_id", 'S', 18);
     lpPacker->AddField("password", 'S', 10);
-    lpPacker->AddField("password_type", 'C', 1);
+    // lpPacker->AddField("password_type", 'C', 1);
     lpPacker->AddField("user_token", 'S', 40);
-    lpPacker->AddField("sysnode_id", 'I', 4);
+    // lpPacker->AddField("sysnode_id", 'I', 4);
 #endif//0
     lpPacker->AddField("issue_type", 'I', 8);
 
     // 加入对应的字段值
     lpPacker->AddInt(apidata->branch_no);
     lpPacker->AddStr(hstd->client_id);
-#if 0
+#if 1
     lpPacker->AddInt(apidata->op_branch_no);
     lpPacker->AddChar(apidata->entrust_way);
     lpPacker->AddStr(apidata->op_station);
     lpPacker->AddStr(hstd->client_id);
     lpPacker->AddStr(hstd->password);
-    lpPacker->AddChar(apidata->password_type);
+    // lpPacker->AddChar(apidata->password_type);
     lpPacker->AddStr(apidata->user_token);
-    lpPacker->AddInt(apidata->sysnode_id);
+    // lpPacker->AddInt(apidata->sysnode_id);
 #endif
     lpPacker->AddInt(issue_type);
 
@@ -297,11 +360,7 @@ int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type)
 
     // 发送消息
     int rv = conn->SendBizMsg(lpBizMessage, 1);
-    if (rv != 0)
-    {
-        fprintf(stderr, "hstrade_subscribe SendBizMsg() failed rv:%d, err:%s\n",
-            rv, conn->GetErrorMsg(rv));
-    }
+    // fprintf(stderr, "hstrade_subscribe SendBizMsg() rv:%d\n", rv);
 
     lpPacker->FreeMem(lpPacker->GetPackBuf());
     lpPacker->Release();

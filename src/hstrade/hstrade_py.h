@@ -53,8 +53,19 @@ public:
     // 设置同步模式超时时间
     void set_timeout(int timeoutms);
 
+    // 加载配置文件
+    int config_load(std::string config_file);
+
+    // 设置配置选项
+    int config_set_string(std::string section, std::string entry_name, std::string value);
+    int config_set_int(std::string section, std::string entry_name, int value);
+
+    // 获取配置选项
+    std::string config_get_string(std::string section, std::string entry_name, std::string default_value);
+    int config_get_int(std::string section, std::string entry_name, int default_value);
+
     // 连接服务器
-    int connect(std::string server_port, std::string license_file, std::string fund_account, int timeoutms);
+    int connect(int timeoutms);
 
     // 设置序列号
     int set_sequece_no(int sequence_no);

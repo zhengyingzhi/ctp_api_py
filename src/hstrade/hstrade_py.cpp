@@ -227,10 +227,38 @@ void HSTdApi::set_timeout(int timeoutms)
     }
 }
 
-int HSTdApi::connect(std::string server_port, std::string license_file, std::string fund_account, int timeoutms)
+int HSTdApi::config_load(std::string config_file)
+{
+    return hstrade_config_load(m_hstd, config_file.c_str());
+}
+
+int HSTdApi::config_set_string(std::string section, std::string entry_name, std::string value)
+{
+    return hstrade_config_set_string(m_hstd, section.c_str(), entry_name.c_str(), value.c_str());
+}
+
+int HSTdApi::config_set_int(std::string section, std::string entry_name, int value)
+{
+    return hstrade_config_set_int(m_hstd, section.c_str(), entry_name.c_str(), value);
+}
+
+std::string HSTdApi::config_get_string(std::string section, std::string entry_name, std::string default_value)
+{
+    const char* ret_value = hstrade_config_get_string(m_hstd, section.c_str(), entry_name.c_str(), default_value.c_str());
+    if (!ret_value)
+        ret_value = "";
+    return std::string(ret_value);
+}
+
+int HSTdApi::config_get_int(std::string section, std::string entry_name, int default_value)
+{
+    return hstrade_config_get_int(m_hstd, section.c_str(), entry_name.c_str(), default_value);
+}
+
+int HSTdApi::connect(int timeoutms)
 {
     int rv;
-    rv = hstrade_init(m_hstd, server_port.c_str(), license_file.c_str(), fund_account.c_str(), timeoutms);
+    rv = hstrade_init(m_hstd, timeoutms);
     return rv;
 }
 
@@ -565,6 +593,11 @@ PYBIND11_MODULE(hstrade, m)
         .def("create_api", &HSTdApi::create_api)
         .def("release", &HSTdApi::release)
         .def("connect", &HSTdApi::connect)
+        .def("config_load", &HSTdApi::config_load)
+        .def("config_set_string", &HSTdApi::config_set_string)
+        .def("config_set_int", &HSTdApi::config_set_int)
+        .def("config_get_string", &HSTdApi::config_get_string)
+        .def("config_get_int", &HSTdApi::config_get_int)
         .def("set_debug_mode", &HSTdApi::set_debug_mode)
         .def("set_json_value", &HSTdApi::set_json_value)
         .def("send_msg", &HSTdApi::send_msg)

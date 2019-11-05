@@ -172,8 +172,9 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
     {
         int error_no = lpMsg->GetErrorNo();
         const char* error_info = lpMsg->GetErrorInfo();
-        fprintf(stderr, "OnReceivedBizMsg empty packet，功能号：%d，错误代码：%d，错误信息:%s\n",
-            func_id, error_no, error_info);
+        if (func_id != UFX_FUNC_HEART)
+            fprintf(stderr, "OnReceivedBizMsg empty packet，功能号：%d，错误代码：%d，错误信息:%s\n",
+                func_id, error_no, error_info);
         return;
     }
 
@@ -219,6 +220,22 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
             {
                 OnRtnOrder(lpUnPacker);
             }
+        }
+        case UFX_FUNC_SUBSCRIBE:
+        {
+            OnResponseSubscribe(lpUnPacker, lpMsg->GetIssueType());
+            break;
+        }
+        case UFX_FUNC_SUB_CANCEL:
+        {
+            OnResponseUnSubscribe(lpUnPacker, lpMsg->GetIssueType());
+            break;
+        }
+        case UFX_FUNC_HEART:
+        {
+            lpMsg->ChangeReq2AnsMessage();
+            lpConnection->SendBizMsg(lpMsg, 1);
+            break;
         }
         default:
             break;
@@ -560,9 +577,25 @@ void TradeCallback::OnResponseQrySecurityInfo(IF2UnPacker* lpUnPacker)
 void TradeCallback::OnResponseQryMD(IF2UnPacker* lpUnPacker)
 {}
 
-void TradeCallback::OnResponseSubscribe(IF2UnPacker* lpUnPacker)
-{}
+void TradeCallback::OnResponseSubscribe(IF2UnPacker* lpUnPacker, int issue_type)
+{
+    if (IsJsonMode())
+    {
+        cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_SUBSCRIBE, issue_type);
+        NotifyJsonData(json, UFX_FUNC_SUBSCRIBE, issue_type);
+        return;
+    }
+}
 
+void TradeCallback::OnResponseUnSubscribe(IF2UnPacker* lpUnPacker, int issue_type)
+{
+    if (IsJsonMode())
+    {
+        cJSON* json = GenJsonDatas(lpUnPacker, UFX_FUNC_SUB_CANCEL, issue_type);
+        NotifyJsonData(json, UFX_FUNC_SUB_CANCEL, issue_type);
+        return;
+    }
+}
 
 void TradeCallback::OnResponseOrderInsert(IF2UnPacker* lpUnPacker)
 {}

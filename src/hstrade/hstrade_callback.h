@@ -84,7 +84,9 @@ public:
     // 400 行情查询
     void OnResponseQryMD(IF2UnPacker* lpUnPacker);
     // 620001 订阅回报应答
-    void OnResponseSubscribe(IF2UnPacker* lpUnPacker);
+    void OnResponseSubscribe(IF2UnPacker* lpUnPacker, int issue_type);
+    // 620002 取消订阅回报应答
+    void OnResponseUnSubscribe(IF2UnPacker* lpUnPacker, int issue_type);
 
     // 委托应答
     void OnResponseOrderInsert(IF2UnPacker* lpUnPacker);
