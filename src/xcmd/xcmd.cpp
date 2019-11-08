@@ -16,7 +16,7 @@
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "0.1.1"
+#define XC_MDAPI_VERSION    "0.1.2"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -120,11 +120,17 @@ static int get_ratio_index(double updown_ratio)
 
 XcMdApi::XcMdApi()
     : api()
-    , qidmap()
+    , m_pendings()
     , mdmap()
     , m_SubList()
     , m_SubListLock()
 {
+    m_pendings.reserve(1024);
+
+    time_t now = time(NULL);
+    struct tm* ptm = localtime(&now);
+    sprintf(trading_day, "%04d%02d%02d", (ptm->tm_year + 1900), (ptm->tm_mon + 1), ptm->tm_mday);
+
     refid = 1;
     have_level10 = 0;
     statistic_mode = 0;
@@ -188,87 +194,89 @@ void XcMdApi::OnIssueEnd(QWORD qQuoteID)
 
     if (log_level == XC_SPEC_LOG_LV)
     {
-        write_data(log_level, "IssueEnd:%ld", (long)qQuoteID);
+        write_data(log_level, "IssueEnd:%ld, pendings:%d", (long)qQuoteID, (int)m_pendings.size());
     }
 
     XcDepthMarketData* pMD;
-    if (qidmap.count(qQuoteID) == 0)
-    {
-        return;
-    }
-    pMD = qidmap[qQuoteID];
-    qidmap.erase(qQuoteID);
 
     gil_scoped_acquire acquire;
-    dict data;
-    data["TradingDay"] = to_utf(pMD->TradingDay);
-    data["InstrumentID"] = to_utf(pMD->InstrumentID);
-    data["ExchangeID"] = to_utf(pMD->ExchangeID);
-    data["PreClosePrice"] = pMD->PreClosePrice;
-    data["LastPrice"] = pMD->LastPrice;
-    data["OpenPrice"] = pMD->OpenPrice;
-    data["HighestPrice"] = pMD->HighestPrice;
-    data["LowestPrice"] = pMD->LowestPrice;
-    data["ClosePrice"] = pMD->ClosePrice;
-    data["Volume"] = pMD->Volume;
-    data["Turnover"] = pMD->Turnover;
-    data["OpenInterest"] = pMD->OpenInterest;
-    data["UpdateTime"] = to_utf(pMD->UpdateTime);
-    data["UpdateMillisec"] = pMD->UpdateMillisec;
-    data["ActionDay"] = to_utf(pMD->ActionDay);
-
-    data["UpperLimitPrice"] = pMD->UpperLimitPrice;
-    data["LowerLimitPrice"] = pMD->LowerLimitPrice;
-
-    data["BidPrice1"]  = pMD->BidPrice1;
-    data["BidVolume1"] = pMD->BidVolume1;
-    data["BidPrice2"]  = pMD->BidPrice2;
-    data["BidVolume2"] = pMD->BidVolume2;
-    data["BidPrice3"]  = pMD->BidPrice3;
-    data["BidVolume3"] = pMD->BidVolume3;
-    data["BidPrice4"]  = pMD->BidPrice4;
-    data["BidVolume4"] = pMD->BidVolume4;
-    data["BidPrice5"]  = pMD->BidPrice5;
-    data["BidVolume5"] = pMD->BidVolume5;
-    if (have_level10)
+    for (int i = 0; i < (int)m_pendings.size(); ++i)
     {
-        data["BidPrice6"] = pMD->BidPrice6;
-        data["BidVolume6"] = pMD->BidVolume6;
-        data["BidPrice7"] = pMD->BidPrice7;
-        data["BidVolume7"] = pMD->BidVolume7;
-        data["BidPrice8"] = pMD->BidPrice8;
-        data["BidVolume8"] = pMD->BidVolume8;
-        data["BidPrice9"] = pMD->BidPrice9;
-        data["BidVolume9"] = pMD->BidVolume9;
-        data["BidPrice10"] = pMD->BidPrice10;
-        data["BidVolume10"] = pMD->BidVolume10;
+        pMD = m_pendings[i];
+
+        dict data;
+        data["TradingDay"] = to_utf(pMD->TradingDay);
+        data["InstrumentID"] = to_utf(pMD->InstrumentID);
+        data["ExchangeID"] = to_utf(pMD->ExchangeID);
+        data["PreClosePrice"] = pMD->PreClosePrice;
+        data["LastPrice"] = pMD->LastPrice;
+        data["OpenPrice"] = pMD->OpenPrice;
+        data["HighestPrice"] = pMD->HighestPrice;
+        data["LowestPrice"] = pMD->LowestPrice;
+        data["ClosePrice"] = pMD->ClosePrice;
+        data["Volume"] = pMD->Volume;
+        data["Turnover"] = pMD->Turnover;
+        data["OpenInterest"] = pMD->OpenInterest;
+        data["UpdateTime"] = to_utf(pMD->UpdateTime);
+        data["UpdateMillisec"] = pMD->UpdateMillisec;
+        data["ActionDay"] = to_utf(pMD->ActionDay);
+
+        data["UpperLimitPrice"] = pMD->UpperLimitPrice;
+        data["LowerLimitPrice"] = pMD->LowerLimitPrice;
+
+        data["BidPrice1"] = pMD->BidPrice1;
+        data["BidVolume1"] = pMD->BidVolume1;
+        data["BidPrice2"] = pMD->BidPrice2;
+        data["BidVolume2"] = pMD->BidVolume2;
+        data["BidPrice3"] = pMD->BidPrice3;
+        data["BidVolume3"] = pMD->BidVolume3;
+        data["BidPrice4"] = pMD->BidPrice4;
+        data["BidVolume4"] = pMD->BidVolume4;
+        data["BidPrice5"] = pMD->BidPrice5;
+        data["BidVolume5"] = pMD->BidVolume5;
+        if (have_level10)
+        {
+            data["BidPrice6"] = pMD->BidPrice6;
+            data["BidVolume6"] = pMD->BidVolume6;
+            data["BidPrice7"] = pMD->BidPrice7;
+            data["BidVolume7"] = pMD->BidVolume7;
+            data["BidPrice8"] = pMD->BidPrice8;
+            data["BidVolume8"] = pMD->BidVolume8;
+            data["BidPrice9"] = pMD->BidPrice9;
+            data["BidVolume9"] = pMD->BidVolume9;
+            data["BidPrice10"] = pMD->BidPrice10;
+            data["BidVolume10"] = pMD->BidVolume10;
+        }
+
+        data["AskPrice1"] = pMD->AskPrice1;
+        data["AskVolume1"] = pMD->AskVolume1;
+        data["AskPrice2"] = pMD->AskPrice2;
+        data["AskVolume2"] = pMD->AskVolume2;
+        data["AskPrice3"] = pMD->AskPrice3;
+        data["AskVolume3"] = pMD->AskVolume3;
+        data["AskPrice4"] = pMD->AskPrice4;
+        data["AskVolume4"] = pMD->AskVolume4;
+        data["AskPrice5"] = pMD->AskPrice5;
+        data["AskVolume5"] = pMD->AskVolume5;
+        if (have_level10)
+        {
+            data["AskPrice6"] = pMD->AskPrice6;
+            data["AskVolume6"] = pMD->AskVolume6;
+            data["AskPrice7"] = pMD->AskPrice7;
+            data["AskVolume7"] = pMD->AskVolume7;
+            data["AskPrice8"] = pMD->AskPrice8;
+            data["AskVolume8"] = pMD->AskVolume8;
+            data["AskPrice9"] = pMD->AskPrice9;
+            data["AskVolume9"] = pMD->AskVolume9;
+            data["AskPrice10"] = pMD->AskPrice10;
+            data["AskVolume10"] = pMD->AskVolume10;
+        }
+
+        this->on_rtn_market_data(data);
     }
 
-    data["AskPrice1"]  = pMD->AskPrice1;
-    data["AskVolume1"] = pMD->AskVolume1;
-    data["AskPrice2"]  = pMD->AskPrice2;
-    data["AskVolume2"] = pMD->AskVolume2;
-    data["AskPrice3"]  = pMD->AskPrice3;
-    data["AskVolume3"] = pMD->AskVolume3;
-    data["AskPrice4"]  = pMD->AskPrice4;
-    data["AskVolume4"] = pMD->AskVolume4;
-    data["AskPrice5"]  = pMD->AskPrice5;
-    data["AskVolume5"] = pMD->AskVolume5;
-    if (have_level10)
-    {
-        data["AskPrice6"] = pMD->AskPrice6;
-        data["AskVolume6"] = pMD->AskVolume6;
-        data["AskPrice7"] = pMD->AskPrice7;
-        data["AskVolume7"] = pMD->AskVolume7;
-        data["AskPrice8"] = pMD->AskPrice8;
-        data["AskVolume8"] = pMD->AskVolume8;
-        data["AskPrice9"] = pMD->AskPrice9;
-        data["AskVolume9"] = pMD->AskVolume9;
-        data["AskPrice10"] = pMD->AskPrice10;
-        data["AskVolume10"] = pMD->AskVolume10;
-    }
-
-    this->on_rtn_market_data(data);
+    // clear after notified all
+    m_pendings.clear();
 }
 
 void XcMdApi::OnMsg(QWORD qRefID, socket_struct_Msg* pMsg)
@@ -439,6 +447,8 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         return;
     }
 
+    // fprintf(stderr, "OnRespDyna%ld: %s\n", (long)qQuoteID, pDyna->SecCode);
+
     int32_t isfirst = 0;
     char buf[64] = "";
     sprintf(buf, "%s.%s", pDyna->SecCode, pDyna->MarketCode);
@@ -529,24 +539,22 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
 
     if (!statistic_mode)
     {
-        qidmap[qQuoteID] = pMD;
+        strcpy(pMD->TradingDay, trading_day);
+        strcpy(pMD->ActionDay, trading_day);
 
-        time_t now = time(NULL);
-        struct tm* ptm = localtime(&now);
-        sprintf(pMD->TradingDay, "%04d%02d%02d", (ptm->tm_year + 1900), (ptm->tm_mon + 1), ptm->tm_mday);
-        strcpy(pMD->ActionDay, pMD->TradingDay);
+        // keep it firstly, and notify when issue end
+        m_pendings.push_back(pMD);
     }
     else
     {
         statistic_md(pMD, isfirst);
     }
 
-    if (log_level == XC_SPEC_LOG_LV)
+    if (log_level == XC_SPEC_LOG_LV && pDyna->Time >= 91500)
     {
-        write_data(log_level, "RespDyna:%ld,Symbol:%s,Time:%s,Last:%.2lf,Open:%.2lf,High:%.2lf,Low:%.2lf,"
-            "Turnover:%.2lf,UpperLimit:%.2lf,LowerLimit:%.2lf,PreClose:%.2lf", (long)qQuoteID,
-            xc_symbol, pMD->UpdateTime, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
-            pMD->Turnover, pMD->UpperLimitPrice, pMD->LowerLimitPrice, pMD->PreClosePrice);
+        write_data(log_level, "RespDyna %ld,%s,%s,%.2lf,%.2lf,%.2lf,%.2lf,%ld,%.2lf,%.2lf,%.2lf,%d", (long)qQuoteID,
+            pMD->UpdateTime, xc_symbol, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
+            (long)pMD->Volume, pMD->UpperLimitPrice, pMD->LowerLimitPrice, pMD->PreClosePrice, m_pendings.size());
     }
 }
 
@@ -558,11 +566,15 @@ void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socke
     //     SecCode, (long)qQuoteID, pDepth->Grade, pDepth->Price, (int)pDepth->Quantity);
 
     XcDepthMarketData* pMD;
-    if (qidmap.count(qQuoteID) == 0)
+
+    char buf[64] = "";
+    sprintf(buf, "%s.%s", SecCode, MarketCode);
+    string xc_symbol(buf);
+    if (mdmap.count(xc_symbol) == 0)
     {
         return;
     }
-    pMD = qidmap[qQuoteID];
+    pMD = &mdmap[xc_symbol];
 
     // double* dstpx;
     // int* dstvol;
@@ -796,6 +808,7 @@ int XcMdApi::subscribe_md(string instrumentID, int depth_order, int each_flag)
     {
         return -11;
     }
+    // fprintf(stderr, "subscribe_md symbol:%s, market:%s\n", symbol, market);
 
     if (strcmp(market, Scdm_SZSE) == 0)
     {
@@ -818,7 +831,7 @@ int XcMdApi::subscribe_md(string instrumentID, int depth_order, int each_flag)
         std::lock_guard<std::mutex> lk(m_SubListLock);
         if (m_SubList.size() == 0)
         {
-            fprintf(stderr, "no security info to subsribe!\n");
+            fprintf(stderr, "[WARN] no security info to subsribe!\n");
             return -1;
         }
         fprintf(stderr, "subscribe_md total count:%d\n", (int)m_SubList.size());
@@ -1050,6 +1063,11 @@ int XcMdApi::open_debug(string log_file, int log_level)
     }
 
     this->log_level = log_level;
+
+    // write header line
+    write_data(log_level, "xcmd version: %s\n", XC_MDAPI_VERSION);
+    write_data(log_level, "%s\n", COLUMNS_NAMES);
+
     return 0;
 }
 

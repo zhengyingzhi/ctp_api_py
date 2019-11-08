@@ -17,6 +17,8 @@ using namespace pybind11;
 
 #define MAX_UPDOWN_LEVEL 11
 
+#define COLUMNS_NAMES   "qQuoteID,Time,Symbol,Last,Open,High,Low,Volume,UpperLimit,LowerLimit,PreClose,Count"
+
 typedef enum
 {
     PS_None = 0,        // ƽ
@@ -194,9 +196,12 @@ public:
     ~XcMdApi();
 
     CXcMarketApi*   api;
-    QuoteIDMapType  qidmap;
+    // QuoteIDMapType  qidmap;
     MDMapType       mdmap;
     SecInfoMapType  secmap;
+    std::vector<XcDepthMarketData*> m_pendings;
+
+    char            trading_day[9];
     QWORD           refid;
     int             have_level10;
     int             statistic_mode;
