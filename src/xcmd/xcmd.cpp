@@ -16,7 +16,7 @@
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "0.1.2"
+#define XC_MDAPI_VERSION    "0.1.3"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -220,6 +220,10 @@ void XcMdApi::OnIssueEnd(QWORD qQuoteID)
         data["UpdateTime"] = to_utf(pMD->UpdateTime);
         data["UpdateMillisec"] = pMD->UpdateMillisec;
         data["ActionDay"] = to_utf(pMD->ActionDay);
+        data["TradingPhaseCode"] = to_utf(pMD->TradingPhaseCode);
+
+        data["Time"] = pMD->Time;
+        data["TickCount"] = pMD->TickCount;
 
         data["UpperLimitPrice"] = pMD->UpperLimitPrice;
         data["LowerLimitPrice"] = pMD->LowerLimitPrice;
@@ -505,6 +509,9 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     int second = int(pDyna->Time % 100);
     sprintf(pMD->UpdateTime, "%02d:%02d:%02d", hour, minute, second);
     pMD->UpdateMillisec = 0;
+    pMD->Time = pDyna->Time;
+    pMD->TickCount = pDyna->TickCount;
+    memcpy(pMD->TradingPhaseCode, pDyna->TradingPhaseCode, sizeof(pMD->TradingPhaseCode));
 
     if (memcmp(pDyna->MarketCode, "SZSE", 4) == 0)
     {
@@ -550,7 +557,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         statistic_md(pMD, isfirst);
     }
 
-    if (log_level == XC_SPEC_LOG_LV && pDyna->Time >= 91500)
+    if (log_level == XC_SPEC_LOG_LV && pDyna->Time >= 91500 && pDyna->Time <= 153000)
     {
         write_data(log_level, "RespDyna %ld,%s,%s,%.2lf,%.2lf,%.2lf,%.2lf,%ld,%.2lf,%.2lf,%.2lf,%d", (long)qQuoteID,
             pMD->UpdateTime, xc_symbol, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,

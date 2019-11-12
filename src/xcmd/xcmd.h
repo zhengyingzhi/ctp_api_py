@@ -179,6 +179,9 @@ struct XcDepthMarketData
     ///业务日期
     char    ActionDay[9];
 
+    char            TradingPhaseCode[10];   // 产品实时阶段及标志
+    uint32_t        TickCount;          // 成交笔数
+    uint32_t        Time;               // 原始时间
     price_status_t PriceStatus;        // 涨跌状态
     price_status_t LimitStatus;        // 涨跌停状态
     double      UpDownRatio;        // 涨跌比例
