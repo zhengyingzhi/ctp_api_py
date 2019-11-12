@@ -181,7 +181,15 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
     lpUnPacker->AddRef();
 
     if (m_hstd->debug_mode)
-        ShowPacket(lpUnPacker);
+    {
+        IF2UnPacker* lpUnPacker2 = NewUnPacker((void *)lpBuffer, iLen);
+        if (lpUnPacker2)
+        {
+            lpUnPacker2->AddRef();
+            ShowPacket(lpUnPacker2);
+            lpUnPacker2->Release();
+        }
+    }
 
     //成功,应用程序不能释放lpBizMessageRecv消息
     if (lpMsg->GetReturnCode() == 0)
@@ -315,7 +323,7 @@ int TradeCallback::GenJsonData(cJSON* json_data, IF2UnPacker* lpUnPacker)
         {
             char val = lpUnPacker->GetCharByIndex(k);
             char buf[8] = "";
-            sprintf(buf, "%d", val);
+            sprintf(buf, "%c", val);
             cJSON_AddStringToObject(json_data, col_name, buf);
         }
             break;
