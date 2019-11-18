@@ -35,6 +35,15 @@
 #define UFX_ISSUE_TYPE_ORDER        23          // 委托推送
 
 
+/// 字段类型定义 field type
+#define HS_FT_Char                  'C'         // 字符
+#define HS_FT_Str                   'S'         // 字符串
+#define HS_FT_Int                   'I'         // 整形
+#define HS_FT_Decimal               'D'         // 浮点形
+#define HS_FT_Float                 'F'         // 浮点形
+#define HS_FT_Raw                   'R'         // 二进制
+
+
 /// 一些常用字段长度定义
 #define HS_CLIENT_ID_LEN            18
 #define HS_STOCK_CODE_LEN           24

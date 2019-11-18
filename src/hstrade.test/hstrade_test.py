@@ -11,35 +11,35 @@ from hstrade import HSTdApi
 
 
 # 以下为一些BT类型和SEC类型的映射字典
-XC_FUNC_QRY_SECINFO     = 330300        # 证券代码信息查询
-XC_FUNC_QRY_CASH_FAST   = 332254        # 客户资金快速查询
-XC_FUNC_QRY_CASH        = 332255        # 客户资金精准查询
-XC_FUNC_PLACE_ORDER     = 333002        # 普通委托
-XC_FUNC_CANCEL_ORDER    = 333017        # 委托撤单
-XC_FUNC_QRY_PURCHASE    = 333030        # 新股申购查询
-XC_FUNC_QRY_ORDER       = 333101        # 证券委托查询
-XC_FUNC_QRY_TRADE       = 333102        # 证券成交查询
-XC_FUNC_QRY_POS_FAST    = 333103        # 证券持仓快速查询
-XC_FUNC_QRY_POSITION    = 333104        # 证券持仓查询
-XC_FUNC_QRY_MD          = 400           # 证券行情查询
-XC_FUNC_LOGIN           = 331100        # 客户登录
-XC_FUNC_QRY_ACCOUNTINFO = 331155        # 账户信息获取
-XC_FUNC_SUB_ORDER       = 620001        # 订阅回报主推
-XC_FUNC_UNSUB_ORDER     = 620002        # 取消订阅回报主推
-XC_FUNC_RTN_ORDER       = 620003        # 回报主推
+HS_FUNC_QRY_SECINFO     = 330300        # 证券代码信息查询
+HS_FUNC_QRY_CASH_FAST   = 332254        # 客户资金快速查询
+HS_FUNC_QRY_CASH        = 332255        # 客户资金精准查询
+HS_FUNC_PLACE_ORDER     = 333002        # 普通委托
+HS_FUNC_CANCEL_ORDER    = 333017        # 委托撤单
+HS_FUNC_QRY_PURCHASE    = 333030        # 新股申购查询
+HS_FUNC_QRY_ORDER       = 333101        # 证券委托查询
+HS_FUNC_QRY_TRADE       = 333102        # 证券成交查询
+HS_FUNC_QRY_POS_FAST    = 333103        # 证券持仓快速查询
+HS_FUNC_QRY_POSITION    = 333104        # 证券持仓查询
+HS_FUNC_QRY_MD          = 400           # 证券行情查询
+HS_FUNC_LOGIN           = 331100        # 客户登录
+HS_FUNC_QRY_ACCOUNTINFO = 331155        # 账户信息获取
+HS_FUNC_SUB_ORDER       = 620001        # 订阅回报主推
+HS_FUNC_UNSUB_ORDER     = 620002        # 取消订阅回报主推
+HS_FUNC_RTN_ORDER       = 620003        # 回报主推
 
-XC_OP_STATION           = ""
-XC_OP_BRANCH_NO         = "0"
-XC_OP_ENTRUST_WAY       = "7"           # 网上委托
-XC_PASSWORD_TYPE        = "2"           # 1-资金密码 2-交易密码
+HS_OP_STATION           = ""
+HS_OP_BRANCH_NO         = "0"
+HS_OP_ENTRUST_WAY       = "7"           # 网上委托
+HS_PASSWORD_TYPE        = "2"           # 1-资金密码 2-交易密码
 
-XC_EXCHANGE_TYPE_CASH   = "0"           # 0-资金 1-上海 2-深圳
-XC_EXCHANGE_TYPE_SSE    = "1"
-XC_EXCHANGE_TYPE_SZSE   = "2"
+HS_EXCHANGE_TYPE_CASH   = "0"           # 0-资金 1-上海 2-深圳
+HS_EXCHANGE_TYPE_SSE    = "1"
+HS_EXCHANGE_TYPE_SZSE   = "2"
 
-XC_ENTRUST_TYPE_BUY     = "1"           # 1-买入 2-卖出
-XC_ENTRUST_TYPE_SELL    = "2"
-XC_ENTRUST_PROP         = "0"           # 0-买卖
+HS_ENTRUST_TYPE_BUY     = "1"           # 1-买入 2-卖出
+HS_ENTRUST_TYPE_SELL    = "2"
+HS_ENTRUST_PROP         = "0"           # 0-买卖
 
 
 #----------------------------------------------------------------------
@@ -58,20 +58,20 @@ def simple_log(func):
     return wrapper
 
 func_id_desc_dict = {
-    XC_FUNC_QRY_SECINFO: "qry_secinfo",
-    XC_FUNC_QRY_CASH_FAST: "qry_cash_fast",
-    XC_FUNC_QRY_CASH: "qry_cash",
-    XC_FUNC_PLACE_ORDER: "place_order",
-    XC_FUNC_CANCEL_ORDER: "cancel_order",
-    XC_FUNC_QRY_PURCHASE: "qry_purchase",
-    XC_FUNC_QRY_ORDER: "qry_order",
-    XC_FUNC_QRY_TRADE: "qry_trade",
-    XC_FUNC_QRY_POSITION: "qry_position",
-    XC_FUNC_QRY_MD: "qrt_md",
-    XC_FUNC_LOGIN: "client_login",
-    XC_FUNC_QRY_ACCOUNTINFO: "qry_account_info",
-    XC_FUNC_SUB_ORDER: "subscribe_order",
-    XC_FUNC_RTN_ORDER: "rtn_msg"
+    HS_FUNC_QRY_SECINFO: "qry_secinfo",
+    HS_FUNC_QRY_CASH_FAST: "qry_cash_fast",
+    HS_FUNC_QRY_CASH: "qry_cash",
+    HS_FUNC_PLACE_ORDER: "place_order",
+    HS_FUNC_CANCEL_ORDER: "cancel_order",
+    HS_FUNC_QRY_PURCHASE: "qry_purchase",
+    HS_FUNC_QRY_ORDER: "qry_order",
+    HS_FUNC_QRY_TRADE: "qry_trade",
+    HS_FUNC_QRY_POSITION: "qry_position",
+    HS_FUNC_QRY_MD: "qrt_md",
+    HS_FUNC_LOGIN: "client_login",
+    HS_FUNC_QRY_ACCOUNTINFO: "qry_account_info",
+    HS_FUNC_SUB_ORDER: "subscribe_order",
+    HS_FUNC_RTN_ORDER: "rtn_msg"
 }
 
 def func_id_desc(func_id):
@@ -112,14 +112,14 @@ class MyHSTdApi(HSTdApi):
         """添加通知请求字段"""
         data["user_token"] = self.userToken
         # data["user_token"] = ""
-        data["op_branch_no"] = XC_OP_BRANCH_NO
-        data["op_entrust_way"] = XC_OP_ENTRUST_WAY
-        data["op_station"] = XC_OP_STATION
+        data["op_branch_no"] = HS_OP_BRANCH_NO
+        data["op_entrust_way"] = HS_OP_ENTRUST_WAY
+        data["op_station"] = HS_OP_STATION
         data["branch_no"] = int(self.branchNo)
         data["client_id"] = self.accountID
         data["fund_account"] = self.accountID
         data["password"] = self.password
-        data["password_type"] = XC_PASSWORD_TYPE
+        data["password_type"] = HS_PASSWORD_TYPE
 
     def get_order_key(self, orderID, frontID, sessionID):
         """返回订单Key"""
@@ -207,19 +207,19 @@ class MyHSTdApi(HSTdApi):
         issueTypeTrade = 12
         issueTypeOrder = 23
         sub_data = {
-            "function_id": str(XC_FUNC_SUB_ORDER),
+            "function_id": str(HS_FUNC_SUB_ORDER),
             "branch_no": self.branchNo,
             "fund_account": self.accountID,
-            "op_station": XC_OP_STATION,
+            "op_station": HS_OP_STATION,
             "password": self.password,
             "sysnode_id": self.sysnodeID
         }
 
         sub_data["issue_type"] = issueTypeTrade
-        self.request_data(XC_FUNC_SUB_ORDER, sub_data, desc="subscribe(trade)")
+        self.request_data(HS_FUNC_SUB_ORDER, sub_data, desc="subscribe(trade)")
 
         sub_data["issue_type"] = issueTypeOrder
-        rv = self.request_data(XC_FUNC_SUB_ORDER, sub_data, desc="subscribe(order)")
+        rv = self.request_data(HS_FUNC_SUB_ORDER, sub_data, desc="subscribe(order)")
         return rv
 
     #----------------------------------------------------------------------
@@ -245,24 +245,24 @@ class MyHSTdApi(HSTdApi):
         self.add_str(self.accountID);
         self.add_str("0")
         self.add_str(self.password);
-        self.add_char(XC_PASSWORD_TYPE);
+        self.add_char(HS_PASSWORD_TYPE);
         self.end_pack()
-        rv = self.send_msg(XC_FUNC_LOGIN, 0, 0)
+        rv = self.send_msg(HS_FUNC_LOGIN, 0, 0)
         return rv
 
         # request client login
         login_data = {
-            "op_branch_no":  XC_OP_BRANCH_NO,
-            "op_entrust_way": XC_OP_ENTRUST_WAY,
-            "op_station": XC_OP_STATION,
+            "op_branch_no":  HS_OP_BRANCH_NO,
+            "op_entrust_way": HS_OP_ENTRUST_WAY,
+            "op_station": HS_OP_STATION,
             "password": self.password,
-            "password_type": XC_PASSWORD_TYPE,
+            "password_type": HS_PASSWORD_TYPE,
             "input_content": "1",
             "account_content": self.accountID,
             "content_type": "0",
             "asset_prop": "0"
         }
-        rv = self.request_data(XC_FUNC_LOGIN, json.dumps(login_data), desc="login")
+        rv = self.request_data(HS_FUNC_LOGIN, json.dumps(login_data), desc="login")
         return rv
 
     #----------------------------------------------------------------------
@@ -271,7 +271,7 @@ class MyHSTdApi(HSTdApi):
         data = {}
         self.add_common_fields(data)
         # data["money_type"] = "0"
-        rv = self.request_data(XC_FUNC_QRY_CASH, data, desc="qry_account_cash")
+        rv = self.request_data(HS_FUNC_QRY_CASH, data, desc="qry_account_cash")
         return rv
 
     #----------------------------------------------------------------------
@@ -279,7 +279,7 @@ class MyHSTdApi(HSTdApi):
         """查询持仓"""
         data = {}
         self.add_common_fields(data)
-        rv = self.request_data(XC_FUNC_QRY_POSITION, data, desc="qry_position")
+        rv = self.request_data(HS_FUNC_QRY_POSITION, data, desc="qry_position")
         return rv
 
     #----------------------------------------------------------------------
@@ -287,7 +287,7 @@ class MyHSTdApi(HSTdApi):
         """查询成交"""
         data = {}
         self.add_common_fields(data)
-        rv = self.request_data(XC_FUNC_QRY_TRADE, data, desc="qry_trade")
+        rv = self.request_data(HS_FUNC_QRY_TRADE, data, desc="qry_trade")
         return rv
 
     #----------------------------------------------------------------------
@@ -295,7 +295,7 @@ class MyHSTdApi(HSTdApi):
         """查询委托"""
         data = {}
         self.add_common_fields(data)
-        rv = self.request_data(XC_FUNC_QRY_ORDER, data, desc="qry_order")
+        rv = self.request_data(HS_FUNC_QRY_ORDER, data, desc="qry_order")
         return rv
 
     #----------------------------------------------------------------------
@@ -313,9 +313,9 @@ class MyHSTdApi(HSTdApi):
         data["entrust_price"] = round(orderReq.price + 1e-8, 2)
         data["entrust_bs"] = direction_inner_2_xc(orderReq.direction)
 
-        data["entrust_prop"] = XC_ENTRUST_PROP;
+        data["entrust_prop"] = HS_ENTRUST_PROP;
         # data["batch_no"] = 1
-        rv = self.request_data(XC_FUNC_PLACE_ORDER, data, desc="send_order")
+        rv = self.request_data(HS_FUNC_PLACE_ORDER, data, desc="send_order")
         return rv
 
     def send_order2(self, symbol, direction, order_qty, order_price):
@@ -351,9 +351,9 @@ class MyHSTdApi(HSTdApi):
             print("invalid direction:%s" % direction)
             return None
 
-        data["entrust_prop"] = XC_ENTRUST_PROP;
+        data["entrust_prop"] = HS_ENTRUST_PROP;
         # data["batch_no"] = 1
-        rv = self.request_data(XC_FUNC_PLACE_ORDER, data, desc="send_order2")
+        rv = self.request_data(HS_FUNC_PLACE_ORDER, data, desc="send_order2")
         return rv
 
     #----------------------------------------------------------------------
@@ -371,7 +371,7 @@ class MyHSTdApi(HSTdApi):
         else:
             data["entrust_no"] = cancelReq.orderID
 
-        rv = self.request_data(XC_FUNC_CANCEL_ORDER, data, desc="cancel_order")
+        rv = self.request_data(HS_FUNC_CANCEL_ORDER, data, desc="cancel_order")
         return rv
 
     def cancel_order2(self, entrust_no):
@@ -383,7 +383,7 @@ class MyHSTdApi(HSTdApi):
         # data["exchange_type"] = ''
         data["entrust_no"] = entrust_no
 
-        rv = self.request_data(XC_FUNC_CANCEL_ORDER, data, desc="cancel_order2")
+        rv = self.request_data(HS_FUNC_CANCEL_ORDER, data, desc="cancel_order2")
         return rv
 
     #----------------------------------------------------------------------
@@ -427,7 +427,7 @@ class MyHSTdApi(HSTdApi):
               % (function_id, func_id_desc(function_id), ref_id, issue_type))
         # print(jsonData["json"])
 
-        if function_id != XC_FUNC_SUB_ORDER:
+        if function_id != HS_FUNC_SUB_ORDER:
             self.write_log(msg, "on_recv_msg")
 
         if "json" not in jsonData:
@@ -435,7 +435,7 @@ class MyHSTdApi(HSTdApi):
             return
         data = jsonData["json"]
 
-        if function_id == XC_FUNC_RTN_ORDER:
+        if function_id == HS_FUNC_RTN_ORDER:
             # 委托回报
             if issue_type == "12":
                 self.on_rtn_trade(data)
@@ -445,25 +445,25 @@ class MyHSTdApi(HSTdApi):
                 print("on_recv_msg unknown issue_type:%s for function_id:%s(%s)" \
                       % (issue_type, function_id, func_id_desc(function_id)))
                 pass
-        elif function_id == XC_FUNC_LOGIN:
+        elif function_id == HS_FUNC_LOGIN:
             # 登录应答
             self.on_rsp_login(data)
-        elif function_id == XC_FUNC_QRY_CASH:
+        elif function_id == HS_FUNC_QRY_CASH:
             # 客户资金
             self.on_rsp_qry_trading_account(data)
-        elif function_id == XC_FUNC_QRY_POSITION:
+        elif function_id == HS_FUNC_QRY_POSITION:
             # 持仓查询应答
             self.on_rsp_qry_position(data)
-        elif function_id == XC_FUNC_QRY_ORDER:
+        elif function_id == HS_FUNC_QRY_ORDER:
             # 委托查询应答
             self.on_rsp_qry_order(data)
-        elif function_id == XC_FUNC_QRY_TRADE:
+        elif function_id == HS_FUNC_QRY_TRADE:
             # 成交查询应答
             self.on_rsp_qry_trade(data)
-        elif function_id == XC_FUNC_QRY_SECINFO:
+        elif function_id == HS_FUNC_QRY_SECINFO:
             # 证券信息查询应答
             pass
-        elif function_id == XC_FUNC_SUB_ORDER:
+        elif function_id == HS_FUNC_SUB_ORDER:
             # 订阅应答
             pass
         else:
@@ -683,7 +683,7 @@ class MyHSTdApi(HSTdApi):
 
 #----------------------------------------------------------------------
 def main(server_ip='', server_port=''):
-    print('test py35 x64 hstrade api server')
+    print('test py35 x64 hstrade api')
 
     """主测试函数，出现堵塞时可以考虑使用sleep
     API使用步骤:

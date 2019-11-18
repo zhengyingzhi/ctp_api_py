@@ -153,8 +153,8 @@ HS_TRADE_API int HS_TRADE_STDCALL hstrade_end_pack(hstrade_t* hstd, void* packer
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_release_pack(hstrade_t* hstd, void* packer);
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func_id);
 
-/// add pack field£¬field_type: I(Integer), S(String), C(Char), D(Double), R(Raw)
-HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_field(hstrade_t* hstd, void* packer, const char* key, char field_type, int field_width);
+/// add pack field£¬field_type(HS_FT_Xxx): I(Integer), S(String), C(Char), D(Double), R(Raw)
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_field(hstrade_t* hstd, void* packer, const char* key, char field_type, int field_width, int field_scale);
 
 /// add pack values
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_char(hstrade_t* hstd, void* packer, const char value);

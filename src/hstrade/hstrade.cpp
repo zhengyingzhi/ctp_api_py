@@ -56,15 +56,15 @@ static IF2Packer* _hstrade_make_if2pakcer(hstrade_t* hstd)
     lpPacker->BeginPack();
 
     // 加入字段名
-    lpPacker->AddField("op_branch_no",  'I', 5);
-    lpPacker->AddField("op_entrust_way",'C', 1);
-    lpPacker->AddField("op_station",    'S', 255);
-    lpPacker->AddField("branch_no",     'I', 5);
-    lpPacker->AddField("client_id",     'S', 18);
-    lpPacker->AddField("fund_account",  'S', 18);
-    lpPacker->AddField("password",      'S', 10);
-    lpPacker->AddField("password_type", 'C', 1);
-    lpPacker->AddField("user_token",    'S', 512);
+    lpPacker->AddField("op_branch_no",  HS_FT_Int, 5);
+    lpPacker->AddField("op_entrust_way",HS_FT_Char, 1);
+    lpPacker->AddField("op_station",    HS_FT_Str, 255);
+    lpPacker->AddField("branch_no",     HS_FT_Int, 5);
+    lpPacker->AddField("client_id",     HS_FT_Str, 18);
+    lpPacker->AddField("fund_account",  HS_FT_Str, 18);
+    lpPacker->AddField("password",      HS_FT_Str, 10);
+    lpPacker->AddField("password_type", HS_FT_Char, 1);
+    lpPacker->AddField("user_token",    HS_FT_Str, 512);
 
     // 加入对应的字段值
     lpPacker->AddInt(apidata->op_branch_no);    // op_branch_no
@@ -316,19 +316,19 @@ int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type)
 
     // 开始打包
     lpPacker->BeginPack();
-    lpPacker->AddField("branch_no", 'I', 5);
-    lpPacker->AddField("fund_account", 'S', 18);
+    lpPacker->AddField("branch_no", HS_FT_Int, 5);
+    lpPacker->AddField("fund_account", HS_FT_Str, 18);
 #if 1
-    lpPacker->AddField("op_branch_no", 'I', 5);
-    lpPacker->AddField("op_entrust_way", 'C', 1);
-    lpPacker->AddField("op_station", 'S', 255);
-    lpPacker->AddField("client_id", 'S', 18);
-    lpPacker->AddField("password", 'S', 10);
-    // lpPacker->AddField("password_type", 'C', 1);
-    lpPacker->AddField("user_token", 'S', 40);
-    // lpPacker->AddField("sysnode_id", 'I', 4);
+    lpPacker->AddField("op_branch_no", HS_FT_Int, 5);
+    lpPacker->AddField("op_entrust_way", HS_FT_Char, 1);
+    lpPacker->AddField("op_station", HS_FT_Str, 255);
+    lpPacker->AddField("client_id", HS_FT_Str, 18);
+    lpPacker->AddField("password", HS_FT_Str, 10);
+    // lpPacker->AddField("password_type", HS_FT_Char, 1);
+    lpPacker->AddField("user_token", HS_FT_Str, 40);
+    // lpPacker->AddField("sysnode_id", HS_FT_Int, 4);
 #endif//0
-    lpPacker->AddField("issue_type", 'I', 8);
+    lpPacker->AddField("issue_type", HS_FT_Int, 4);
 
     // 加入对应的字段值
     lpPacker->AddInt(apidata->branch_no);
@@ -392,16 +392,16 @@ int HS_TRADE_STDCALL hstrade_user_login(hstrade_t* hstd, HSReqUserLoginField* lo
     lpPacker->AddRef();
     lpPacker->BeginPack();
 
-    lpPacker->AddField("op_branch_no", 'I', 5);     // 操作分支机构
-    lpPacker->AddField("op_entrust_way", 'C', 1);   // 委托方式 
-    lpPacker->AddField("op_station", 'S', 255);     // 站点地址
-    lpPacker->AddField("branch_no", 'I', 5);        // 营业部编号
-    lpPacker->AddField("input_content", 'C');
-    lpPacker->AddField("account_content", 'S', 30); // 资金账号
-    lpPacker->AddField("content_type", 'S', 6);
-    lpPacker->AddField("password", 'S', 10);
-    lpPacker->AddField("password_type", 'C');
-    //lpPacker->AddField("asset_prop",'C');
+    lpPacker->AddField("op_branch_no", HS_FT_Int, 5);     // 操作分支机构
+    lpPacker->AddField("op_entrust_way", HS_FT_Char, 1);   // 委托方式 
+    lpPacker->AddField("op_station", HS_FT_Str, 255);     // 站点地址
+    lpPacker->AddField("branch_no", HS_FT_Int, 5);        // 营业部编号
+    lpPacker->AddField("input_content", HS_FT_Char, 1);
+    lpPacker->AddField("account_content", HS_FT_Str, 30); // 资金账号
+    lpPacker->AddField("content_type", HS_FT_Str, 6);
+    lpPacker->AddField("password", HS_FT_Str, 10);
+    lpPacker->AddField("password_type", HS_FT_Char, 1);
+    //lpPacker->AddField("asset_prop", HS_FT_Char, 1);
 
     if (strcmp(hstd->client_id, login_req->client_id) != 0)
     {
@@ -508,23 +508,23 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
     lpPacker->BeginPack();
 
     // 加入字段名
-    lpPacker->AddField("op_branch_no", 'I', 5);      // 名字 类型 长度
-    lpPacker->AddField("op_entrust_way", 'C', 1);
-    lpPacker->AddField("op_station", 'S', 255);
-    lpPacker->AddField("branch_no", 'I', 5);
-    lpPacker->AddField("client_id", 'S', 18);
-    lpPacker->AddField("fund_account", 'S', 18);
-    lpPacker->AddField("password", 'S', 50);
-    lpPacker->AddField("password_type", 'C', 1);
-    lpPacker->AddField("user_token", 'S', 512);
-    lpPacker->AddField("exchange_type", 'S', 4);
-    lpPacker->AddField("stock_account", 'S', 11);
-    lpPacker->AddField("stock_code", 'S', 16);
-    lpPacker->AddField("entrust_amount", 'F', 19, 2);
-    lpPacker->AddField("entrust_price", 'F', 18, 3);
-    lpPacker->AddField("entrust_bs", 'C', 1);
-    lpPacker->AddField("entrust_prop", 'S', 3);
-    lpPacker->AddField("batch_no", 'I', 8);
+    lpPacker->AddField("op_branch_no", HS_FT_Int, 5);      // 名字 类型 长度
+    lpPacker->AddField("op_entrust_way", HS_FT_Char, 1);
+    lpPacker->AddField("op_station", HS_FT_Str, 255);
+    lpPacker->AddField("branch_no", HS_FT_Int, 5);
+    lpPacker->AddField("client_id", HS_FT_Str, 18);
+    lpPacker->AddField("fund_account", HS_FT_Str, 18);
+    lpPacker->AddField("password", HS_FT_Str, 16);
+    lpPacker->AddField("password_type", HS_FT_Char, 1);
+    lpPacker->AddField("user_token", HS_FT_Str, 512);
+    lpPacker->AddField("exchange_type", HS_FT_Str, 4);
+    lpPacker->AddField("stock_account", HS_FT_Str, 12);
+    lpPacker->AddField("stock_code", HS_FT_Str, 16);
+    lpPacker->AddField("entrust_amount", HS_FT_Int, 10);
+    lpPacker->AddField("entrust_price", HS_FT_Float, 11, 3);
+    lpPacker->AddField("entrust_bs", HS_FT_Char, 1);
+    lpPacker->AddField("entrust_prop", HS_FT_Str, 3);
+    lpPacker->AddField("batch_no", HS_FT_Int, 8);
 
     // 加入对应的字段值
     lpPacker->AddInt(apidata->op_branch_no);        // op_branch_no
@@ -639,17 +639,17 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
     lpPacker->BeginPack();
 
     // 加入字段名
-    lpPacker->AddField("op_branch_no", 'I', 5);
-    lpPacker->AddField("op_entrust_way", 'C', 1);
-    lpPacker->AddField("op_station", 'S', 255);
-    lpPacker->AddField("branch_no", 'I', 5);
-    lpPacker->AddField("client_id", 'S', 18);
-    lpPacker->AddField("fund_account", 'S', 18);
-    lpPacker->AddField("password", 'S', 10);
-    lpPacker->AddField("password_type", 'C', 1);
-    lpPacker->AddField("user_token", 'S', 512);
-    lpPacker->AddField("batch_flag", 'S', 4);   // FIXME
-    lpPacker->AddField("entrust_no", 'S', 18);  // FIXME
+    lpPacker->AddField("op_branch_no", HS_FT_Int, 5);
+    lpPacker->AddField("op_entrust_way", HS_FT_Char, 1);
+    lpPacker->AddField("op_station", HS_FT_Str, 255);
+    lpPacker->AddField("branch_no", HS_FT_Int, 5);
+    lpPacker->AddField("client_id", HS_FT_Str, 18);
+    lpPacker->AddField("fund_account", HS_FT_Str, 18);
+    lpPacker->AddField("password", HS_FT_Str, 10);
+    lpPacker->AddField("password_type", HS_FT_Char, 1);
+    lpPacker->AddField("user_token", HS_FT_Str, 512);
+    lpPacker->AddField("batch_flag", HS_FT_Str, 4);   // FIXME
+    lpPacker->AddField("entrust_no", HS_FT_Str, 18);  // FIXME
 
     // 加入对应的字段值
     lpPacker->AddInt(apidata->op_branch_no);        // op_branch_no	
@@ -1091,8 +1091,8 @@ int HS_TRADE_STDCALL hstrade_qry_md(hstrade_t* hstd, HSReqQueryField* qry_field)
     lpPacker->BeginPack();
 
     //加入字段名
-    lpPacker->AddField("exchange_type", 'S');
-    lpPacker->AddField("stock_code", 'S');
+    lpPacker->AddField("exchange_type", HS_FT_Str);
+    lpPacker->AddField("stock_code", HS_FT_Str);
 
     //加入字段值
     lpPacker->AddStr(qry_field->exchange_type);
@@ -1298,11 +1298,11 @@ EXIT:
 }
 
 /// add pack fields
-int HS_TRADE_STDCALL hstrade_add_field(hstrade_t* hstd, void* packer, const char* key, char field_type, int field_width)
+int HS_TRADE_STDCALL hstrade_add_field(hstrade_t* hstd, void* packer, const char* key, char field_type, int field_width, int field_scale)
 {
     IF2Packer* lpPacker;
     lpPacker = (IF2Packer*)packer;
-    return lpPacker->AddField(key, field_type, field_width);
+    return lpPacker->AddField(key, field_type, field_width, field_scale);
 }
 
 

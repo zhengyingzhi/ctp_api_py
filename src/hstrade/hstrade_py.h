@@ -84,8 +84,8 @@ public:
     // 结束打包
     void end_pack(void);
 
-    // 添加包字段，字段类型：I(Integer), S(String), C(Char), F(Double)
-    int add_field(const std::string& key, const std::string& field_type, int field_width);
+    // 添加包字段，字段类型：I(Integer), S(String), C(Char), D(Double)
+    int add_field(const std::string& key, const std::string& field_type, int field_width, int field_scale=4);
 
     // 添加包数据
     int add_char(const std::string& value);

@@ -499,7 +499,7 @@ void HSTdApi::end_pack(void)
     }
 }
 
-int HSTdApi::add_field(const std::string& key, const std::string& field_type, int field_width)
+int HSTdApi::add_field(const std::string& key, const std::string& field_type, int field_width, int field_scale)
 {
     if (!m_packer)
     {
@@ -507,7 +507,7 @@ int HSTdApi::add_field(const std::string& key, const std::string& field_type, in
         return -1;
     }
 
-    if (field_type.length() > 1)
+    if (field_type.length() != 1)
     {
         fprintf(stderr, "add_field unknown field_type:%s\n", field_type.c_str());
         return -2;
@@ -521,7 +521,7 @@ int HSTdApi::add_field(const std::string& key, const std::string& field_type, in
     char ft = field_type[0];
 
     // fprintf(stderr, "add_field key:%s, field_type:%c, field_width:%d\n", key.c_str(), ft, field_width);
-    return m_packer->AddField(key.c_str(), ft, field_width);
+    return m_packer->AddField(key.c_str(), ft, field_width, field_scale);
 }
 
 int HSTdApi::add_char(const std::string& value)
