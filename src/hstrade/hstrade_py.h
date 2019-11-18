@@ -93,6 +93,17 @@ public:
     int add_int(const int value);
     int add_double(const double value);
 
+    // 一些常用接口
+    int req_login(const dict& req);
+    int req_qry_account_info(const dict& req);
+    int req_qry_cash(const dict& req);
+    int req_qry_position(const dict& req);
+    int req_qry_order(const dict& req);
+    int req_qry_trade(const dict& req);
+    int req_qry_md(const std::string& exchange_type, const std::string& stock_code);
+    int req_order_insert(const dict& order_req);
+    int req_order_action(const dict& order_action);
+
 private:
     // 发送已打好包的数据
     int send_pack_msg(int func_id, int subsystem_no, int branch_no);

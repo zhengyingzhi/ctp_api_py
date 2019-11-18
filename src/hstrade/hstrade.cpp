@@ -649,7 +649,7 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
     lpPacker->AddField("password_type", HS_FT_Char, 1);
     lpPacker->AddField("user_token", HS_FT_Str, 512);
     lpPacker->AddField("batch_flag", HS_FT_Str, 4);   // FIXME
-    lpPacker->AddField("entrust_no", HS_FT_Str, 18);  // FIXME
+    lpPacker->AddField("entrust_no", HS_FT_Int, 8);   // FIXME
 
     // 加入对应的字段值
     lpPacker->AddInt(apidata->op_branch_no);        // op_branch_no	
@@ -662,7 +662,7 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
     lpPacker->AddChar(apidata->password_type);      // password_type	
     lpPacker->AddStr(apidata->user_token);          // user_token
     lpPacker->AddStr("0");                          // action single order
-    lpPacker->AddStr(order_action->entrust_no);    // entrust_no
+    lpPacker->AddInt(atoi(order_action->entrust_no));    // entrust_no
 
     // 结束打包
     lpPacker->EndPack();

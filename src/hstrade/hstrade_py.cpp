@@ -43,6 +43,55 @@
     } while (0);
 
 
+//从字典中获取某个建值对应的整数，并赋值到请求结构体对象的值上
+void getInt(const dict &d, const char *key, int *value)
+{
+    if (d.contains(key))        //检查字典中是否存在该键值
+    {
+        object o = d[key];      //获取该键值
+        *value = o.cast<int>();
+    }
+}
+
+
+//从字典中获取某个建值对应的浮点数，并赋值到请求结构体对象的值上
+void getDouble(const dict &d, const char *key, double *value)
+{
+    if (d.contains(key))
+    {
+        object o = d[key];
+        *value = o.cast<double>();
+    }
+}
+
+
+//从字典中获取某个建值对应的字符，并赋值到请求结构体对象的值上
+void getChar(const dict &d, const char *key, char *value)
+{
+    if (d.contains(key))
+    {
+        object o = d[key];
+        *value = o.cast<char>();
+    }
+}
+
+
+template <uint32_t size>
+using string_literal = char[size];
+
+//从字典中获取某个建值对应的字符串，并赋值到请求结构体对象的值上
+template <uint32_t size>
+void getString(const pybind11::dict &d, const char *key, string_literal<size> &value)
+{
+    if (d.contains(key))
+    {
+        object o = d[key];
+        std::string s = o.cast<std::string>();
+        const char *buf = s.c_str();
+        strcpy(value, buf);
+    }
+}
+
 extern void ShowPacket(IF2UnPacker *lpUnPacker);
 
 // 从原始api获取数据的回调
@@ -530,9 +579,9 @@ int HSTdApi::add_char(const std::string& value)
     {
         // fprintf(stderr, "add_char value:%s\n", value.c_str());
         if (!value.empty())
-            m_packer->AddChar(value[0]);
+            return m_packer->AddChar(value[0]);
         else
-            m_packer->AddChar(0);
+            return m_packer->AddChar(0);
     }
     return -1;
 }
@@ -567,6 +616,109 @@ int HSTdApi::add_double(const double value)
     return -1;
 }
 
+
+int HSTdApi::req_login(const dict& req)
+{
+    HSReqUserLoginField myreq = { 0 };
+    getString(req, "client_id", myreq.client_id);
+    getString(req, "password", myreq.password);
+    getChar(req, "password_type", &myreq.password_type);
+    getString(req, "mac_address", myreq.mac_address);
+    getString(req, "ip_address", myreq.ip_address);
+
+    return hstrade_user_login(m_hstd, &myreq);
+}
+
+int HSTdApi::req_qry_account_info(const dict& req)
+{
+    // 
+    fprintf(stderr, "req_qry_account_info not impl yet!\n");
+    return -1;
+}
+
+int HSTdApi::req_qry_cash(const dict& req)
+{
+    HSReqQueryField myreq = { 0 };
+    getInt(req, "branch_no", &myreq.branch_no);
+    getString(req, "client_id", myreq.client_id);
+    getString(req, "exchange_type", myreq.exchange_type);
+    getString(req, "stock_code", myreq.stock_code);
+    return hstrade_qry_trading_account(m_hstd, &myreq);
+}
+
+int HSTdApi::req_qry_position(const dict& req)
+{
+    HSReqQueryField myreq = { 0 };
+    getInt(req, "branch_no", &myreq.branch_no);
+    getString(req, "client_id", myreq.client_id);
+    getString(req, "exchange_type", myreq.exchange_type);
+    getString(req, "stock_code", myreq.stock_code);
+    return hstrade_qry_position(m_hstd, &myreq);
+}
+
+int HSTdApi::req_qry_order(const dict& req)
+{
+    HSReqQueryField myreq = { 0 };
+    getInt(req, "branch_no", &myreq.branch_no);
+    getString(req, "client_id", myreq.client_id);
+    getString(req, "exchange_type", myreq.exchange_type);
+    getString(req, "stock_code", myreq.stock_code);
+    return hstrade_qry_order(m_hstd, &myreq);
+}
+
+int HSTdApi::req_qry_trade(const dict& req)
+{
+    HSReqQueryField myreq = { 0 };
+    getInt(req, "branch_no", &myreq.branch_no);
+    getString(req, "client_id", myreq.client_id);
+    getString(req, "exchange_type", myreq.exchange_type);
+    getString(req, "stock_code", myreq.stock_code);
+    return hstrade_qry_trade(m_hstd, &myreq);
+}
+
+int HSTdApi::req_qry_md(const std::string& exchange_type, const std::string& stock_code)
+{
+    HSReqQueryField myreq = { 0 };
+    strncpy(myreq.exchange_type, exchange_type.c_str(), sizeof(myreq.exchange_type) - 1);
+    strncpy(myreq.stock_code, stock_code.c_str(), sizeof(myreq.stock_code) - 1);
+    return hstrade_qry_md(m_hstd, &myreq);
+}
+
+int HSTdApi::req_order_insert(const dict& order_req)
+{
+    HSReqOrderInsertField myreq = { 0 };
+    getInt(order_req, "branch_no", &myreq.branch_no);
+    getString(order_req, "client_id", myreq.client_id);
+    getString(order_req, "exchange_type", myreq.exchange_type);
+    getString(order_req, "stock_code", myreq.stock_code);
+    getString(order_req, "entrust_prop", myreq.entrust_prop);
+    getChar(order_req, "entrust_bs", &myreq.entrust_bs);
+    getChar(order_req, "entrust_oc", &myreq.entrust_oc);
+    getChar(order_req, "covered_flag", &myreq.covered_flag);
+    getInt(order_req, "entrust_amount", &myreq.entrust_amount);
+    getDouble(order_req, "entrust_price", &myreq.entrust_price);
+    getInt(order_req, "batch_no", &myreq.batch_no);
+
+    return hstrade_order_insert(m_hstd, &myreq);
+}
+
+int HSTdApi::req_order_action(const dict& order_action)
+{
+    HSReqOrderActionField myreq = { 0 };
+    getInt(order_action, "branch_no", &myreq.branch_no);
+    getString(order_action, "client_id", myreq.client_id);
+    getString(order_action, "exchange_type", myreq.exchange_type);
+    getString(order_action, "stock_code", myreq.stock_code);
+
+    int entrust_no = 0;
+    getInt(order_action, "entrust_no", &entrust_no);
+    if (entrust_no != 0)
+        sprintf(myreq.entrust_no, "%d", entrust_no);
+    else
+        getString(order_action, "entrust_no", myreq.entrust_no);
+
+    return hstrade_order_action(m_hstd, &myreq);
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -661,6 +813,16 @@ PYBIND11_MODULE(hstrade, m)
         .def("AddStr", &HSTdApi::add_str)
         .def("AddInt", &HSTdApi::add_int)
         .def("AddDouble", &HSTdApi::add_double)
+
+        .def("req_login", &HSTdApi::req_login)
+        .def("req_qry_account_info", &HSTdApi::req_qry_account_info)
+        .def("req_qry_cash", &HSTdApi::req_qry_cash)
+        .def("req_qry_position", &HSTdApi::req_qry_position)
+        .def("req_qry_order", &HSTdApi::req_qry_order)
+        .def("req_qry_trade", &HSTdApi::req_qry_trade)
+        .def("req_qry_md", &HSTdApi::req_qry_md)
+        .def("req_order_insert", &HSTdApi::req_order_insert)
+        .def("req_order_action", &HSTdApi::req_order_action)
 
         .def("on_front_connected", &HSTdApi::on_front_connected)
         .def("on_front_disconnected", &HSTdApi::on_front_disconnected)
