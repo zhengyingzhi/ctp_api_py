@@ -73,6 +73,19 @@ static void _on_disconnected_static(hstrade_t* hstd, int reason)
     obj->on_front_disconnected(reason);
 }
 
+static void _on_msg_error_static(hstrade_t* hstd, int func_id, int issue_type, int error_no, const char* error_info)
+{
+    // fprintf(stderr, "<_on_msg_error_static>\n");
+
+    HSTdApi* obj;
+    obj = (HSTdApi*)hstrade_get_userdata(hstd);
+    if (!obj)
+        return;
+
+    gil_scoped_acquire acquire;
+    obj->on_msg_error(func_id, issue_type, error_no, std::string(error_info));
+}
+
 static void _on_recv_msg_static(hstrade_t* hstd, int func_id, int issue_type, const char* msg)
 {
     // fprintf(stderr, "#<_on_recv_msg_static> func_id:%d, issue_type:%d\n", func_id, issue_type);
@@ -96,6 +109,7 @@ HSTdApi::HSTdApi()
     memset(&m_spi, 0, sizeof(m_spi));
     m_spi.on_connected = _on_connected_static;
     m_spi.on_disconnected = _on_disconnected_static;
+    m_spi.on_msg_error = _on_msg_error_static;
     m_spi.on_json_msg = _on_recv_msg_static;
 
     m_hsend = 0;
@@ -156,28 +170,44 @@ std::string HSTdApi::recv_msg(int hsend)
         }
         else
         {
+            int func_id = lpBizMessageRecv->GetFunction();
             int len = 0;
-            const void * lpBuffer = lpBizMessageRecv->GetContent(len);
-            IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
-            lpUnPacker->AddRef();
+            const void* lpBuffer;
+            if (func_id >= UFX_FUNC_SUBSCRIBE && func_id <= UFX_FUNC_RTN_DATA)
+                lpBuffer = lpBizMessageRecv->GetKeyInfo(len);
+            else
+                lpBuffer = lpBizMessageRecv->GetContent(len);
 
             if (hstd->debug_mode)
-                ShowPacket(lpUnPacker);
-
-            // make json msg
-            cJSON* json = TradeCallback::GenJsonDatas(lpUnPacker, lpBizMessageRecv->GetFunction(), lpBizMessageRecv->GetIssueType());
-            char* json_str = "";
-            if (json)
             {
-                json_str = cJSON_Print(json);
+                IF2UnPacker* lpUnPacker2 = NewUnPacker((void *)lpBuffer, len);
+                lpUnPacker2->AddRef();
+                ShowPacket(lpUnPacker2);
+                lpUnPacker2->Release();
             }
-            std::string ret_msg(json_str);
-            cJSON_free(json_str);
-            cJSON_Delete(json);
 
-            lpUnPacker->Release();
+            IF2UnPacker* lpUnPacker = NewUnPacker((void *)lpBuffer, len);
+            if (lpUnPacker)
+            {
+                lpUnPacker->AddRef();
+                // make json msg
+                cJSON* json = TradeCallback::GenJsonDatas(lpUnPacker, lpBizMessageRecv->GetFunction(), lpBizMessageRecv->GetIssueType());
+                char* json_str = "";
+                if (json)
+                {
+                    json_str = cJSON_Print(json);
+                }
+                std::string ret_msg(json_str);
+                cJSON_free(json_str);
+                cJSON_Delete(json);
 
-            return ret_msg;
+                lpUnPacker->Release();
+                return ret_msg;
+            }
+            else
+            {
+                fprintf(stderr, "empty packet!\n");
+            }
         }
     }
 
@@ -569,6 +599,18 @@ public:
         }
     };
 
+    void on_msg_error(int func_id, int issue_type, int error_no, const std::string& error_info) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, HSTdApi, on_msg_error, func_id, issue_type, error_no, error_info);
+        }
+        catch (const error_already_set &e)
+        {
+            std::cout << "on_msg_error: " << e.what() << std::endl;
+        }
+    }
+
     void on_recv_msg(int func_id, int issue_type, const std::string& msg) override
     {
         try
@@ -622,6 +664,7 @@ PYBIND11_MODULE(hstrade, m)
 
         .def("on_front_connected", &HSTdApi::on_front_connected)
         .def("on_front_disconnected", &HSTdApi::on_front_disconnected)
+        .def("on_msg_error", &HSTdApi::on_msg_error)
         .def("on_recv_msg", &HSTdApi::on_recv_msg)
 
         .def("get_api_version", &HSTdApi::get_api_version)

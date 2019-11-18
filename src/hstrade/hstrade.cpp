@@ -48,7 +48,7 @@ static IF2Packer* _hstrade_make_if2pakcer(hstrade_t* hstd)
     IF2Packer* lpPacker = NewPacker(2);
     if (!lpPacker)
     {
-        fprintf(stderr, "make_if2pakcer NewPacker() failed!\n");
+        HSDebugInfo(HSDbgFd, "make_if2pakcer NewPacker() failed!\n");
         return lpPacker;
     }
 
@@ -126,7 +126,7 @@ void HS_TRADE_STDCALL hstrade_realese(hstrade_t* hstd)
     int* pdesc = (int*)hstd;
     if (*pdesc != HS_TRADE)
     {
-        fprintf(stderr, "hstrade_realese unknown desc:%d!\n", *pdesc);
+        HSDebugInfo(HSDbgFd, "hstrade_realese unknown desc:%d!\n", *pdesc);
         return;
     }
 
@@ -164,7 +164,7 @@ void HS_TRADE_STDCALL hstrade_set_timeout(hstrade_t* hstd, int timeoutms)
 {
     if (timeoutms < 0)
     {
-        fprintf(stderr, "hstrade_set_timeout timeoutms:%d invalid\n", timeoutms);
+        HSDebugInfo(HSDbgFd, "hstrade_set_timeout timeoutms:%d invalid\n", timeoutms);
         return;
     }
     hstd->timeoutms = timeoutms;
@@ -214,7 +214,7 @@ int HS_TRADE_STDCALL hstrade_config_set_string(hstrade_t* hstd, const char* sect
             strncpy(hstd->client_id, value, sizeof(hstd->client_id) - 1);
     }
 
-    // fprintf(stderr, "hstrade_config_set_string section:%s, entry:%s, value:%s\n", section, entry_name, value);
+    // HSDebugInfo(HSDbgFd, "hstrade_config_set_string section:%s, entry:%s, value:%s\n", section, entry_name, value);
 
     return hstd->config->SetString(section, entry_name, value);
 }
@@ -231,7 +231,7 @@ int HS_TRADE_STDCALL hstrade_config_set_int(hstrade_t* hstd, const char* section
         return -2;
     }
 
-    // fprintf(stderr, "hstrade_config_set_int section:%s, entry:%s, value:%d\n", section, entry_name, value);
+    // HSDebugInfo(HSDbgFd, "hstrade_config_set_int section:%s, entry:%s, value:%d\n", section, entry_name, value);
 
     return hstd->config->SetInt(section, entry_name, value);
 }
@@ -276,7 +276,7 @@ int HS_TRADE_STDCALL hstrade_init(hstrade_t* hstd, int timeoutms)
     rv = conn->Create2BizMsg(hstd->callback);
     if (0 != rv)
     {
-        fprintf(stderr, "hstrade_init Create2BizMsg() failed rv=%d, msg:%s\n",
+        HSDebugInfo(HSDbgFd, "hstrade_init Create2BizMsg() failed rv=%d, msg:%s\n",
             rv, conn->GetErrorMsg(rv));
 
         conn->Release();
@@ -309,7 +309,7 @@ int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type)
     IF2Packer *lpPacker = NewPacker(2);
     if (!lpPacker)
     {
-        fprintf(stderr, "hstrade_subscribe NewPacker() failed!\n");
+        HSDebugInfo(HSDbgFd, "hstrade_subscribe NewPacker() failed!\n");
         return -1;
     }
     lpPacker->AddRef();
@@ -360,7 +360,7 @@ int HS_TRADE_STDCALL hstrade_subscribe(hstrade_t* hstd, int issue_type)
 
     // 发送消息
     int rv = conn->SendBizMsg(lpBizMessage, 1);
-    // fprintf(stderr, "hstrade_subscribe SendBizMsg() rv:%d\n", rv);
+    // HSDebugInfo(HSDbgFd, "hstrade_subscribe SendBizMsg() rv:%d\n", rv);
 
     lpPacker->FreeMem(lpPacker->GetPackBuf());
     lpPacker->Release();
@@ -385,7 +385,7 @@ int HS_TRADE_STDCALL hstrade_user_login(hstrade_t* hstd, HSReqUserLoginField* lo
     lpPacker = NewPacker(2);
     if (!lpPacker)
     {
-        fprintf(stderr, "hstrade_user_login NewPacker() failed!\n");
+        HSDebugInfo(HSDbgFd, "hstrade_user_login NewPacker() failed!\n");
         return -1;
     }
 
@@ -437,20 +437,21 @@ int HS_TRADE_STDCALL hstrade_user_login(hstrade_t* hstd, HSReqUserLoginField* lo
     {
         if (rv < 0)
         {
-            fprintf(stderr, "hstrade_user_login, rv:%d, err:%s!\n", rv, hstd->conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_user_login, rv:%d, err:%s!\n", rv, hstd->conn->GetErrorMsg(rv));
             goto EXIT;
         }
 
         // 同步模式
         IBizMessage* lpBizMessageRecv = NULL;
         rv = hstd->conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
-        // fprintf(stderr, "hstrade_user_login RecvBizMsg ret:%d\n", rv);
+        // HSDebugInfo(HSDbgFd, "hstrade_user_login RecvBizMsg ret:%d\n", rv);
 
         int iReturnCode = lpBizMessageRecv->GetReturnCode();
         if (iReturnCode != 0)
         {
-            fprintf(stderr, "hstrade_user_login return code error code:%d, msg:%s\n",
+            HSDebugInfo(HSDbgFd, "hstrade_user_login return code error code:%d, msg:%s\n",
                 lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+            rv = iReturnCode;
         }
         else
         {
@@ -459,7 +460,12 @@ int HS_TRADE_STDCALL hstrade_user_login(hstrade_t* hstd, HSReqUserLoginField* lo
             lpUnPacker->AddRef();
 
             if (hstd->debug_mode)
-                ShowPacket(lpUnPacker);
+            {
+                IF2UnPacker* lpUnPacker2 = NewUnPacker((void*)lpBuffer, len);
+                lpUnPacker2->AddRef();
+                ShowPacket(lpUnPacker2);
+                lpUnPacker2->Release();
+            }
 
             TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackPositionData);
             lpUnPacker->Release();
@@ -493,7 +499,7 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
     IF2Packer *lpPacker = NewPacker(2);
     if (!lpPacker)
     {
-        fprintf(stderr, "hstrade_order_insert NewPacker() failed!\n");
+        HSDebugInfo(HSDbgFd, "hstrade_order_insert NewPacker() failed!\n");
         return -1;
     }
     lpPacker->AddRef();
@@ -554,7 +560,7 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
         // 同步模式
         if (rv < 0)
         {
-            fprintf(stderr, "hstrade_order_insert, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_order_insert, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
 
@@ -562,7 +568,7 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
         rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            fprintf(stderr, "hstrade_order_insert recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_order_insert recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -570,8 +576,9 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                fprintf(stderr, "hstrade_order_insert return code error code:%d, msg:%s\n",
+                HSDebugInfo(HSDbgFd, "hstrade_order_insert return code error code:%d, msg:%s\n",
                     lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+                rv = iReturnCode;
             }
             else
             {
@@ -581,7 +588,12 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
                 lpUnPacker->AddRef();
 
                 if (hstd->debug_mode)
-                    ShowPacket(lpUnPacker);
+                {
+                    IF2UnPacker* lpUnPacker2 = NewUnPacker((void*)lpBuffer, len);
+                    lpUnPacker2->AddRef();
+                    ShowPacket(lpUnPacker2);
+                    lpUnPacker2->Release();
+                }
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackRspOrderData);
                 lpUnPacker->Release();
@@ -618,7 +630,7 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
     IF2Packer *lpPacker = NewPacker(2);
     if (!lpPacker)
     {
-        fprintf(stderr, "hstrade_order_action NewPacker() failed!\n");
+        HSDebugInfo(HSDbgFd, "hstrade_order_action NewPacker() failed!\n");
         return -1;
     }
     lpPacker->AddRef();
@@ -665,7 +677,7 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
         // 同步模式
         if (rv < 0)
         {
-            fprintf(stderr, "hstrade_order_action failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_order_action failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
 
@@ -673,7 +685,7 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
         rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            fprintf(stderr, "hstrade_order_action recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_order_action recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -681,18 +693,24 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                fprintf(stderr, "hstrade_order_action return code error code:%d, msg:%s\n",
+                HSDebugInfo(HSDbgFd, "hstrade_order_action return code error code:%d, msg:%s\n",
                     lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+                rv = iReturnCode;
             }
             else
             {
-                int iLen = 0;
-                const void * lpBuffer = lpBizMessageRecv->GetContent(iLen);
-                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
+                int len = 0;
+                const void * lpBuffer = lpBizMessageRecv->GetContent(len);
+                IF2UnPacker * lpUnPacker = NewUnPacker((void *)lpBuffer, len);
                 lpUnPacker->AddRef();
 
                 if (hstd->debug_mode)
-                    ShowPacket(lpUnPacker);
+                {
+                    IF2UnPacker* lpUnPacker2 = NewUnPacker((void*)lpBuffer, len);
+                    lpUnPacker2->AddRef();
+                    ShowPacket(lpUnPacker2);
+                    lpUnPacker2->Release();
+                }
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackRspOrderActionData);
                 lpUnPacker->Release();
@@ -738,7 +756,7 @@ int HS_TRADE_STDCALL hstrade_qry_trading_account(hstrade_t* hstd, HSReqQueryFiel
         // 同步模式
         if (rv < 0)
         {
-            fprintf(stderr, "hstrade_qry_trading_account failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_qry_trading_account failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             rv = -2;
             goto EXIT;
         }
@@ -748,7 +766,7 @@ int HS_TRADE_STDCALL hstrade_qry_trading_account(hstrade_t* hstd, HSReqQueryFiel
         rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            fprintf(stderr, "hstrade_qry_trading_account recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_qry_trading_account recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -756,7 +774,7 @@ int HS_TRADE_STDCALL hstrade_qry_trading_account(hstrade_t* hstd, HSReqQueryFiel
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                fprintf(stderr, "hstrade_qry_trading_account return code error code:%d, msg:%s\n",
+                HSDebugInfo(HSDbgFd, "hstrade_qry_trading_account return code error code:%d, msg:%s\n",
                     lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
             }
             else if (iReturnCode == 0)
@@ -767,7 +785,12 @@ int HS_TRADE_STDCALL hstrade_qry_trading_account(hstrade_t* hstd, HSReqQueryFiel
                 lpUnPacker->AddRef();
 
                 if (hstd->debug_mode)
-                    ShowPacket(lpUnPacker);
+                {
+                    IF2UnPacker* lpUnPacker2 = NewUnPacker((void*)lpBuffer, len);
+                    lpUnPacker2->AddRef();
+                    ShowPacket(lpUnPacker2);
+                    lpUnPacker2->Release();
+                }
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackTradingAccountData);
                 lpUnPacker->Release();
@@ -819,7 +842,7 @@ int HS_TRADE_STDCALL hstrade_qry_position(hstrade_t* hstd, HSReqQueryField* qry_
         // 同步模式
         if (rv < 0)
         {
-            fprintf(stderr, "hstrade_qry_position failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_qry_position failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             rv = -2;
             goto EXIT;
         }
@@ -828,7 +851,7 @@ int HS_TRADE_STDCALL hstrade_qry_position(hstrade_t* hstd, HSReqQueryField* qry_
         rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            fprintf(stderr, "hstrade_qry_position recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_qry_position recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -836,8 +859,9 @@ int HS_TRADE_STDCALL hstrade_qry_position(hstrade_t* hstd, HSReqQueryField* qry_
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                fprintf(stderr, "hstrade_qry_position return code error code:%d, msg:%s\n",
+                HSDebugInfo(HSDbgFd, "hstrade_qry_position return code error code:%d, msg:%s\n",
                     lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+                rv = iReturnCode;
             }
             else
             {
@@ -847,7 +871,12 @@ int HS_TRADE_STDCALL hstrade_qry_position(hstrade_t* hstd, HSReqQueryField* qry_
                 lpUnPacker->AddRef();
 
                 if (hstd->debug_mode)
-                    ShowPacket(lpUnPacker);
+                {
+                    IF2UnPacker* lpUnPacker2 = NewUnPacker((void*)lpBuffer, len);
+                    lpUnPacker2->AddRef();
+                    ShowPacket(lpUnPacker2);
+                    lpUnPacker2->Release();
+                }
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackPositionData);
                 lpUnPacker->Release();
@@ -896,7 +925,7 @@ int HS_TRADE_STDCALL hstrade_qry_trade(hstrade_t* hstd, HSReqQueryField* qry_fie
         // 同步模式
         if (rv < 0)
         {
-            fprintf(stderr, "hstrade_qry_trade failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_qry_trade failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             rv = -2;
             goto EXIT;
         }
@@ -905,7 +934,7 @@ int HS_TRADE_STDCALL hstrade_qry_trade(hstrade_t* hstd, HSReqQueryField* qry_fie
         rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            fprintf(stderr, "hstrade_qry_trade recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_qry_trade recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -924,7 +953,12 @@ int HS_TRADE_STDCALL hstrade_qry_trade(hstrade_t* hstd, HSReqQueryField* qry_fie
                 lpUnPacker->AddRef();
 
                 if (hstd->debug_mode)
-                    ShowPacket(lpUnPacker);
+                {
+                    IF2UnPacker* lpUnPacker2 = NewUnPacker((void*)lpBuffer, len);
+                    lpUnPacker2->AddRef();
+                    ShowPacket(lpUnPacker2);
+                    lpUnPacker2->Release();
+                }
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackQryTradeData);
                 lpUnPacker->Release();
@@ -971,7 +1005,7 @@ int HS_TRADE_STDCALL hstrade_qry_order(hstrade_t* hstd, HSReqQueryField* qry_fie
         // 同步模式
         if (rv < 0)
         {
-            fprintf(stderr, "hstrade_qry_order failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_qry_order failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             rv = -2;
             goto EXIT;
         }
@@ -980,7 +1014,7 @@ int HS_TRADE_STDCALL hstrade_qry_order(hstrade_t* hstd, HSReqQueryField* qry_fie
         rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            fprintf(stderr, "hstrade_qry_order recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_qry_order recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -988,8 +1022,9 @@ int HS_TRADE_STDCALL hstrade_qry_order(hstrade_t* hstd, HSReqQueryField* qry_fie
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                fprintf(stderr, "hstrade_qry_order return code error code:%d, msg:%s\n",
+                HSDebugInfo(HSDbgFd, "hstrade_qry_order return code error code:%d, msg:%s\n",
                     lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+                rv = iReturnCode;
             }
             else
             {
@@ -999,7 +1034,12 @@ int HS_TRADE_STDCALL hstrade_qry_order(hstrade_t* hstd, HSReqQueryField* qry_fie
                 lpUnPacker->AddRef();
 
                 if (hstd->debug_mode)
-                    ShowPacket(lpUnPacker);
+                {
+                    IF2UnPacker* lpUnPacker2 = NewUnPacker((void*)lpBuffer, len);
+                    lpUnPacker2->AddRef();
+                    ShowPacket(lpUnPacker2);
+                    lpUnPacker2->Release();
+                }
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackQryOrderData);
                 lpUnPacker->Release();
@@ -1043,7 +1083,7 @@ int HS_TRADE_STDCALL hstrade_qry_md(hstrade_t* hstd, HSReqQueryField* qry_field)
     IF2Packer* lpPacker = NewPacker(2);
     if (!lpPacker)
     {
-        fprintf(stderr, "hstrade_qry_md NewPacker() failed!\n");
+        HSDebugInfo(HSDbgFd, "hstrade_qry_md NewPacker() failed!\n");
         return -1;
     }
 
@@ -1072,7 +1112,7 @@ int HS_TRADE_STDCALL hstrade_qry_md(hstrade_t* hstd, HSReqQueryField* qry_field)
         // 同步模式
         if (rv < 0)
         {
-            fprintf(stderr, "hstrade_qry_md failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_qry_md failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             rv = -2;
             goto EXIT;
         }
@@ -1081,7 +1121,7 @@ int HS_TRADE_STDCALL hstrade_qry_md(hstrade_t* hstd, HSReqQueryField* qry_field)
         rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            fprintf(stderr, "hstrade_qry_md recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_qry_md recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -1089,8 +1129,9 @@ int HS_TRADE_STDCALL hstrade_qry_md(hstrade_t* hstd, HSReqQueryField* qry_field)
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                fprintf(stderr, "hstrade_qry_md return code error code:%d, msg:%s\n",
+                HSDebugInfo(HSDbgFd, "hstrade_qry_md return code error code:%d, msg:%s\n",
                     lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+                rv = iReturnCode;
             }
             else
             {
@@ -1100,7 +1141,12 @@ int HS_TRADE_STDCALL hstrade_qry_md(hstrade_t* hstd, HSReqQueryField* qry_field)
                 lpUnPacker->AddRef();
 
                 if (hstd->debug_mode)
-                    ShowPacket(lpUnPacker);
+                {
+                    IF2UnPacker* lpUnPacker2 = NewUnPacker((void*)lpBuffer, len);
+                    lpUnPacker2->AddRef();
+                    ShowPacket(lpUnPacker2);
+                    lpUnPacker2->Release();
+                }
 
                 TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackQryOrderData);
                 lpUnPacker->Release();
@@ -1196,7 +1242,7 @@ int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func
         // 同步模式
         if (rv < 0)
         {
-            fprintf(stderr, "hstrade_send_bizmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_send_bizmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
 
@@ -1204,7 +1250,7 @@ int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func
         rv = conn->RecvBizMsg(rv, &lpBizMessageRecv, hstd->timeoutms);
         if (rv != 0)
         {
-            fprintf(stderr, "hstrade_send_bizmsg recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
+            HSDebugInfo(HSDbgFd, "hstrade_send_bizmsg recvmsg failed, rv:%d, err:%s!\n", rv, conn->GetErrorMsg(rv));
             goto EXIT;
         }
         else
@@ -1212,8 +1258,9 @@ int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func
             int iReturnCode = lpBizMessageRecv->GetReturnCode();
             if (iReturnCode != 0)
             {
-                fprintf(stderr, "hstrade_send_bizmsg return code error code:%d, msg:%s\n",
+                HSDebugInfo(HSDbgFd, "hstrade_send_bizmsg return code error code:%d, msg:%s\n",
                     lpBizMessageRecv->GetReturnCode(), lpBizMessageRecv->GetErrorInfo());
+                rv = iReturnCode;
             }
             else
             {
@@ -1223,7 +1270,12 @@ int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func
                 lpUnPacker->AddRef();
 
                 if (hstd->debug_mode)
-                    ShowPacket(lpUnPacker);
+                {
+                    IF2UnPacker* lpUnPacker2 = NewUnPacker((void*)lpBuffer, len);
+                    lpUnPacker2->AddRef();
+                    ShowPacket(lpUnPacker2);
+                    lpUnPacker2->Release();
+                }
 
                 // TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackXXX);
                 lpUnPacker->Release();
@@ -1287,6 +1339,14 @@ int HS_TRADE_STDCALL hstrade_add_double(hstrade_t* hstd, void* packer, const dou
     return 0;
 }
 
+int HS_TRADE_STDCALL hstrade_add_raw(hstrade_t* hstd, void* packer, void* buf, const int len)
+{
+    IF2Packer* lpPacker;
+    lpPacker = (IF2Packer*)packer;
+    lpPacker->AddRaw(buf, len);
+    return 0;
+}
+
 int HS_TRADE_STDCALL hstrade_recv_msg(hstrade_t* hstd, int hsend, int timeoutms, void** ppmsg)
 {
     IBizMessage* lpBizMessageRecv = NULL;
@@ -1300,3 +1360,49 @@ int HS_TRADE_STDCALL hstrade_recv_msg(hstrade_t* hstd, int hsend, int timeoutms,
     return rv;
 }
 
+int HS_TRADE_STDCALL hstrade_show_msg(void* pmsg)
+{
+    if (!pmsg)
+    {
+        return 0;
+    }
+
+    IBizMessage* lpBizMessageRecv = NULL;
+    lpBizMessageRecv = (IBizMessage*)pmsg;
+    int func_id = lpBizMessageRecv->GetFunction();
+
+    if (lpBizMessageRecv->GetReturnCode() != 0)
+    {
+        fprintf(stderr, "function_id: %d\n", func_id);
+        fprintf(stderr, "issue_type: %d\n", lpBizMessageRecv->GetIssueType());
+        fprintf(stderr, "return_code: %d\n", lpBizMessageRecv->GetReturnCode());
+        fprintf(stderr, "error_no: %d\n", lpBizMessageRecv->GetErrorNo());
+        fprintf(stderr, "error_info: %s\n", lpBizMessageRecv->GetErrorInfo());
+        return 0;
+    }
+
+    int len;
+    const void* lpBuffer;
+    if (func_id >= UFX_FUNC_SUBSCRIBE && func_id <= UFX_FUNC_RTN_DATA)
+    {
+        lpBuffer = lpBizMessageRecv->GetKeyInfo(len);
+    }
+    else
+    {
+        lpBuffer = lpBizMessageRecv->GetContent(len);
+    }
+
+    IF2UnPacker* lpUnpacker = NewUnPacker((void*)lpBuffer, len);
+    if (!lpUnpacker)
+    {
+        fprintf(stderr, "empty packet for function_id:%d\n", func_id);
+    }
+    else
+    {
+        lpUnpacker->AddRef();
+        ShowPacket(lpUnpacker);
+        lpUnpacker->Release();
+    }
+
+    return 0;
+}

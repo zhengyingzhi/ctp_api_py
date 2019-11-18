@@ -140,12 +140,12 @@ void TradeCallback::OnReceivedBizEx(CConnectionInterface *lpConnection, int hSen
 
 void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSend, IBizMessage* lpMsg)
 {
-    if (m_hstd->debug_mode)
-        fprintf(stderr, "TradeCallback::OnReceivedBizMsg hSend:%d\n", hSend);
+    // if (m_hstd->debug_mode)
+    //     fprintf(stderr, "TradeCallback::OnReceivedBizMsg hSend:%d\n", hSend);
 
     if (!lpMsg)
     {
-        fprintf(stderr, "TradeCallback::OnReceivedBizMsg lpMsg is null!\n");
+        HSDebugInfo(HSDbgFd, "TradeCallback::OnReceivedBizMsg lpMsg is null!\n");
         m_return_code = 0;
         m_return_msg = NULL;
         return;
@@ -154,27 +154,49 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
     m_return_code = lpMsg->GetReturnCode();
     m_return_msg = lpMsg->GetErrorInfo();
     int func_id = lpMsg->GetFunction();
+    int issue_type = lpMsg->GetIssueType();
 
-    int iLen = 0;
+    if (m_return_code != 0)
+    {
+        if (m_hstd->spi && m_hstd->spi->on_msg_error)
+        {
+            if (!m_return_msg)
+                m_return_msg = "";
+            m_hstd->spi->on_msg_error(m_hstd, func_id, issue_type, m_return_code, m_return_msg);
+        }
+        return;
+    }
+
+    // 成功,应用程序不能释放lpBizMessageRecv消息
+
+    // 如果要把消息放到其他线程处理，必须自行拷贝，操作如下：
+    // int iMsgLen = 0;
+    // void * lpMsgBuffer = lpBizMessageRecv->GetBuff(iMsgLen);
+    // 将lpMsgBuffer拷贝走，然后在其他线程中恢复成消息可进行如下操作：
+    // lpBizMessageRecv->SetBuff(lpMsgBuffer,iMsgLen);
+
+    int len = 0;
     const void* lpBuffer;
     IF2UnPacker* lpUnPacker;
     if (func_id >= UFX_FUNC_SUBSCRIBE && func_id <= UFX_FUNC_RTN_DATA)
     {
-        lpBuffer = lpMsg->GetKeyInfo(iLen);
+        lpBuffer = lpMsg->GetKeyInfo(len);
     }
     else
     {
-        lpBuffer = lpMsg->GetContent(iLen);
+        lpBuffer = lpMsg->GetContent(len);
     }
 
-    lpUnPacker = NewUnPacker((void *)lpBuffer, iLen);
+    lpUnPacker = NewUnPacker((void *)lpBuffer, len);
     if (!lpUnPacker)
     {
         int error_no = lpMsg->GetErrorNo();
         const char* error_info = lpMsg->GetErrorInfo();
         if (func_id != UFX_FUNC_HEART)
+        {
             fprintf(stderr, "OnReceivedBizMsg empty packet，功能号：%d，错误代码：%d，错误信息:%s\n",
                 func_id, error_no, error_info);
+        }
         return;
     }
 
@@ -182,7 +204,7 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
 
     if (m_hstd->debug_mode)
     {
-        IF2UnPacker* lpUnPacker2 = NewUnPacker((void *)lpBuffer, iLen);
+        IF2UnPacker* lpUnPacker2 = NewUnPacker((void *)lpBuffer, len);
         if (lpUnPacker2)
         {
             lpUnPacker2->AddRef();
@@ -191,68 +213,56 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
         }
     }
 
-    //成功,应用程序不能释放lpBizMessageRecv消息
-    if (lpMsg->GetReturnCode() == 0)
+    switch (func_id)
     {
-        //如果要把消息放到其他线程处理，必须自行拷贝，操作如下：
-        //int iMsgLen = 0;
-        //void * lpMsgBuffer = lpBizMessageRecv->GetBuff(iMsgLen);
-        //将lpMsgBuffer拷贝走，然后在其他线程中恢复成消息可进行如下操作：
-        //lpBizMessageRecv->SetBuff(lpMsgBuffer,iMsgLen);
-        //没有错误信息
-
-        switch (func_id)
+    case UFX_FUNC_LOGIN:
+        OnResponseUserLogin(lpUnPacker);
+        break;
+    case UFX_FUNC_QRY_CASH:
+        OnResponseQryTradingAccount(lpUnPacker);
+        break;
+    case UFX_FUNC_QRY_POSITION:
+        OnResponseQryPosition(lpUnPacker);
+        break;
+    case UFX_FUNC_QRY_ORDER:
+        OnResponseQryOrder(lpUnPacker);
+        break;
+    case UFX_FUNC_QRY_TRADE:
+        OnResponseQryTrade(lpUnPacker);
+        break;
+    case UFX_FUNC_RTN_DATA:
+    {
+        if (issue_type == UFX_ISSUE_TYPE_TRADE)
         {
-        case UFX_FUNC_LOGIN:
-            OnResponseUserLogin(lpUnPacker);
-            break;
-        case UFX_FUNC_QRY_CASH:
-            OnResponseQryTradingAccount(lpUnPacker);
-            break;
-        case UFX_FUNC_QRY_POSITION:
-            OnResponseQryPosition(lpUnPacker);
-            break;
-        case UFX_FUNC_QRY_ORDER:
-            OnResponseQryOrder(lpUnPacker);
-            break;
-        case UFX_FUNC_QRY_TRADE:
-            OnResponseQryTrade(lpUnPacker);
-            break;
-        case UFX_FUNC_RTN_DATA:
+            OnRtnTrade(lpUnPacker);
+        }
+        else if (issue_type == UFX_ISSUE_TYPE_ORDER)
         {
-            if (lpMsg->GetIssueType() == UFX_ISSUE_TYPE_TRADE)
-            {
-                OnRtnTrade(lpUnPacker);
-            }
-            else if (lpMsg->GetIssueType() == UFX_ISSUE_TYPE_ORDER)
-            {
-                OnRtnOrder(lpUnPacker);
-            }
+            OnRtnOrder(lpUnPacker);
         }
-        case UFX_FUNC_SUBSCRIBE:
-        {
-            OnResponseSubscribe(lpUnPacker, lpMsg->GetIssueType());
-            break;
-        }
-        case UFX_FUNC_SUB_CANCEL:
-        {
-            OnResponseUnSubscribe(lpUnPacker, lpMsg->GetIssueType());
-            break;
-        }
-        case UFX_FUNC_HEART:
-        {
-            lpMsg->ChangeReq2AnsMessage();
-            lpConnection->SendBizMsg(lpMsg, 1);
-            break;
-        }
-        default:
-            break;
-        }
-
     }
-    else
+    case UFX_FUNC_SUBSCRIBE:
     {
-        fprintf(stderr, "OnReceivedBizMsg(%d) error code:%d, msg:%s\n", lpMsg->GetFunction(), m_return_code, m_return_msg);
+        OnResponseSubscribe(lpUnPacker, issue_type);
+        break;
+    }
+    case UFX_FUNC_SUB_CANCEL:
+    {
+        OnResponseUnSubscribe(lpUnPacker, issue_type);
+        break;
+    }
+    case UFX_FUNC_HEART:
+    {
+        lpMsg->ChangeReq2AnsMessage();
+        lpConnection->SendBizMsg(lpMsg, 1);
+        break;
+    }
+    default:
+    {
+        if (m_hstd->spi && m_hstd->spi->on_raw_bizmsg)
+            m_hstd->spi->on_raw_bizmsg(m_hstd, lpMsg, lpUnPacker);
+    }
+        break;
     }
 
     lpUnPacker->Release();
@@ -507,45 +517,6 @@ void TradeCallback::OnResponseQryPosition(IF2UnPacker *lpUnPacker)
     }
 
     TradeCallback::UnpackBizMessage(lpUnPacker, m_hstd, TradeCallback::UnpackPositionData);
-    return;
-
-#if 0
-    if (lpUnPacker->GetInt("error_no") != 0)
-    {
-        fprintf(stderr, lpUnPacker->GetStr("error_info"));
-        return;
-    }
-    else
-    {
-        int ct = lpUnPacker->GetRowCount();
-        string pos = "";
-        while (!lpUnPacker->IsEOF())
-        {
-            const char* lpStrPos = lpUnPacker->GetStr("position_str");
-            if (lpStrPos == 0)
-                pos = "";
-            else
-                pos = lpStrPos;
-
-            lpUnPacker->Next();
-        }
-
-        if (pos.length() != 0)
-        {
-            if (m_hstd->debug_mode)
-                ShowPacket(lpUnPacker);
-            // lpReqMode->ReqFunction333104(pos.c_str());
-        }
-    }
-
-    hstrade_spi_t* spi = m_hstd->spi;
-    HSPositionField rsp_pos = { 0 };
-    HSRspInfoField rsp_info = { 0 };
-    if (spi && spi->on_qry_position)
-    {
-        spi->on_qry_position(m_hstd, &rsp_pos, &rsp_info, 1);
-    }
-#endif//0
 }
 
 void TradeCallback::OnResponseQryOrder(IF2UnPacker* lpUnPacker)

@@ -7,6 +7,17 @@
 #include "hstrade.h"
 
 
+#define MY_DEBUG 1
+
+#if (MY_DEBUG)
+#define HSDebugInfo(fd,fmt,...) fprintf(fd,fmt,##__VA_ARGS__)
+#else
+static  inline void HSPrintNull(FILE* fd, const char* fmt, ...) { (void)fd; (void)fmt; }
+#define HSDebugInfo(fd,fmt,...) HSPrintNull(fd,fmt,##__VA_ARGS__)
+#endif//MY_DEBUG
+#define HSDbgFd stderr
+
+
 #define HSTRADE_DEFAULT_TIMEOUT     3000
 
 class TradeCallback;

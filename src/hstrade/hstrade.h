@@ -53,10 +53,11 @@ typedef struct hstrade_spi_s
     void (*on_rtn_trade)(hstrade_t*, HSTradeField*);
 
     // on json msg only when json mode
+    void (*on_msg_error)(hstrade_t*, int func_id, int issue_type, int error_no, const char* error_info);
     void (*on_json_msg)(hstrade_t*, int func_id, int issue_type, const char* json_msg);
 
-    // on raw api bizmsg IBizMessage* object
-    void (*on_raw_bizmsg)(hstrade_t*, void* pmsg);
+    // on raw api bizmsg IBizMessage* object, IF2UnPacker* object
+    void (*on_raw_bizmsg)(hstrade_t*, void* pmsg, void* punpacker);
 }hstrade_spi_t;
 
 
@@ -152,7 +153,7 @@ HS_TRADE_API int HS_TRADE_STDCALL hstrade_end_pack(hstrade_t* hstd, void* packer
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_release_pack(hstrade_t* hstd, void* packer);
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_send_bizmsg(hstrade_t* hstd, void* packer, int func_id);
 
-/// add pack field£¬field_type: I(Integer), S(String), C(Char), F(Double)
+/// add pack field£¬field_type: I(Integer), S(String), C(Char), D(Double), R(Raw)
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_field(hstrade_t* hstd, void* packer, const char* key, char field_type, int field_width);
 
 /// add pack values
@@ -160,9 +161,12 @@ HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_char(hstrade_t* hstd, void* packer
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_str(hstrade_t* hstd, void* packer, const char* value);
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_int(hstrade_t* hstd, void* packer, const int value);
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_double(hstrade_t* hstd, void* packer, const double value);
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_add_raw(hstrade_t* hstd, void* packer, void* buf, const int len);
 
 /// sync recv msg, got IBizMessage* object
 HS_TRADE_API int HS_TRADE_STDCALL hstrade_recv_msg(hstrade_t* hstd, int hsend, int timeoutms, void** ppmsg);
+
+HS_TRADE_API int HS_TRADE_STDCALL hstrade_show_msg(void* pmsg);
 
 
 #ifdef __cplusplus
