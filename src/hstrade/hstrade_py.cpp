@@ -122,7 +122,7 @@ static void _on_disconnected_static(hstrade_t* hstd, int reason)
     obj->on_front_disconnected(reason);
 }
 
-static void _on_msg_error_static(hstrade_t* hstd, int func_id, int issue_type, int error_no, const char* error_info)
+static void _on_msg_error_static(hstrade_t* hstd, int func_id, int issue_type, int ref_id, int error_no, const char* error_info)
 {
     // fprintf(stderr, "<_on_msg_error_static>\n");
 
@@ -132,10 +132,10 @@ static void _on_msg_error_static(hstrade_t* hstd, int func_id, int issue_type, i
         return;
 
     gil_scoped_acquire acquire;
-    obj->on_msg_error(func_id, issue_type, error_no, std::string(error_info));
+    obj->on_msg_error(func_id, issue_type, ref_id, error_no, std::string(error_info));
 }
 
-static void _on_recv_msg_static(hstrade_t* hstd, int func_id, int issue_type, const char* msg)
+static void _on_recv_msg_static(hstrade_t* hstd, int func_id, int issue_type, int ref_id, const char* msg)
 {
     // fprintf(stderr, "#<_on_recv_msg_static> func_id:%d, issue_type:%d\n", func_id, issue_type);
     // fprintf(stderr, msg);
@@ -146,7 +146,7 @@ static void _on_recv_msg_static(hstrade_t* hstd, int func_id, int issue_type, co
         return;
 
     gil_scoped_acquire acquire;
-    obj->on_recv_msg(func_id, issue_type, std::string(msg));
+    obj->on_recv_msg(func_id, issue_type, ref_id, std::string(msg));
 }
 
 
@@ -240,7 +240,7 @@ std::string HSTdApi::recv_msg(int hsend)
             {
                 lpUnPacker->AddRef();
                 // make json msg
-                cJSON* json = TradeCallback::GenJsonDatas(lpUnPacker, lpBizMessageRecv->GetFunction(), lpBizMessageRecv->GetIssueType());
+                cJSON* json = TradeCallback::GenJsonDatas(lpUnPacker, lpBizMessageRecv->GetFunction(), lpBizMessageRecv->GetIssueType(), 0);
                 char* json_str = "";
                 if (json)
                 {
@@ -751,11 +751,11 @@ public:
         }
     };
 
-    void on_msg_error(int func_id, int issue_type, int error_no, const std::string& error_info) override
+    void on_msg_error(int func_id, int issue_type, int ref_id, int error_no, const std::string& error_info) override
     {
         try
         {
-            PYBIND11_OVERLOAD(void, HSTdApi, on_msg_error, func_id, issue_type, error_no, error_info);
+            PYBIND11_OVERLOAD(void, HSTdApi, on_msg_error, func_id, issue_type, ref_id, error_no, error_info);
         }
         catch (const error_already_set &e)
         {
@@ -763,11 +763,11 @@ public:
         }
     }
 
-    void on_recv_msg(int func_id, int issue_type, const std::string& msg) override
+    void on_recv_msg(int func_id, int issue_type, int ref_id, const std::string& msg) override
     {
         try
         {
-            PYBIND11_OVERLOAD(void, HSTdApi, on_recv_msg, func_id, issue_type, msg);
+            PYBIND11_OVERLOAD(void, HSTdApi, on_recv_msg, func_id, issue_type, ref_id, msg);
         }
         catch (const error_already_set &e)
         {

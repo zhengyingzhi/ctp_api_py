@@ -33,31 +33,31 @@ typedef struct hstrade_spi_s
 {
     void (*on_connected)(hstrade_t*);
     void (*on_disconnected)(hstrade_t*, int reason);
-    void (*on_rsp_subscribe)(hstrade_t*, HSRspSubscribeField* rsp_sub);
-    void (*on_user_login)(hstrade_t*, HSRspUserLoginField* rsp_login, HSRspInfoField* rsp_info);
-    void (*on_order_insert)(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
-    void (*on_order_action)(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
+    void (*on_rsp_subscribe)(hstrade_t*, HSRspSubscribeField* rsp_sub, int ref_id);
+    void (*on_user_login)(hstrade_t*, HSRspUserLoginField* rsp_login, HSRspInfoField* rsp_info, int ref_id);
+    void (*on_order_insert)(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+    void (*on_order_action)(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int ref_id, int islast);
 
-    void (*on_qry_trading_account)(hstrade_t*, HSTradingAccountField*, HSRspInfoField* rsp_info, int islast);
-    void (*on_qry_position)(hstrade_t*, HSPositionField*, HSRspInfoField* rsp_info, int islast);
-    void (*on_qry_order)(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
-    void (*on_qry_trade)(hstrade_t*, HSTradeField*, HSRspInfoField* rsp_info, int islast);
-    void (*on_qry_security_info)(hstrade_t*, HSSecurityInfoField*, HSRspInfoField* rsp_info, int islast);
-    void (*on_qry_md)(hstrade_t*, HSMarketDataField*, HSRspInfoField* rsp_info, int islast);
+    void (*on_qry_trading_account)(hstrade_t*, HSTradingAccountField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+    void (*on_qry_position)(hstrade_t*, HSPositionField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+    void (*on_qry_order)(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+    void (*on_qry_trade)(hstrade_t*, HSTradeField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+    void (*on_qry_security_info)(hstrade_t*, HSSecurityInfoField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+    void (*on_qry_md)(hstrade_t*, HSMarketDataField*, HSRspInfoField* rsp_info, int ref_id, int islast);
 
-    void(*on_qry_cash_hist)(hstrade_t*, HSTradingAccountField*, HSRspInfoField* rsp_info, int islast);
-    void(*on_qry_order_hist)(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
-    void(*on_qry_trade_hist)(hstrade_t*, HSTradeField*, HSRspInfoField* rsp_info, int islast);
+    void(*on_qry_cash_hist)(hstrade_t*, HSTradingAccountField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+    void(*on_qry_order_hist)(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+    void(*on_qry_trade_hist)(hstrade_t*, HSTradeField*, HSRspInfoField* rsp_info, int ref_id, int islast);
 
-    void (*on_rtn_order)(hstrade_t*, HSOrderField*);
-    void (*on_rtn_trade)(hstrade_t*, HSTradeField*);
+    void (*on_rtn_order)(hstrade_t*, HSOrderField* order, int ref_id);
+    void (*on_rtn_trade)(hstrade_t*, HSTradeField* trade, int ref_id);
 
     // on json msg only when json mode
-    void (*on_msg_error)(hstrade_t*, int func_id, int issue_type, int error_no, const char* error_info);
-    void (*on_json_msg)(hstrade_t*, int func_id, int issue_type, const char* json_msg);
+    void (*on_msg_error)(hstrade_t*, int func_id, int issue_type, int ref_id, int error_no, const char* error_info);
+    void (*on_json_msg)(hstrade_t*, int func_id, int issue_type, int ref_id, const char* json_msg);
 
     // on raw api bizmsg IBizMessage* object, IF2UnPacker* object
-    void (*on_raw_bizmsg)(hstrade_t*, void* pmsg, void* punpacker);
+    void (*on_raw_bizmsg)(hstrade_t*, int ref_id, void* pmsg, void* punpacker);
 }hstrade_spi_t;
 
 

@@ -410,7 +410,7 @@ class MyHSTdApi(HSTdApi):
 
     #----------------------------------------------------------------------
     @simple_log
-    def on_recv_msg(self, funcID, issueType, msg):
+    def on_recv_msg(self, funcID, issueType, refId, msg):
         """消息回调
         issue_type: 主推类型 12-成交 23-委托
         ref_id: 参考序号 用于和请求匹配

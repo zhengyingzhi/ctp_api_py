@@ -10,7 +10,7 @@
 
 #define HS_TRADE                0x44545348
 
-#define HS_TRADE_VERSION        "0.0.1"
+#define HS_TRADE_VERSION        "0.0.2"
 
 
 extern void ShowPacket(IF2UnPacker *lpUnPacker);
@@ -467,7 +467,7 @@ int HS_TRADE_STDCALL hstrade_user_login(hstrade_t* hstd, HSReqUserLoginField* lo
                 lpUnPacker2->Release();
             }
 
-            TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackPositionData);
+            TradeCallback::UnpackBizMessage(lpUnPacker, 0, hstd, TradeCallback::UnpackPositionData);
             lpUnPacker->Release();
         }
     }
@@ -595,7 +595,7 @@ int HS_TRADE_STDCALL hstrade_order_insert(hstrade_t* hstd, HSReqOrderInsertField
                     lpUnPacker2->Release();
                 }
 
-                TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackRspOrderData);
+                TradeCallback::UnpackBizMessage(lpUnPacker, 0, hstd, TradeCallback::UnpackRspOrderData);
                 lpUnPacker->Release();
             }
         }
@@ -712,7 +712,7 @@ int HS_TRADE_STDCALL hstrade_order_action(hstrade_t* hstd, HSReqOrderActionField
                     lpUnPacker2->Release();
                 }
 
-                TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackRspOrderActionData);
+                TradeCallback::UnpackBizMessage(lpUnPacker, 0, hstd, TradeCallback::UnpackRspOrderActionData);
                 lpUnPacker->Release();
             }
         }
@@ -792,7 +792,7 @@ int HS_TRADE_STDCALL hstrade_qry_trading_account(hstrade_t* hstd, HSReqQueryFiel
                     lpUnPacker2->Release();
                 }
 
-                TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackTradingAccountData);
+                TradeCallback::UnpackBizMessage(lpUnPacker, 0, hstd, TradeCallback::UnpackTradingAccountData);
                 lpUnPacker->Release();
             }
 
@@ -878,7 +878,7 @@ int HS_TRADE_STDCALL hstrade_qry_position(hstrade_t* hstd, HSReqQueryField* qry_
                     lpUnPacker2->Release();
                 }
 
-                TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackPositionData);
+                TradeCallback::UnpackBizMessage(lpUnPacker, 0, hstd, TradeCallback::UnpackPositionData);
                 lpUnPacker->Release();
             }
 
@@ -960,7 +960,7 @@ int HS_TRADE_STDCALL hstrade_qry_trade(hstrade_t* hstd, HSReqQueryField* qry_fie
                     lpUnPacker2->Release();
                 }
 
-                TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackQryTradeData);
+                TradeCallback::UnpackBizMessage(lpUnPacker, 0, hstd, TradeCallback::UnpackQryTradeData);
                 lpUnPacker->Release();
             }
 
@@ -1041,7 +1041,7 @@ int HS_TRADE_STDCALL hstrade_qry_order(hstrade_t* hstd, HSReqQueryField* qry_fie
                     lpUnPacker2->Release();
                 }
 
-                TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackQryOrderData);
+                TradeCallback::UnpackBizMessage(lpUnPacker, 0, hstd, TradeCallback::UnpackQryOrderData);
                 lpUnPacker->Release();
             }
 
@@ -1148,7 +1148,7 @@ int HS_TRADE_STDCALL hstrade_qry_md(hstrade_t* hstd, HSReqQueryField* qry_field)
                     lpUnPacker2->Release();
                 }
 
-                TradeCallback::UnpackBizMessage(lpUnPacker, hstd, TradeCallback::UnpackQryOrderData);
+                TradeCallback::UnpackBizMessage(lpUnPacker, 0, hstd, TradeCallback::UnpackQryOrderData);
                 lpUnPacker->Release();
             }
 

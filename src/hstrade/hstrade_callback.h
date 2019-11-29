@@ -43,22 +43,22 @@ public:
     //int FUNCTION_CALL_MODE EncodeEx(const char *pIn, char *pOut);
 
 public:
-    static int UnpackBizMessage(IF2UnPacker* lpUnPacker, void* ctxdata, int(*data_proc_pt)(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata));
+    static int UnpackBizMessage(IF2UnPacker* lpUnPacker, int ref_id, void* ctxdata, int(*data_proc_pt)(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata));
 
-    static int UnpackLoginData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
-    static int UnpackRspOrderData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
-    static int UnpackRspOrderActionData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
-    static int UnpackTradingAccountData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
-    static int UnpackPositionData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
-    static int UnpackQryOrderData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
-    static int UnpackQryTradeData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
-    static int UnpackRtnOrderData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
-    static int UnpackRtnTradeData(IF2UnPacker* lpUnPacker, int ds_index, void* ctxdata);
+    static int UnpackLoginData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
+    static int UnpackRspOrderData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
+    static int UnpackRspOrderActionData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
+    static int UnpackTradingAccountData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
+    static int UnpackPositionData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
+    static int UnpackQryOrderData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
+    static int UnpackQryTradeData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
+    static int UnpackRtnOrderData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
+    static int UnpackRtnTradeData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
 
     static void GetErrorField(HSRspInfoField* rsp_info, IF2UnPacker* lpUnPacker);
 
     static int GenJsonData(cJSON* json_data, IF2UnPacker* lpUnPacker);
-    static cJSON* GenJsonDatas(IF2UnPacker* lpUnPacker, int func_id, int issue_type);
+    static cJSON* GenJsonDatas(IF2UnPacker* lpUnPacker, int func_id, int issue_type, int ref_id);
 
 public:
     void SetContextData(hstrade_t* hstd);
@@ -67,34 +67,34 @@ public:
 
     int  IsJsonMode();
 
-    int NotifyJsonData(cJSON* json, int func_id, int issue_type);
+    int NotifyJsonData(cJSON* json, int func_id, int issue_type, int ref_id);
 
     // 331100 登入
-    void OnResponseUserLogin(IF2UnPacker* lpUnPacker);
+    void OnResponseUserLogin(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
     // 332255 资金账户查询
-    void OnResponseQryTradingAccount(IF2UnPacker* lpUnPacker);
+    void OnResponseQryTradingAccount(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
     // 333104 持仓查询
-    void OnResponseQryPosition(IF2UnPacker* lpUnPacker);
+    void OnResponseQryPosition(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
     // 333101 委托查询
-    void OnResponseQryOrder(IF2UnPacker* lpUnPacker);
+    void OnResponseQryOrder(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
     // 333102 成交查询
-    void OnResponseQryTrade(IF2UnPacker* lpUnPacker);
+    void OnResponseQryTrade(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
     // 330300 证券代码信息查询
-    void OnResponseQrySecurityInfo(IF2UnPacker* lpUnPacker);
+    void OnResponseQrySecurityInfo(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
     // 400 行情查询
-    void OnResponseQryMD(IF2UnPacker* lpUnPacker);
+    void OnResponseQryMD(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
     // 620001 订阅回报应答
-    void OnResponseSubscribe(IF2UnPacker* lpUnPacker, int issue_type);
+    void OnResponseSubscribe(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker, int issue_type);
     // 620002 取消订阅回报应答
-    void OnResponseUnSubscribe(IF2UnPacker* lpUnPacker, int issue_type);
+    void OnResponseUnSubscribe(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker, int issue_type);
 
     // 委托应答
-    void OnResponseOrderInsert(IF2UnPacker* lpUnPacker);
-    void OnResponseOrderCancel(IF2UnPacker* lpUnPacker);
+    void OnResponseOrderInsert(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
+    void OnResponseOrderCancel(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
 
     // 620003 回报主推
-    void OnRtnOrder(IF2UnPacker* lpUnPacker);
-    void OnRtnTrade(IF2UnPacker* lpUnPacker);
+    void OnRtnOrder(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
+    void OnRtnTrade(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
 
 private:
     hstrade_t*  m_hstd;

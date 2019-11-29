@@ -8,24 +8,24 @@ using namespace std;
 
 void on_connected(hstrade_t*);
 void on_disconnected(hstrade_t*, int reason);
-void on_rsp_subscribe(hstrade_t*, HSRspSubscribeField* rsp_sub);
-void on_user_login(hstrade_t*, HSRspUserLoginField* rsp_login, HSRspInfoField* rsp_info);
-void on_order_insert(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
-void on_order_action(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
+void on_rsp_subscribe(hstrade_t*, HSRspSubscribeField* rsp_sub, int ref_id);
+void on_user_login(hstrade_t*, HSRspUserLoginField* rsp_login, HSRspInfoField* rsp_info, int ref_id);
+void on_order_insert(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+void on_order_action(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int ref_id, int islast);
 
-void on_qry_trading_account(hstrade_t*, HSTradingAccountField*, HSRspInfoField* rsp_info, int islast);
-void on_qry_position(hstrade_t*, HSPositionField*, HSRspInfoField* rsp_info, int islast);
-void on_qry_order(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
-void on_qry_trade(hstrade_t*, HSTradeField*, HSRspInfoField* rsp_info, int islast);
-void on_qry_security_info(hstrade_t*, HSSecurityInfoField*, HSRspInfoField* rsp_info, int islast);
-void on_qry_md(hstrade_t*, HSMarketDataField*, HSRspInfoField* rsp_info, int islast);
+void on_qry_trading_account(hstrade_t*, HSTradingAccountField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+void on_qry_position(hstrade_t*, HSPositionField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+void on_qry_order(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+void on_qry_trade(hstrade_t*, HSTradeField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+void on_qry_security_info(hstrade_t*, HSSecurityInfoField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+void on_qry_md(hstrade_t*, HSMarketDataField*, HSRspInfoField* rsp_info, int ref_id, int islast);
 
-void on_qry_cash_hist(hstrade_t*, HSTradingAccountField*, HSRspInfoField* rsp_info, int islast);
-void on_qry_order_hist(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int islast);
-void on_qry_trade_hist(hstrade_t*, HSTradeField*, HSRspInfoField* rsp_info, int islast);
+void on_qry_cash_hist(hstrade_t*, HSTradingAccountField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+void on_qry_order_hist(hstrade_t*, HSOrderField*, HSRspInfoField* rsp_info, int ref_id, int islast);
+void on_qry_trade_hist(hstrade_t*, HSTradeField*, HSRspInfoField* rsp_info, int ref_id, int islast);
 
-void on_rtn_order(hstrade_t*, HSOrderField*);
-void on_rtn_trade(hstrade_t*, HSTradeField*);
+void on_rtn_order(hstrade_t*, HSOrderField*, int ref_id);
+void on_rtn_trade(hstrade_t*, HSTradeField*, int ref_id);
 
 
 int showmenu1()
@@ -178,32 +178,32 @@ void on_disconnected(hstrade_t* hstd, int reason)
     fprintf(stderr, "<on_disconnected>\n");
 }
 
-void on_rsp_subscribe(hstrade_t* hstd, HSRspSubscribeField* rsp_sub)
+void on_rsp_subscribe(hstrade_t* hstd, HSRspSubscribeField* rsp_sub, int ref_id)
 {
-    fprintf(stderr, "<on_rsp_subscribe>\n");
+    fprintf(stderr, "<on_rsp_subscribe %d>\n", ref_id);
 }
 
-void on_user_login(hstrade_t* hstd, HSRspUserLoginField* rsp_login, HSRspInfoField* rsp_info)
+void on_user_login(hstrade_t* hstd, HSRspUserLoginField* rsp_login, HSRspInfoField* rsp_info, int ref_id)
 {
-    fprintf(stderr, "<on_user_login>\n");
+    fprintf(stderr, "<on_user_login %d>\n", ref_id);
     fprintf(stderr, "accountid:%s, branch_no:%d, trading_day:%d\n",
         rsp_login->client_id, rsp_login->branch_no, rsp_login->trading_date);
 }
 
-void on_order_insert(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int islast)
+void on_order_insert(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int ref_id, int islast)
 {
-    fprintf(stderr, "<on_order_insert>\n");
+    fprintf(stderr, "<on_order_insert %d>\n", ref_id);
 }
 
-void on_order_action(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int islast)
+void on_order_action(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int ref_id, int islast)
 {
-    fprintf(stderr, "<on_order_action>\n");
+    fprintf(stderr, "<on_order_action %d>\n", ref_id);
 }
 
 
-void on_qry_trading_account(hstrade_t* hstd, HSTradingAccountField* ta, HSRspInfoField* rsp_info, int islast)
+void on_qry_trading_account(hstrade_t* hstd, HSTradingAccountField* ta, HSRspInfoField* rsp_info, int ref_id, int islast)
 {
-    fprintf(stderr, "<on_qry_trading_account> %p\n", ta);
+    fprintf(stderr, "<on_qry_trading_account %d>\n", ref_id);
     if (!ta)
     {
         return;
@@ -213,9 +213,9 @@ void on_qry_trading_account(hstrade_t* hstd, HSTradingAccountField* ta, HSRspInf
         ta->asset_balance, ta->current_balance, ta->enable_balance, ta->frozen_balance, ta->market_value);
 }
 
-void on_qry_position(hstrade_t* hstd, HSPositionField* pos, HSRspInfoField* rsp_info, int islast)
+void on_qry_position(hstrade_t* hstd, HSPositionField* pos, HSRspInfoField* rsp_info, int ref_id, int islast)
 {
-    fprintf(stderr, "<on_qry_position> %p\n", pos);
+    fprintf(stderr, "<on_qry_position %d>\n", ref_id);
     if (!pos)
     {
         return;
@@ -225,9 +225,9 @@ void on_qry_position(hstrade_t* hstd, HSPositionField* pos, HSRspInfoField* rsp_
         pos->stock_code, pos->current_amount, pos->enable_amount, pos->frozen_amount, pos->cost_price, pos->market_value, pos->income_balance);
 }
 
-void on_qry_order(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int islast)
+void on_qry_order(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int ref_id, int islast)
 {
-    fprintf(stderr, "<on_qry_order> %p\n", order);
+    fprintf(stderr, "<on_qry_order %d>\n", ref_id);
     if (!order)
     {
         return;
@@ -237,9 +237,9 @@ void on_qry_order(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info
         order->stock_code, order->entrust_amount, order->entrust_price, order->entrust_no, order->entrust_status);
 }
 
-void on_qry_trade(hstrade_t* hstd, HSTradeField* trade, HSRspInfoField* rsp_info, int islast)
+void on_qry_trade(hstrade_t* hstd, HSTradeField* trade, HSRspInfoField* rsp_info, int ref_id, int islast)
 {
-    fprintf(stderr, "<on_qry_trade> %p\n", trade);
+    fprintf(stderr, "<on_qry_trade %d>\n", ref_id);
     if (!trade)
     {
         return;
@@ -249,30 +249,30 @@ void on_qry_trade(hstrade_t* hstd, HSTradeField* trade, HSRspInfoField* rsp_info
         trade->stock_code, trade->business_amount, trade->business_price, trade->entrust_no, trade->business_no, trade->business_time);
 }
 
-void on_qry_security_info(hstrade_t* hstd, HSSecurityInfoField* secinfo, HSRspInfoField* rsp_info, int islast)
+void on_qry_security_info(hstrade_t* hstd, HSSecurityInfoField* secinfo, HSRspInfoField* rsp_info, int ref_id, int islast)
 {}
 
-void on_qry_md(hstrade_t* hstd, HSMarketDataField* md, HSRspInfoField* rsp_info, int islast)
+void on_qry_md(hstrade_t* hstd, HSMarketDataField* md, HSRspInfoField* rsp_info, int ref_id, int islast)
 {}
 
 
-void on_qry_cash_hist(hstrade_t* hstd, HSTradingAccountField*, HSRspInfoField* rsp_info, int islast)
+void on_qry_cash_hist(hstrade_t* hstd, HSTradingAccountField*, HSRspInfoField* rsp_info, int ref_id, int islast)
 {}
 
-void on_qry_order_hist(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int islast)
+void on_qry_order_hist(hstrade_t* hstd, HSOrderField* order, HSRspInfoField* rsp_info, int ref_id, int islast)
 {}
 
-void on_qry_trade_hist(hstrade_t* hstd, HSTradeField* order, HSRspInfoField* rsp_info, int islast)
+void on_qry_trade_hist(hstrade_t* hstd, HSTradeField* order, HSRspInfoField* rsp_info, int ref_id, int islast)
 {}
 
-void on_rtn_order(hstrade_t* hstd, HSOrderField* order)
+void on_rtn_order(hstrade_t* hstd, HSOrderField* order, int ref_id)
 {
     fprintf(stderr, "<on_rtn_order>\n");
     fprintf(stderr, "symbol:%s,qty:%d,price:%.2lf,orderid:%s,status:%c\n",
         order->stock_code, order->entrust_amount, order->entrust_price, order->entrust_no, order->entrust_status);
 }
 
-void on_rtn_trade(hstrade_t* hstd, HSTradeField* trade)
+void on_rtn_trade(hstrade_t* hstd, HSTradeField* trade, int ref_id)
 {
     fprintf(stderr, "<on_rtn_trade>\n");
     fprintf(stderr, "symbol:%s,qty:%d,price:%.2lf,orderid:%s,tradeid:%s,tradetime:%d\n",

@@ -33,6 +33,7 @@
 
 #define UFX_ISSUE_TYPE_TRADE        12          // 成交推送
 #define UFX_ISSUE_TYPE_ORDER        23          // 委托推送
+#define UFX_ISSUE_TYPE_DEFAULT      0           // 
 
 
 /// 字段类型定义 field type

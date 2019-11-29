@@ -111,8 +111,8 @@ private:
 public:
     virtual void on_front_connected() {}
     virtual void on_front_disconnected(int reason) {}
-    virtual void on_msg_error(int func_id, int issue_type, int error_no, const std::string& error_info) {}
-    virtual void on_recv_msg(int func_id, int issue_type, const std::string& msg) {}
+    virtual void on_msg_error(int func_id, int issue_type, int ref_id, int error_no, const std::string& error_info) {}
+    virtual void on_recv_msg(int func_id, int issue_type, int ref_id, const std::string& msg) {}
 
 private:
     std::string     m_json_str;
