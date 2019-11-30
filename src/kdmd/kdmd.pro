@@ -58,7 +58,7 @@ BOOST_DIR = ../../thirdparty/boost_1_66_0/linux64
 #LIBS += $${BOOST_DIR}/libboost_system.a
 #LIBS += $${BOOST_DIR}/libboost_chrono.a
 #LIBS += $${BOOST_DIR}/libboost_atomic.a
-LIBS += $${BOOST_DIR}/libboost_locale.a
+#LIBS += $${BOOST_DIR}/libboost_locale.a
 LIBS += -L../../thirdparty/python35/linux64 -lpython3.5m
 LIBS += -L../api/kdmd/linux64 -lKDMdUserApi
 
