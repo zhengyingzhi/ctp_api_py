@@ -109,13 +109,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\..\thirdparty\python35\include;..\..\thirdparty</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\api;..\..\thirdparty\python35\include;..\..\thirdparty</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>python35.lib;XcMarketApi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\XcMarketApi\win64;..\..\thirdparty;..\..\thirdparty\python35\win64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\api\XcMarketApi\win64;..\..\thirdparty;..\..\thirdparty\python35\win64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -145,7 +145,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\..\thirdparty\python35\include;..\..\thirdparty</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\api;..\..\thirdparty\python35\include;..\..\thirdparty</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -154,7 +154,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>python35.lib;XcMarketApi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\XcMarketApi\win64;..\..\thirdparty;..\..\thirdparty\python35\win64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\api\XcMarketApi\win64;..\..\thirdparty;..\..\thirdparty\python35\win64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

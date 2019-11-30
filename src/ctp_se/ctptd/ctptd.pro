@@ -40,6 +40,7 @@ QMAKE_CXXFLAGS += -std=c++0x -fPIC -Wno-unused-parameter -fvisibility=hidden -fv
 DEFINES += __STDC_FORMAT_MACROS
 
 
+INCLUDEPATH += ..
 INCLUDEPATH += ../../api/ctp_se
 INCLUDEPATH += ../../../thirdparty
 INCLUDEPATH += ../../../thirdparty/python35/linux_include
