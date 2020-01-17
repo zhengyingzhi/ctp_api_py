@@ -9,6 +9,9 @@
 #include <Windows.h>
 #define sleepms(x)  Sleep((x))
 #else
+#include <sys/time.h>
+#include <sys/types.h>
+#include <pthread.h>
 #include <unistd.h>
 #define sleepms(x)  usleep((x) * 1000)
 #endif
@@ -16,7 +19,7 @@
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "0.1.3"
+#define XC_MDAPI_VERSION    "1.0.0"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -116,6 +119,36 @@ static int get_ratio_index(double updown_ratio)
 {
     return int32_t(abs(updown_ratio) * 100);
 }
+
+#ifdef _MSC_VER
+void gettimeofday(struct timeval *tp, void* reserve)
+{
+    int64_t intervals;
+    FILETIME ft;
+
+    GetSystemTimeAsFileTime(&ft);
+
+    /*
+    * A file time is a 64-bit value that represents the number
+    * of 100-nanosecond intervals that have elapsed since
+    * January 1, 1601 12:00 A.M. UTC.
+    *
+    * Between January 1, 1970 (Epoch) and January 1, 1601 there were
+    * 134744 days,
+    * 11644473600 seconds or
+    * 11644473600,000,000,0 100-nanosecond intervals.
+    *
+    * See also MSKB Q167296.
+    */
+
+    intervals = ((__int64)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+    intervals -= 116444736000000000;
+
+    tp->tv_sec = (long)(intervals / 10000000);
+    tp->tv_usec = (long)((intervals % 10000000) / 10);
+}
+
+#endif//_MSC_VER
 
 
 XcMdApi::XcMdApi()
@@ -329,15 +362,15 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
     sec_info.LowerLimitPrice = pSecurity->DailyPriceDownLimit;
     secmap[xc_symbol] = sec_info;
 
-    int index = 0;
-    while (sec_info.SecName[index])
+    int index = 32;
+    while (index > 0)
     {
-        if (sec_info.SecName[index] == ' ')
+        if (sec_info.SecName[index] != ' ')
         {
-            sec_info.SecName[index] = '\0';
             break;
         }
-        ++index;
+        sec_info.SecName[index] = '\0';
+        --index;
     }
 
     // only keep the AShares
@@ -388,23 +421,7 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
     strcpy(sec_info.InstrumentID, pSecurity->SecCode);
     strcpy(sec_info.SecName, pSecurity->SecName);
     sec_info.PreClosePrice = pSecurity->PrevClosePx;
-    sec_info.UpperLimitPrice = pExtend->T_LimitUpAbsolute;
-    sec_info.LowerLimitPrice = pExtend->T_LimitUpAbsolute;
-    secmap[xc_symbol] = sec_info;
-
-    int index = 0;
-    while (sec_info.SecName[index])
-    {
-        if (sec_info.SecName[index] == ' ')
-        {
-            sec_info.SecName[index] = '\0';
-            break;
-        }
-        ++index;
-    }
-
-    // for xc test environment
-    if (sec_info.LowerLimitPrice < 0.1)
+    if (pExtend->T_LimitUpRate < 0.0001)
     {
         double limit_rate = 0.1;
         if (strstr(sec_info.SecName, "ST"))
@@ -416,6 +433,28 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
 
         sprintf(buf, "%.2lf", sec_info.PreClosePrice * (1 - limit_rate));
         sec_info.LowerLimitPrice = atof(buf);
+    }
+    else
+    {
+        char buf[200] = "";
+        sprintf(buf, "%.2lf", sec_info.PreClosePrice * (1 + pExtend->T_LimitUpRate));
+        sec_info.UpperLimitPrice = atof(buf);
+
+        sprintf(buf, "%.2lf", sec_info.PreClosePrice * (1 - pExtend->T_LimitDownRate));
+        sec_info.LowerLimitPrice = atof(buf);
+    }
+
+    secmap[xc_symbol] = sec_info;
+
+    int index = 20;
+    while (index > 0)
+    {
+        if (sec_info.SecName[index] != ' ')
+        {
+            break;
+        }
+        sec_info.SecName[index] = '\0';
+        --index;
     }
 
     // only keep the AShares
@@ -557,11 +596,11 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         statistic_md(pMD, isfirst);
     }
 
-    if (log_level == XC_SPEC_LOG_LV && pDyna->Time >= 91500 && pDyna->Time <= 153000)
+    if (log_level == XC_SPEC_LOG_LV && pDyna->Time >= 91500 && pDyna->Time <= 151500)
     {
-        write_data(log_level, "RespDyna %ld,%s,%s,%.2lf,%.2lf,%.2lf,%.2lf,%ld,%.2lf,%.2lf,%.2lf,%d", (long)qQuoteID,
+        write_data(log_level, "RespDyna %ld,%s,%s,%.2lf,%.2lf,%.2lf,%.2lf,%ld,%.2lf,%.2lf,%.2lf,bp1:%.2lf,ap1:%.2lf,n:%d", (long)qQuoteID,
             pMD->UpdateTime, xc_symbol, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
-            (long)pMD->Volume, pMD->UpperLimitPrice, pMD->LowerLimitPrice, pMD->PreClosePrice, m_pendings.size());
+            (long)pMD->Volume, pMD->UpperLimitPrice, pMD->LowerLimitPrice, pMD->PreClosePrice, pMD->BidPrice1, pMD->AskPrice1, m_pendings.size());
     }
 }
 
@@ -755,7 +794,7 @@ void XcMdApi::create_md_api(string pszFlowPath)
     this->api->Register(this);
 
     // 设置重连参数
-    this->api->SetConnectParam(true, 10, 10000);
+    this->api->SetConnectParam(true, 1000, 10000);
 }
 
 void XcMdApi::release()
@@ -786,6 +825,7 @@ int XcMdApi::init(string user_id, string server_ip, string server_port, string l
     int rv;
     XcDebugInfo(XcDbgFd, "init user_id:%s, server_ip:%s, server_port:%s, liscense:%s\n",
         user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str());
+    write_data(0, "init user_id:%s, server:%s:%s, liscense:%s\n", user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str());
 
     rv = this->api->Connect(user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str());
     if (rv < 0)
@@ -1090,11 +1130,14 @@ int XcMdApi::write_line(int reserve, const std::string& line)
     char buf[1000] = "";
     int  len = 0;
 
-    time_t now = time(NULL);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    // time_t now = time(NULL);
+    time_t now = tv.tv_sec;
     struct tm* ptm = localtime(&now);
-    len = sprintf(buf + len, "%04d-%02d-%02d %02d:%02d:%02d ",
+    len = sprintf(buf + len, "[%04d-%02d-%02d %02d:%02d:%02d.%06d] ",
         ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
-        ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec, tv.tv_usec);
 
     fwrite(buf, len, 1, fp);
     fwrite(line.c_str(), line.length(), 1, fp);
@@ -1116,11 +1159,14 @@ int XcMdApi::write_data(int reserve, const char* fmt, ...)
     char buf[16300] = "";
     int  len = 0;
 
-    time_t now = time(NULL);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    // time_t now = time(NULL);
+    time_t now = tv.tv_sec;
     struct tm* ptm = localtime(&now);
-    len = sprintf(buf + len, "%04d-%02d-%02d %02d:%02d:%02d ",
+    len = sprintf(buf + len, "[%04d-%02d-%02d %02d:%02d:%02d.%06d] ",
         ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
-        ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec, tv.tv_usec);
 
     va_list args;
     va_start(args, fmt);
@@ -1481,6 +1527,7 @@ PYBIND11_MODULE(xcmd, m)
     mdapi
         .def(init<>())
         .def("create_md_api", &XcMdApi::create_md_api)
+        .def("create_api", &XcMdApi::create_md_api)
         .def("release", &XcMdApi::release)
         .def("set_connect_param", &XcMdApi::set_connect_param)
         .def("init", &XcMdApi::init)
