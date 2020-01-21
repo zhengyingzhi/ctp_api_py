@@ -19,7 +19,7 @@
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.0.0"
+#define XC_MDAPI_VERSION    "1.1.0"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -70,14 +70,14 @@ static string to_utf(const string &gb2312)
 
 static bool get_symbol_market(char symbol[], char market[], const std::string& instrument)
 {
-    std::size_t dot_index = instrument.find('.');
-    if (dot_index == std::string::npos || dot_index < 1 || dot_index > 9)
+    std::size_t lDotIndex = instrument.find('.');
+    if (lDotIndex == std::string::npos || lDotIndex < 1 || lDotIndex > 9)
     {
         return false;
     }
 
     // 000001.SZSE
-    strncpy(symbol, instrument.c_str(), dot_index);
+    strncpy(symbol, instrument.c_str(), lDotIndex);
 
     if (instrument.find("SSE") != string::npos ||
         instrument.find("SH") != string::npos ||
@@ -115,9 +115,9 @@ static bool get_symbol_market(char symbol[], char market[], const std::string& i
     return true;
 }
 
-static int get_ratio_index(double updown_ratio)
+static int get_ratio_index(double aUpdownRatio)
 {
-    return int32_t(abs(updown_ratio) * 100);
+    return int32_t(abs(aUpdownRatio) * 100);
 }
 
 #ifdef _MSC_VER
@@ -156,7 +156,7 @@ XcMdApi::XcMdApi()
     , m_pendings()
     , mdmap()
     , m_SubList()
-    , m_SubListLock()
+    , m_Lock()
 {
     m_pendings.reserve(1024);
 
@@ -186,6 +186,10 @@ XcMdApi::~XcMdApi()
         fclose(fp);
         fp = NULL;
     }
+    if (m_active)
+    {
+        this->exit();
+    }
 }
 
 void XcMdApi::OnUserLogin(socket_struct_Msg* pMsg)
@@ -198,14 +202,20 @@ void XcMdApi::OnUserLogin(socket_struct_Msg* pMsg)
     // cout << "ÓÃ»§µÇÂ¼·µ»Ø:" << pMsg->Desc << endl;
     XcDebugInfo(XcDbgFd, "OnUserLogin:%s\n", pMsg->Desc);
 
-    gil_scoped_acquire acquire;
-    this->on_front_connected();
+    Task task = Task();
+    task.task_name = ONUSERLOGIN;
+    socket_struct_Msg* task_data = new socket_struct_Msg();
+    *task_data = *pMsg;
+    task.task_data = task_data;
 
-    dict data;
-    data["MsgID"] = pMsg->Msgid;
-    data["Desc"] = to_utf(pMsg->Desc);
-
-    this->on_rsp_user_login(data);
+    if (m_thread_mode)
+    {
+        m_task_queue.push(task);
+    }
+    else
+    {
+        processOnUserLogin(&task);
+    }
 }
 
 void XcMdApi::OnHeart()
@@ -217,8 +227,18 @@ void XcMdApi::OnClose()
 {
     XcDebugInfo(XcDbgFd, "OnClose\n");
 
-    gil_scoped_acquire acquire;
-    this->on_front_disconnected(-1);
+    Task task = Task();
+    task.task_name = ONCLOSE;
+    task.task_id = -1;
+
+    if (m_thread_mode)
+    {
+        m_task_queue.push(task);
+    }
+    else
+    {
+        processOnClose(&task);
+    }
 }
 
 void XcMdApi::OnIssueEnd(QWORD qQuoteID)
@@ -232,84 +252,32 @@ void XcMdApi::OnIssueEnd(QWORD qQuoteID)
 
     XcDepthMarketData* pMD;
 
-    gil_scoped_acquire acquire;
-    for (int i = 0; i < (int)m_pendings.size(); ++i)
+    if (m_thread_mode)
     {
-        pMD = m_pendings[i];
-
-        dict data;
-        data["TradingDay"] = to_utf(pMD->TradingDay);
-        data["InstrumentID"] = to_utf(pMD->InstrumentID);
-        data["ExchangeID"] = to_utf(pMD->ExchangeID);
-        data["PreClosePrice"] = pMD->PreClosePrice;
-        data["LastPrice"] = pMD->LastPrice;
-        data["OpenPrice"] = pMD->OpenPrice;
-        data["HighestPrice"] = pMD->HighestPrice;
-        data["LowestPrice"] = pMD->LowestPrice;
-        data["ClosePrice"] = pMD->ClosePrice;
-        data["Volume"] = pMD->Volume;
-        data["Turnover"] = pMD->Turnover;
-        data["OpenInterest"] = pMD->OpenInterest;
-        data["UpdateTime"] = to_utf(pMD->UpdateTime);
-        data["UpdateMillisec"] = pMD->UpdateMillisec;
-        data["ActionDay"] = to_utf(pMD->ActionDay);
-        data["TradingPhaseCode"] = to_utf(pMD->TradingPhaseCode);
-
-        data["Time"] = pMD->Time;
-        data["TickCount"] = pMD->TickCount;
-
-        data["UpperLimitPrice"] = pMD->UpperLimitPrice;
-        data["LowerLimitPrice"] = pMD->LowerLimitPrice;
-
-        data["BidPrice1"] = pMD->BidPrice1;
-        data["BidVolume1"] = pMD->BidVolume1;
-        data["BidPrice2"] = pMD->BidPrice2;
-        data["BidVolume2"] = pMD->BidVolume2;
-        data["BidPrice3"] = pMD->BidPrice3;
-        data["BidVolume3"] = pMD->BidVolume3;
-        data["BidPrice4"] = pMD->BidPrice4;
-        data["BidVolume4"] = pMD->BidVolume4;
-        data["BidPrice5"] = pMD->BidPrice5;
-        data["BidVolume5"] = pMD->BidVolume5;
-        if (have_level10)
+        for (int i = 0; i < (int)m_pendings.size(); ++i)
         {
-            data["BidPrice6"] = pMD->BidPrice6;
-            data["BidVolume6"] = pMD->BidVolume6;
-            data["BidPrice7"] = pMD->BidPrice7;
-            data["BidVolume7"] = pMD->BidVolume7;
-            data["BidPrice8"] = pMD->BidPrice8;
-            data["BidVolume8"] = pMD->BidVolume8;
-            data["BidPrice9"] = pMD->BidPrice9;
-            data["BidVolume9"] = pMD->BidVolume9;
-            data["BidPrice10"] = pMD->BidPrice10;
-            data["BidVolume10"] = pMD->BidVolume10;
-        }
+            pMD = m_pendings[i];
 
-        data["AskPrice1"] = pMD->AskPrice1;
-        data["AskVolume1"] = pMD->AskVolume1;
-        data["AskPrice2"] = pMD->AskPrice2;
-        data["AskVolume2"] = pMD->AskVolume2;
-        data["AskPrice3"] = pMD->AskPrice3;
-        data["AskVolume3"] = pMD->AskVolume3;
-        data["AskPrice4"] = pMD->AskPrice4;
-        data["AskVolume4"] = pMD->AskVolume4;
-        data["AskPrice5"] = pMD->AskPrice5;
-        data["AskVolume5"] = pMD->AskVolume5;
-        if (have_level10)
+            Task task = Task();
+            task.task_name = ONRTNDEPTHMARKETDATA;
+            task.task_id = (int)qQuoteID;
+            XcDepthMarketData* lpMD = new XcDepthMarketData();
+            *lpMD = *pMD;
+            task.task_data = lpMD;
+            m_task_queue.push(task);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < (int)m_pendings.size(); ++i)
         {
-            data["AskPrice6"] = pMD->AskPrice6;
-            data["AskVolume6"] = pMD->AskVolume6;
-            data["AskPrice7"] = pMD->AskPrice7;
-            data["AskVolume7"] = pMD->AskVolume7;
-            data["AskPrice8"] = pMD->AskPrice8;
-            data["AskVolume8"] = pMD->AskVolume8;
-            data["AskPrice9"] = pMD->AskPrice9;
-            data["AskVolume9"] = pMD->AskVolume9;
-            data["AskPrice10"] = pMD->AskPrice10;
-            data["AskVolume10"] = pMD->AskVolume10;
+            pMD = m_pendings[i];
+            Task task = Task();
+            task.task_name = ONRTNDEPTHMARKETDATA;
+            task.task_id = (int)qQuoteID;
+            task.task_data = pMD;
+            processOnRtnMarketData(&task, 1);
         }
-
-        this->on_rtn_market_data(data);
     }
 
     // clear after notified all
@@ -320,11 +288,21 @@ void XcMdApi::OnMsg(QWORD qRefID, socket_struct_Msg* pMsg)
 {
     XcDebugInfo(XcDbgFd, "OnMsg qRefID:%ld, MsgId:%d, Msg:%s\n", (long)qRefID, pMsg->Msgid, pMsg->Desc);
 
-    gil_scoped_acquire acquire;
-    dict data;
-    data["MsgId"] = pMsg->Msgid;
-    data["Desc"] = to_utf(pMsg->Desc);
-    this->on_msg((int)qRefID, data);
+    Task task = Task();
+    task.task_name = ONMSG;
+    task.task_id = (int)qRefID;
+    socket_struct_Msg* task_data = new socket_struct_Msg();
+    *task_data = *pMsg;
+    task.task_data = task_data;
+
+    if (m_thread_mode)
+    {
+        m_task_queue.push(task);
+    }
+    else
+    {
+        processOnMsg(&task);
+    }
 }
 
 void XcMdApi::OnRespMarket(QWORD qQuoteID, socket_struct_Market* pMarket)
@@ -332,14 +310,22 @@ void XcMdApi::OnRespMarket(QWORD qQuoteID, socket_struct_Market* pMarket)
     XcDebugInfo(XcDbgFd, "OnRespMarket qQuoteID:%ld, Code:%s, Name:%s\n",
         (long)qQuoteID, pMarket->MarketCode, pMarket->MarketName);
 
-    gil_scoped_acquire acquire;
-    dict data;
-    data["MarketCode"] = to_utf(pMarket->MarketCode);
-    data["MarketName"] = to_utf(pMarket->MarketName);
-    data["TimeZone"] = pMarket->TimeZone;
-    data["OpenTime"] = pMarket->OpenTime;
-    data["CloseTime"] = pMarket->CloseTime;
-    this->on_rsp_market((int)qQuoteID, data);}
+    Task task = Task();
+    task.task_name = ONRSPMARKET;
+    task.task_id = (int)qQuoteID;
+    socket_struct_Market* task_data = new socket_struct_Market();
+    *task_data = *pMarket;
+    task.task_data = task_data;
+
+    if (m_thread_mode)
+    {
+        m_task_queue.push(task);
+    }
+    else
+    {
+        processOnRspMarket(&task);
+    }
+}
 
 void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
 {
@@ -351,48 +337,54 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
 
     char buf[64] = "";
     sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
-    string xc_symbol(buf);
+    string lXcSymbol(buf);
 
-    XcSecurityInfo sec_info = { 0 };
-    strcpy(sec_info.ExchangeID, pSecurity->MarketCode);
-    strcpy(sec_info.InstrumentID, pSecurity->SecCode);
-    strcpy(sec_info.SecName, pSecurity->SecName);
-    sec_info.PreClosePrice = pSecurity->SecurityClosePx;
-    sec_info.UpperLimitPrice = pSecurity->DailyPriceUpLimit;
-    sec_info.LowerLimitPrice = pSecurity->DailyPriceDownLimit;
-    secmap[xc_symbol] = sec_info;
+    XcSecurityInfo lSecInfo = { 0 };
+    strcpy(lSecInfo.ExchangeID, pSecurity->MarketCode);
+    strcpy(lSecInfo.InstrumentID, pSecurity->SecCode);
+    strcpy(lSecInfo.SecName, pSecurity->SecName);
+    lSecInfo.PreClosePrice = pSecurity->SecurityClosePx;
+    lSecInfo.UpperLimitPrice = pSecurity->DailyPriceUpLimit;
+    lSecInfo.LowerLimitPrice = pSecurity->DailyPriceDownLimit;
+    secmap[lXcSymbol] = lSecInfo;
 
     int index = 32;
     while (index > 0)
     {
-        if (sec_info.SecName[index] != ' ')
+        if (lSecInfo.SecName[index] != ' ')
         {
             break;
         }
-        sec_info.SecName[index] = '\0';
+        lSecInfo.SecName[index] = '\0';
         --index;
     }
 
     // only keep the AShares
-    if (statistic_mode && sec_info.InstrumentID[0] == '6')
+    if (statistic_mode && lSecInfo.InstrumentID[0] == '6')
     {
         socket_struct_SubscribeDetail sub;
-        strcpy(sub.MarketCode, sec_info.ExchangeID);
-        strcpy(sub.SecCode, sec_info.InstrumentID);
+        strcpy(sub.MarketCode, lSecInfo.ExchangeID);
+        strcpy(sub.SecCode, lSecInfo.InstrumentID);
 
-        std::lock_guard<std::mutex> lk(m_SubListLock);
+        std::lock_guard<std::mutex> lk(m_Lock);
         m_SubList.push_back(sub);
     }
 
-    gil_scoped_acquire acquire;
-    dict data;
-    data["ExchangeID"] = to_utf(sec_info.ExchangeID);
-    data["InstrumentID"] = to_utf(sec_info.InstrumentID);
-    data["SecName"] = to_utf(sec_info.SecName);
-    data["PreClosePrice"] = sec_info.PreClosePrice;
-    data["UpperLimitPrice"] = sec_info.UpperLimitPrice;
-    data["LowerLimitPrice"] = sec_info.LowerLimitPrice;
-    this->on_rsp_qry_data(data);
+    Task task = Task();
+    task.task_name = ONRSPQRYDATA;
+    task.task_id = (int)qQuoteID;
+    XcSecurityInfo* task_data = new XcSecurityInfo();
+    *task_data = lSecInfo;
+    task.task_data = task_data;
+
+    if (m_thread_mode)
+    {
+        m_task_queue.push(task);
+    }
+    else
+    {
+        processOnRspQryData(&task);
+    }
 }
 
 void XcMdApi::OnRespSecurity_Opt(QWORD qQuoteID, void* pParam)
@@ -414,69 +406,75 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
 
     char buf[64] = "";
     sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
-    string xc_symbol(buf);
+    string lXcSymbol(buf);
 
-    XcSecurityInfo sec_info = { 0 };
-    strcpy(sec_info.ExchangeID, pSecurity->MarketCode);
-    strcpy(sec_info.InstrumentID, pSecurity->SecCode);
-    strcpy(sec_info.SecName, pSecurity->SecName);
-    sec_info.PreClosePrice = pSecurity->PrevClosePx;
+    XcSecurityInfo lSecInfo = { 0 };
+    strcpy(lSecInfo.ExchangeID, pSecurity->MarketCode);
+    strcpy(lSecInfo.InstrumentID, pSecurity->SecCode);
+    strcpy(lSecInfo.SecName, pSecurity->SecName);
+    lSecInfo.PreClosePrice = pSecurity->PrevClosePx;
     if (pExtend->T_LimitUpRate < 0.0001)
     {
-        double limit_rate = 0.1;
-        if (strstr(sec_info.SecName, "ST"))
-            limit_rate = 0.05;
+        double lLimitRate = 0.1;
+        if (strstr(lSecInfo.SecName, "ST"))
+            lLimitRate = 0.05;
 
         char buf[200] = "";
-        sprintf(buf, "%.2lf", sec_info.PreClosePrice * (1 + limit_rate));
-        sec_info.UpperLimitPrice = atof(buf);
+        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 + lLimitRate));
+        lSecInfo.UpperLimitPrice = atof(buf);
 
-        sprintf(buf, "%.2lf", sec_info.PreClosePrice * (1 - limit_rate));
-        sec_info.LowerLimitPrice = atof(buf);
+        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 - lLimitRate));
+        lSecInfo.LowerLimitPrice = atof(buf);
     }
     else
     {
         char buf[200] = "";
-        sprintf(buf, "%.2lf", sec_info.PreClosePrice * (1 + pExtend->T_LimitUpRate));
-        sec_info.UpperLimitPrice = atof(buf);
+        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 + pExtend->T_LimitUpRate));
+        lSecInfo.UpperLimitPrice = atof(buf);
 
-        sprintf(buf, "%.2lf", sec_info.PreClosePrice * (1 - pExtend->T_LimitDownRate));
-        sec_info.LowerLimitPrice = atof(buf);
+        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 - pExtend->T_LimitDownRate));
+        lSecInfo.LowerLimitPrice = atof(buf);
     }
 
-    secmap[xc_symbol] = sec_info;
+    secmap[lXcSymbol] = lSecInfo;
 
     int index = 20;
     while (index > 0)
     {
-        if (sec_info.SecName[index] != ' ')
+        if (lSecInfo.SecName[index] != ' ')
         {
             break;
         }
-        sec_info.SecName[index] = '\0';
+        lSecInfo.SecName[index] = '\0';
         --index;
     }
 
     // only keep the AShares
-    if (statistic_mode && (strncmp(sec_info.InstrumentID, "00", 2) == 0 || strncmp(sec_info.InstrumentID, "30", 2) == 0))
+    if (statistic_mode && (strncmp(lSecInfo.InstrumentID, "00", 2) == 0 || strncmp(lSecInfo.InstrumentID, "30", 2) == 0))
     {
         socket_struct_SubscribeDetail sub;
-        strcpy(sub.MarketCode, sec_info.ExchangeID);
-        strcpy(sub.SecCode, sec_info.InstrumentID);
+        strcpy(sub.MarketCode, lSecInfo.ExchangeID);
+        strcpy(sub.SecCode, lSecInfo.InstrumentID);
 
-        std::lock_guard<std::mutex> lk(m_SubListLock);
+        std::lock_guard<std::mutex> lk(m_Lock);
         m_SubList.push_back(sub);
     }
 
-    gil_scoped_acquire acquire;
-    dict data;
-    data["ExchangeID"] = to_utf(sec_info.ExchangeID);
-    data["InstrumentID"] = to_utf(sec_info.InstrumentID);
-    data["SecName"] = to_utf(sec_info.SecName);
-    data["PreClosePrice"] = sec_info.PreClosePrice;
-    data["UpperLimitPrice"] = sec_info.UpperLimitPrice;
-    data["LowerLimitPrice"] = sec_info.LowerLimitPrice;
-    this->on_rsp_qry_data(data);
+    Task task = Task();
+    task.task_name = ONRSPQRYDATA;
+    task.task_id = (int)qQuoteID;
+    XcSecurityInfo* task_data = new XcSecurityInfo();
+    *task_data = lSecInfo;
+    task.task_data = task_data;
+
+    if (m_thread_mode)
+    {
+        m_task_queue.push(task);
+    }
+    else
+    {
+        processOnRspQryData(&task);
+    }
 }
 
 
@@ -495,18 +493,18 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     int32_t isfirst = 0;
     char buf[64] = "";
     sprintf(buf, "%s.%s", pDyna->SecCode, pDyna->MarketCode);
-    string xc_symbol(buf);
-    if (mdmap.count(xc_symbol) == 0)
+    string lXcSymbol(buf);
+    if (mdmap.count(lXcSymbol) == 0)
     {
         XcDepthMarketData lMD = { 0 };
         // XcDebugInfo(XcDbgFd, "---->>>>%s,%s\n", pDyna->SecCode, pDyna->MarketCode);
         strcpy(lMD.InstrumentID, pDyna->SecCode);
         strcpy(lMD.ExchangeID, pDyna->MarketCode);
-        mdmap[xc_symbol] = lMD;
+        mdmap[lXcSymbol] = lMD;
 
         isfirst = 1;
     }
-    pMD = &mdmap[xc_symbol];
+    pMD = &mdmap[lXcSymbol];
 
 #if 0
     // reset depth field ?
@@ -561,9 +559,9 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
             pMD->UpperLimitPrice = pExtend->UpLimit / PRICE_DIV;
             pMD->LowerLimitPrice = pExtend->DownLimit / PRICE_DIV;
         }
-        else if (secmap.count(xc_symbol))
+        else if (secmap.count(lXcSymbol))
         {
-            XcSecurityInfo* psec_info = &secmap[xc_symbol];
+            XcSecurityInfo* psec_info = &secmap[lXcSymbol];
             pMD->UpperLimitPrice = psec_info->UpperLimitPrice;
             pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
         }
@@ -575,9 +573,9 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     }
     else
     {
-        if (secmap.count(xc_symbol))
+        if (secmap.count(lXcSymbol))
         {
-            XcSecurityInfo* psec_info = &secmap[xc_symbol];
+            XcSecurityInfo* psec_info = &secmap[lXcSymbol];
             pMD->UpperLimitPrice = psec_info->UpperLimitPrice;
             pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
         }
@@ -599,7 +597,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     if (log_level == XC_SPEC_LOG_LV && pDyna->Time >= 91500 && pDyna->Time <= 151500)
     {
         write_data(log_level, "RespDyna %ld,%s,%s,%.2lf,%.2lf,%.2lf,%.2lf,%ld,%.2lf,%.2lf,%.2lf,bp1:%.2lf,ap1:%.2lf,n:%d", (long)qQuoteID,
-            pMD->UpdateTime, xc_symbol, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
+            pMD->UpdateTime, lXcSymbol, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
             (long)pMD->Volume, pMD->UpperLimitPrice, pMD->LowerLimitPrice, pMD->PreClosePrice, pMD->BidPrice1, pMD->AskPrice1, m_pendings.size());
     }
 }
@@ -615,12 +613,12 @@ void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socke
 
     char buf[64] = "";
     sprintf(buf, "%s.%s", SecCode, MarketCode);
-    string xc_symbol(buf);
-    if (mdmap.count(xc_symbol) == 0)
+    string lXcSymbol(buf);
+    if (mdmap.count(lXcSymbol) == 0)
     {
         return;
     }
-    pMD = &mdmap[xc_symbol];
+    pMD = &mdmap[lXcSymbol];
 
     // double* dstpx;
     // int* dstvol;
@@ -820,12 +818,29 @@ int XcMdApi::set_connect_param(int is_reconnect, int reconnect_ms, int reconect_
     return api->SetConnectParam(is_reconnect ? true : false, reconnect_ms, reconect_count);
 }
 
+int XcMdApi::set_thread_mode(int on)
+{
+    if (m_active)
+    {
+        return -1;
+    }
+    m_thread_mode = on;
+    return 0;
+}
+
 int XcMdApi::init(string user_id, string server_ip, string server_port, string license)
 {
     int rv;
-    XcDebugInfo(XcDbgFd, "init user_id:%s, server_ip:%s, server_port:%s, liscense:%s\n",
-        user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str());
-    write_data(0, "init user_id:%s, server:%s:%s, liscense:%s\n", user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str());
+    XcDebugInfo(XcDbgFd, "init user_id:%s, server_ip:%s, server_port:%s, liscense:%s, thread_mode:%d\n",
+        user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str(), m_thread_mode);
+    write_data(0, "init user_id:%s, server:%s:%s, liscense:%s, thread_mode:%d\n",
+        user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str(), m_thread_mode);
+
+    if (m_thread_mode)
+    {
+        m_active = true;
+        m_task_thread = thread(&XcMdApi::processTask, this);
+    }
 
     rv = this->api->Connect(user_id.c_str(), server_ip.c_str(), server_port.c_str(), license.c_str());
     if (rv < 0)
@@ -835,6 +850,15 @@ int XcMdApi::init(string user_id, string server_ip, string server_port, string l
     return rv;
 }
 
+void XcMdApi::exit()
+{
+    if (m_thread_mode && m_active)
+    {
+        m_active = false;
+        m_task_queue.terminate();
+        m_task_thread.join();
+    }
+}
 
 int XcMdApi::subscribe_md(string instrumentID, int depth_order, int each_flag)
 {
@@ -849,7 +873,7 @@ int XcMdApi::subscribe_md(string instrumentID, int depth_order, int each_flag)
     sub_flag.EachDeal_flag = each_flag ? true : false;
     sub_flag.EachOrder_flag = each_flag ? true : false;
 
-    char market[16] = "";
+    char market[32] = "";
     char symbol[16] = "";
     if (!get_symbol_market(symbol, market, instrumentID))
     {
@@ -875,7 +899,7 @@ int XcMdApi::subscribe_md(string instrumentID, int depth_order, int each_flag)
 
         int count = 0;
 
-        std::lock_guard<std::mutex> lk(m_SubListLock);
+        std::lock_guard<std::mutex> lk(m_Lock);
         if (m_SubList.size() == 0)
         {
             fprintf(stderr, "[WARN] no security info to subsribe!\n");
@@ -1041,7 +1065,7 @@ int XcMdApi::req_qry_data(string instrument)
 
     if (strcmp(req[0].SecCode, "*") == 0)
     {
-        std::lock_guard<std::mutex> lk(m_SubListLock);
+        std::lock_guard<std::mutex> lk(m_Lock);
         m_SubList.clear();
     }
 
@@ -1061,7 +1085,7 @@ int XcMdApi::req_qry_data_batch(const std::vector<std::string>& reqs)
 
         if (strcmp(ReqList[count].SecCode, "*") == 0)
         {
-            std::lock_guard<std::mutex> lk(m_SubListLock);
+            std::lock_guard<std::mutex> lk(m_Lock);
             m_SubList.clear();
         }
 
@@ -1181,7 +1205,6 @@ int XcMdApi::write_data(int reserve, const char* fmt, ...)
 #endif
     return 0;
 }
-
 
 int XcMdApi::get_statistics(dict out)
 {
@@ -1353,7 +1376,6 @@ void XcMdApi::statistic_md(XcDepthMarketData* pMD, int32_t isfirst)
     pMD->UpDownRatio = updown_ratio;
 }
 
-
 int XcMdApi::get_ratio_count(double ratio, int cond)
 {
     // fprintf(stderr, "now upcount:%d, downcound:%d\n", m_UpCount, m_DownCount);
@@ -1388,6 +1410,209 @@ int XcMdApi::get_ratio_count(double ratio, int cond)
     }
     return count;
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+void XcMdApi::processTask()
+{
+    try
+    {
+        while (m_active)
+        {
+            Task task = m_task_queue.pop();
+
+            switch (task.task_name)
+            {
+            case ONUSERLOGIN:
+            {
+                this->processOnUserLogin(&task);
+                break;
+            }
+
+            case ONCLOSE:
+            {
+                this->processOnClose(&task);
+                break;
+            }
+
+            case ONMSG:
+            {
+                this->processOnMsg(&task);
+                break;
+            }
+
+            case ONRSPMARKET:
+            {
+                this->processOnRspMarket(&task);
+                break;
+            }
+
+            case ONRSPQRYDATA:
+            {
+                this->processOnRspQryData(&task);
+                break;
+            }
+
+            case ONRTNDEPTHMARKETDATA:
+            {
+                this->processOnRtnMarketData(&task);
+                break;
+            }
+            } // switch
+        } // while
+    }
+    catch (const TerminatedError&)
+    {
+    }
+}
+
+void XcMdApi::processOnUserLogin(Task *task)
+{
+    gil_scoped_acquire acquire;
+    this->on_front_connected();
+
+    socket_struct_Msg* pMsg = (socket_struct_Msg*)task->task_data;
+    dict data;
+    data["MsgID"] = pMsg->Msgid;
+    data["Desc"] = to_utf(pMsg->Desc);
+    delete pMsg;
+
+    this->on_rsp_user_login(data);
+}
+
+void XcMdApi::processOnClose(Task *task)
+{
+    gil_scoped_acquire acquire;
+    this->on_front_disconnected(task->task_id);
+}
+
+void XcMdApi::processOnMsg(Task *task)
+{
+    socket_struct_Msg* pMsg = (socket_struct_Msg*)task->task_data;
+
+    gil_scoped_acquire acquire;
+    dict data;
+    data["MsgId"] = pMsg->Msgid;
+    data["Desc"] = to_utf(pMsg->Desc);
+    delete pMsg;
+    this->on_msg(task->task_id, data);
+}
+
+void XcMdApi::processOnRspMarket(Task *task)
+{
+    socket_struct_Market* pMarket = (socket_struct_Market*)task->task_data;
+
+    gil_scoped_acquire acquire;
+    dict data;
+    data["MarketCode"] = to_utf(pMarket->MarketCode);
+    data["MarketName"] = to_utf(pMarket->MarketName);
+    data["TimeZone"] = pMarket->TimeZone;
+    data["OpenTime"] = pMarket->OpenTime;
+    data["CloseTime"] = pMarket->CloseTime;
+    delete pMarket;
+    this->on_rsp_market(task->task_id, data);
+}
+
+void XcMdApi::processOnRspQryData(Task *task)
+{
+    XcSecurityInfo* lpSecInfo = (XcSecurityInfo*)task->task_data;
+
+    gil_scoped_acquire acquire;
+    dict data;
+    data["ExchangeID"] = to_utf(lpSecInfo->ExchangeID);
+    data["InstrumentID"] = to_utf(lpSecInfo->InstrumentID);
+    data["SecName"] = to_utf(lpSecInfo->SecName);
+    data["PreClosePrice"] = lpSecInfo->PreClosePrice;
+    data["UpperLimitPrice"] = lpSecInfo->UpperLimitPrice;
+    data["LowerLimitPrice"] = lpSecInfo->LowerLimitPrice;
+    delete lpSecInfo;
+    this->on_rsp_qry_data(data);
+}
+
+void XcMdApi::processOnRtnMarketData(Task *task, int isIOThread)
+{
+    XcDepthMarketData* pMD = (XcDepthMarketData*)task->task_data;
+
+    gil_scoped_acquire acquire;
+    dict data;
+    data["TradingDay"] = to_utf(pMD->TradingDay);
+    data["InstrumentID"] = to_utf(pMD->InstrumentID);
+    data["ExchangeID"] = to_utf(pMD->ExchangeID);
+    data["PreClosePrice"] = pMD->PreClosePrice;
+    data["LastPrice"] = pMD->LastPrice;
+    data["OpenPrice"] = pMD->OpenPrice;
+    data["HighestPrice"] = pMD->HighestPrice;
+    data["LowestPrice"] = pMD->LowestPrice;
+    data["ClosePrice"] = pMD->ClosePrice;
+    data["Volume"] = pMD->Volume;
+    data["Turnover"] = pMD->Turnover;
+    data["OpenInterest"] = pMD->OpenInterest;
+    data["UpdateTime"] = to_utf(pMD->UpdateTime);
+    data["UpdateMillisec"] = pMD->UpdateMillisec;
+    data["ActionDay"] = to_utf(pMD->ActionDay);
+    data["TradingPhaseCode"] = to_utf(pMD->TradingPhaseCode);
+
+    data["Time"] = pMD->Time;
+    data["TickCount"] = pMD->TickCount;
+
+    data["UpperLimitPrice"] = pMD->UpperLimitPrice;
+    data["LowerLimitPrice"] = pMD->LowerLimitPrice;
+
+    data["BidPrice1"] = pMD->BidPrice1;
+    data["BidVolume1"] = pMD->BidVolume1;
+    data["BidPrice2"] = pMD->BidPrice2;
+    data["BidVolume2"] = pMD->BidVolume2;
+    data["BidPrice3"] = pMD->BidPrice3;
+    data["BidVolume3"] = pMD->BidVolume3;
+    data["BidPrice4"] = pMD->BidPrice4;
+    data["BidVolume4"] = pMD->BidVolume4;
+    data["BidPrice5"] = pMD->BidPrice5;
+    data["BidVolume5"] = pMD->BidVolume5;
+    if (have_level10)
+    {
+        data["BidPrice6"] = pMD->BidPrice6;
+        data["BidVolume6"] = pMD->BidVolume6;
+        data["BidPrice7"] = pMD->BidPrice7;
+        data["BidVolume7"] = pMD->BidVolume7;
+        data["BidPrice8"] = pMD->BidPrice8;
+        data["BidVolume8"] = pMD->BidVolume8;
+        data["BidPrice9"] = pMD->BidPrice9;
+        data["BidVolume9"] = pMD->BidVolume9;
+        data["BidPrice10"] = pMD->BidPrice10;
+        data["BidVolume10"] = pMD->BidVolume10;
+    }
+
+    data["AskPrice1"] = pMD->AskPrice1;
+    data["AskVolume1"] = pMD->AskVolume1;
+    data["AskPrice2"] = pMD->AskPrice2;
+    data["AskVolume2"] = pMD->AskVolume2;
+    data["AskPrice3"] = pMD->AskPrice3;
+    data["AskVolume3"] = pMD->AskVolume3;
+    data["AskPrice4"] = pMD->AskPrice4;
+    data["AskVolume4"] = pMD->AskVolume4;
+    data["AskPrice5"] = pMD->AskPrice5;
+    data["AskVolume5"] = pMD->AskVolume5;
+    if (have_level10)
+    {
+        data["AskPrice6"] = pMD->AskPrice6;
+        data["AskVolume6"] = pMD->AskVolume6;
+        data["AskPrice7"] = pMD->AskPrice7;
+        data["AskVolume7"] = pMD->AskVolume7;
+        data["AskPrice8"] = pMD->AskPrice8;
+        data["AskVolume8"] = pMD->AskVolume8;
+        data["AskPrice9"] = pMD->AskPrice9;
+        data["AskVolume9"] = pMD->AskVolume9;
+        data["AskPrice10"] = pMD->AskPrice10;
+        data["AskVolume10"] = pMD->AskVolume10;
+    }
+    
+    this->on_rtn_market_data(data);
+    if (!isIOThread)
+    {
+        delete pMD;
+    }
+}
+
 
 
 ///-------------------------------------------------------------------------------------
@@ -1530,6 +1755,7 @@ PYBIND11_MODULE(xcmd, m)
         .def("create_api", &XcMdApi::create_md_api)
         .def("release", &XcMdApi::release)
         .def("set_connect_param", &XcMdApi::set_connect_param)
+        .def("set_thread_mode", &XcMdApi::set_thread_mode)
         .def("init", &XcMdApi::init)
         .def("set_have_level10", &XcMdApi::set_have_level10)
         .def("get_api_version", &XcMdApi::get_api_version)
@@ -1538,6 +1764,8 @@ PYBIND11_MODULE(xcmd, m)
         .def("set_statistic_mode", &XcMdApi::set_statistic_mode)
         .def("get_statistics", &XcMdApi::get_statistics)
         .def("subscribe_md", &XcMdApi::subscribe_md)
+        .def("subscribe_md_batch", &XcMdApi::subscribe_md_batch, pybind11::return_value_policy::reference)
+        .def("unsubscribe_md_batch", &XcMdApi::unsubscribe_md_batch, pybind11::return_value_policy::reference)
         .def("unsubscribe_md", &XcMdApi::unsubscribe_md)
         .def("unsubscribe_all", &XcMdApi::unsubscribe_all)
         .def("req_qry_data", &XcMdApi::req_qry_data)

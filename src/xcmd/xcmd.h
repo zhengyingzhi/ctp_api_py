@@ -8,8 +8,12 @@
 #include <map>
 #include <vector>
 #include <mutex>
+#include <queue>
+#include <thread>
+#include <condition_variable>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <XcMarketApi/XcMarketApi.h>
 
 using namespace std;
@@ -18,6 +22,16 @@ using namespace pybind11;
 #define MAX_UPDOWN_LEVEL 11
 
 #define COLUMNS_NAMES   "qQuoteID,Time,Symbol,Last,Open,High,Low,Volume,UpperLimit,LowerLimit,PreClose,Count"
+
+
+//常量
+#define ONUSERLOGIN 0
+#define ONCLOSE 1
+#define ONMSG 2
+#define ONRSPMARKET 3
+#define ONRSPQRYDATA 4
+#define ONRTNDEPTHMARKETDATA 5
+
 
 typedef enum
 {
@@ -192,6 +206,59 @@ typedef map<QWORD, XcDepthMarketData*>   QuoteIDMapType;
 typedef map<string, XcSecurityInfo>      SecInfoMapType;
 
 
+//任务结构体
+struct Task
+{
+    int task_name;      //回调函数名称对应的常量
+    void *task_data;    //数据指针
+    void *task_error;   //错误指针
+    int task_id;        //请求id
+    bool task_last;     //是否为最后返回
+};
+
+class TerminatedError : std::exception
+{};
+
+class TaskQueue
+{
+private:
+    queue<Task> queue_;
+    mutex mutex_;
+    condition_variable cond_;
+
+    bool _terminate = false;
+
+public:
+    void push(const Task &task)
+    {
+        unique_lock<mutex > mlock(mutex_);
+        queue_.push(task);
+        mlock.unlock();
+        cond_.notify_one();
+    }
+
+    //取出老的任务
+    Task pop()
+    {
+        unique_lock<mutex> mlock(mutex_);
+        cond_.wait(mlock, [&]() {
+            return !queue_.empty() || _terminate;
+        });
+        if (_terminate)
+            throw TerminatedError();
+        Task task = queue_.front();
+        queue_.pop();
+        return task;
+    }
+
+    void terminate()
+    {
+        _terminate = true;
+        cond_.notify_all();
+    }
+};
+
+
 class XcMdApi :public CXcMarketSpi
 {
 public:
@@ -218,7 +285,21 @@ public:
     uint32_t    m_UpLimitCount;
     uint32_t    m_DownLimitCount;
     std::vector<socket_struct_SubscribeDetail> m_SubList;
-    std::mutex  m_SubListLock;
+    std::mutex  m_Lock;
+
+    thread m_task_thread;
+    TaskQueue m_task_queue;
+    bool m_active = false;
+    int m_thread_mode = 0;
+
+private:
+    void processTask();
+    void processOnUserLogin(Task *task);
+    void processOnClose(Task *task);
+    void processOnMsg(Task *task);
+    void processOnRspMarket(Task *task);
+    void processOnRspQryData(Task *task);
+    void processOnRtnMarketData(Task *task, int isIOThread=0);
 
 public:
     void OnUserLogin(socket_struct_Msg* pMsg);
@@ -263,8 +344,12 @@ public:
 
     int set_connect_param(int is_reconnect, int reconnect_ms, int reconect_count);
 
+    int set_thread_mode(int on);
+
     // connect to server
     int init(string user_id, string server_ip, string server_port, string license);
+
+    void exit();
 
     // subscribe eg. 000001.SZSE or 600000.SSE
     int subscribe_md(string instrument, int depth_order = 0, int each_flag = 0);
