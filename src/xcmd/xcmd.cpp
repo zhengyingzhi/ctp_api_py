@@ -165,6 +165,7 @@ XcMdApi::XcMdApi()
     sprintf(trading_day, "%04d%02d%02d", (ptm->tm_year + 1900), (ptm->tm_mon + 1), ptm->tm_mday);
 
     refid = 1;
+    flush_count = 0;
     have_level10 = 0;
     statistic_mode = 0;
     log_level = 0;
@@ -247,7 +248,7 @@ void XcMdApi::OnIssueEnd(QWORD qQuoteID)
 
     if (log_level == XC_SPEC_LOG_LV)
     {
-        write_data(log_level, "IssueEnd:%ld, pendings:%d", (long)qQuoteID, (int)m_pendings.size());
+        // write_data(log_level, "IssueEnd:%ld, pendings:%d", (long)qQuoteID, (int)m_pendings.size());
     }
 
     XcDepthMarketData* pMD;
@@ -596,9 +597,10 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
 
     if (log_level == XC_SPEC_LOG_LV && pDyna->Time >= 91500 && pDyna->Time <= 151500)
     {
-        write_data(log_level, "RespDyna %ld,%s,%s,%.2lf,%.2lf,%.2lf,%.2lf,%ld,%.2lf,%.2lf,%.2lf,bp1:%.2lf,ap1:%.2lf,n:%d", (long)qQuoteID,
-            pMD->UpdateTime, lXcSymbol, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
-            (long)pMD->Volume, pMD->UpperLimitPrice, pMD->LowerLimitPrice, pMD->PreClosePrice, pMD->BidPrice1, pMD->AskPrice1, m_pendings.size());
+        write_data(log_level, "RespDyna %ld,%s,%s,%.2lf,%.2lf,%.2lf,%.2lf,%ld,%.2lf,%.2lf,%.2lf,bid:%.2lf,%d,ask:%.2lf,%d,n:%d",
+            (long)qQuoteID, pMD->UpdateTime, lXcSymbol, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
+            (long)pMD->Volume, pMD->UpperLimitPrice, pMD->LowerLimitPrice, pMD->PreClosePrice, pMD->BidPrice1, pMD->BidVolume1,
+            pMD->AskPrice1, pMD->AskVolume1, m_pendings.size());
     }
 }
 
@@ -1201,7 +1203,9 @@ int XcMdApi::write_data(int reserve, const char* fmt, ...)
     buf[len] = '\0';
 
     fwrite(buf, len, 1, fp);
-    fflush(fp);
+    flush_count += 1;
+    if (flush_count & 127 == 0)
+        fflush(fp);
 #endif
     return 0;
 }

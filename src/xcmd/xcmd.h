@@ -273,6 +273,7 @@ public:
 
     char            trading_day[9];
     QWORD           refid;
+    int             flush_count;
     int             have_level10;
     int             statistic_mode;
     int             log_level;
