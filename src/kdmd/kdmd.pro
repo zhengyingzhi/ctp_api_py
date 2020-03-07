@@ -45,7 +45,8 @@ INCLUDEPATH += ../api/kdmd
 # INCLUDEPATH += /opt/python3.5/include/python3.5m
 INCLUDEPATH += ../../../thirdparty/boost_1_66_0
 INCLUDEPATH += ../../thirdparty
-INCLUDEPATH += ../../thirdparty/python35/linux_include
+# INCLUDEPATH += ../../thirdparty/python35/linux_include
+INCLUDEPATH += ../../thirdparty/python36/linux_include
 
 LIBS += -lpthread -lrt
 
@@ -59,7 +60,9 @@ BOOST_DIR = ../../thirdparty/boost_1_66_0/linux64
 #LIBS += $${BOOST_DIR}/libboost_chrono.a
 #LIBS += $${BOOST_DIR}/libboost_atomic.a
 #LIBS += $${BOOST_DIR}/libboost_locale.a
-LIBS += -L../../thirdparty/python35/linux64 -lpython3.5m
+
+# LIBS += -L../../thirdparty/python35/linux64 -lpython3.5m
+LIBS += -L../../thirdparty/python36/linux64 -lpython3.6m
 LIBS += -L../api/kdmd/linux64 -lKDMdUserApi
 
 

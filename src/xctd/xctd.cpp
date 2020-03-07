@@ -6,6 +6,30 @@
 
 #include "xctd.h"
 
+#ifdef _MSC_VER
+#else
+
+#include <unistd.h>
+#include <iconv.h>
+#define sleepms(x)  usleep((x) * 1000)
+
+int code_convert(char* from, char* to, char* inbuf, int inlen, char* outbuf, int outlen)
+{
+    iconv_t cd;
+    char** pin = &inbuf;
+    char** pout = &outbuf;
+
+    cd = iconv_open(to, from);
+    if (cd == 0)
+        return -1;
+    if (iconv(cd, pin, &inlen, pout, &outlen) == -1)
+        return -1;
+    iconv_close(cd);
+    return 0;
+}
+
+#endif//_MSC_VER
+
 
 #define MY_DEBUG 0
 
@@ -73,9 +97,6 @@ static std::string to_utf(const std::string &gb2312)
 {
 #ifdef _MSC_VER
     const static locale loc("zh-CN");
-#else
-    const static locale loc("zh_CN.GB18030");
-#endif
 
     vector<wchar_t> wstr(gb2312.size());
     wchar_t* wstrEnd = nullptr;
@@ -93,6 +114,15 @@ static std::string to_utf(const std::string &gb2312)
     }
 
     return std::string();
+#else
+    // const static locale loc("zh_CN.GB18030");
+    char outbuf[4080] = "";
+    int outlen = sizeof(outbuf) - 1;
+    int rv = code_convert("gb2312", "utf-8", (char*)gb2312.c_str(), (int)gb2312.length(), outbuf, outlen);
+    if (rv == -1)
+        return string();
+    return string(outbuf);
+#endif
 }
 
 

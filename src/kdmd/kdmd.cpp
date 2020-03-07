@@ -12,7 +12,26 @@
 #include "KDFutureMarket.h"
 
 #ifndef _MSC_VER
-// #include <boost/locale.hpp>         //字符集转换
+
+#include <unistd.h>
+#include <iconv.h>
+#define sleepms(x)  usleep((x) * 1000)
+
+int code_convert(char* from, char* to, char* inbuf, int inlen, char* outbuf, int outlen)
+{
+    iconv_t cd;
+    char** pin = &inbuf;
+    char** pout = &outbuf;
+
+    cd = iconv_open(to, from);
+    if (cd == 0)
+        return -1;
+    if (iconv(cd, pin, &inlen, pout, &outlen) == -1)
+        return -1;
+    iconv_close(cd);
+    return 0;
+}
+
 #endif//_MSC_VER
 
 
@@ -68,14 +87,7 @@ inline string to_utf(const string &gb2312)
 {
 #ifdef _MSC_VER
     const static locale loc("zh-CN");
-#else
-    const static locale loc("zh_CN.GB18030");
 
-    // @20190715 some linux platform without zh_CN locale
-    // return boost::locale::conv::to_utf<char>(gb2312, std::string("GB2312"));
-#endif//_MSC_VER
-
-#ifdef _MSC_VER
     vector<wchar_t> wstr(gb2312.size());
     wchar_t* wstrEnd = nullptr;
     const char* gbEnd = nullptr;
@@ -92,8 +104,20 @@ inline string to_utf(const string &gb2312)
     }
 
     return string();
-#endif
-    return "";
+#else
+    // const static locale loc("zh_CN.GB18030");
+
+    // @20190715 some linux platform without zh_CN locale
+    // return boost::locale::conv::to_utf<char>(gb2312, std::string("GB2312"));
+
+    // const static locale loc("zh_CN.GB18030");
+    char outbuf[4080] = "";
+    int outlen = sizeof(outbuf) - 1;
+    int rv = code_convert("gb2312", "utf-8", (char*)gb2312.c_str(), (int)gb2312.length(), outbuf, outlen);
+    if (rv == -1)
+        return string();
+    return string(outbuf);
+#endif//_MSC_VER
 }
 
 static const char* _KDGetMarketName(uint16_t aMarketId)
