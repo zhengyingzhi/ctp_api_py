@@ -131,9 +131,14 @@ static std::string to_utf(const std::string &gb2312)
         char* outbuf = (char*)malloc(outlen);
         memset(outbuf, 0, outlen);
         int rv = code_convert("gb2312", "utf-8", (char*)gb2312.c_str(), (int)gb2312.length(), outbuf, outlen);
+
+        string ret(outbuf);
+        free(outbuf);
+
         if (rv == -1)
             return string();
-        return string(outbuf);
+        else
+            return ret;
     }
 #endif
 }
