@@ -16,7 +16,7 @@
 #include <iconv.h>
 #define sleepms(x)  usleep((x) * 1000)
 
-int code_convert(char* from, char* to, char* inbuf, int inlen, char* outbuf, int outlen)
+int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, size_t outlen)
 {
     iconv_t cd;
     char** pin = &inbuf;
@@ -36,7 +36,7 @@ int code_convert(char* from, char* to, char* inbuf, int inlen, char* outbuf, int
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.1.0"
+#define XC_MDAPI_VERSION    "1.2.0"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -175,8 +175,9 @@ void gettimeofday(struct timeval *tp, void* reserve)
 
 XcMdApi::XcMdApi()
     : api()
-    , m_pendings()
     , mdmap()
+    , secmap()
+    , m_pendings()
     , m_SubList()
     , m_Lock()
 {
@@ -354,7 +355,7 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
 {
     // 上海A股证券行情响应
     socket_struct_Security* pSecurity = (socket_struct_Security*)pParam;
-    socket_struct_Security_Extend* pExtend = (socket_struct_Security_Extend*)pSecurity->Extend_fields;
+    // socket_struct_Security_Extend* pExtend = (socket_struct_Security_Extend*)pSecurity->Extend_fields;
     XcDebugInfo(XcDbgFd, "OnRespSecurity Code:%s,Name:%s,PreClose:%.2lf, UpperLimit:%.2lf, LowerLimit:%.2lf\n",
         pSecurity->SecCode, pSecurity->SecName, pSecurity->SecurityClosePx, pSecurity->DailyPriceUpLimit, pSecurity->DailyPriceDownLimit);
 
@@ -362,7 +363,8 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
     sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
     string lXcSymbol(buf);
 
-    XcSecurityInfo lSecInfo = { 0 };
+    XcSecurityInfo lSecInfo;
+    memset(&lSecInfo, 0, sizeof(lSecInfo));
     strcpy(lSecInfo.ExchangeID, pSecurity->MarketCode);
     strcpy(lSecInfo.InstrumentID, pSecurity->SecCode);
     strcpy(lSecInfo.SecName, pSecurity->SecName);
@@ -431,7 +433,8 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
     sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
     string lXcSymbol(buf);
 
-    XcSecurityInfo lSecInfo = { 0 };
+    XcSecurityInfo lSecInfo;
+    memset(&lSecInfo, 0, sizeof(lSecInfo));
     strcpy(lSecInfo.ExchangeID, pSecurity->MarketCode);
     strcpy(lSecInfo.InstrumentID, pSecurity->SecCode);
     strcpy(lSecInfo.SecName, pSecurity->SecName);
@@ -519,7 +522,8 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     string lXcSymbol(buf);
     if (mdmap.count(lXcSymbol) == 0)
     {
-        XcDepthMarketData lMD = { 0 };
+        XcDepthMarketData lMD;
+        memset(&lMD, 0, sizeof(lMD));
         // XcDebugInfo(XcDbgFd, "---->>>>%s,%s\n", pDyna->SecCode, pDyna->MarketCode);
         strcpy(lMD.InstrumentID, pDyna->SecCode);
         strcpy(lMD.ExchangeID, pDyna->MarketCode);
@@ -1185,7 +1189,7 @@ int XcMdApi::write_line(int reserve, const std::string& line)
     struct tm* ptm = localtime(&now);
     len = sprintf(buf + len, "[%04d-%02d-%02d %02d:%02d:%02d.%06d] ",
         ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
-        ptm->tm_hour, ptm->tm_min, ptm->tm_sec, tv.tv_usec);
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec, (int)tv.tv_usec);
 
     fwrite(buf, len, 1, fp);
     fwrite(line.c_str(), line.length(), 1, fp);
@@ -1214,7 +1218,7 @@ int XcMdApi::write_data(int reserve, const char* fmt, ...)
     struct tm* ptm = localtime(&now);
     len = sprintf(buf + len, "[%04d-%02d-%02d %02d:%02d:%02d.%06d] ",
         ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
-        ptm->tm_hour, ptm->tm_min, ptm->tm_sec, tv.tv_usec);
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec, (int)tv.tv_usec);
 
     va_list args;
     va_start(args, fmt);
@@ -1226,7 +1230,7 @@ int XcMdApi::write_data(int reserve, const char* fmt, ...)
 
     fwrite(buf, len, 1, fp);
     flush_count += 1;
-    if (flush_count & 127 == 0)
+    if ((flush_count & 127) == 0)
         fflush(fp);
 #endif
     return 0;

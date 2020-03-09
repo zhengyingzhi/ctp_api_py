@@ -17,7 +17,7 @@
 #include <iconv.h>
 #define sleepms(x)  usleep((x) * 1000)
 
-int code_convert(char* from, char* to, char* inbuf, int inlen, char* outbuf, int outlen)
+int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, size_t outlen)
 {
     iconv_t cd;
     char** pin = &inbuf;

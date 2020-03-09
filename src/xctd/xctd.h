@@ -20,7 +20,7 @@
 using namespace pybind11;
 
 
-#define XC_TDAPI_VERSION        "0.1.0"
+#define XC_TDAPI_VERSION        "1.0.1"
 
 #define XC_FUNC_QRY_SECINFO     330300      // 证券代码信息查询
 #define XC_FUNC_QRY_CASH_FAST   332254      // 客户资金快速查询

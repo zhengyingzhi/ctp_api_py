@@ -13,7 +13,7 @@
 #include <iconv.h>
 #define sleepms(x)  usleep((x) * 1000)
 
-int code_convert(char* from, char* to, char* inbuf, int inlen, char* outbuf, int outlen)
+int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, size_t outlen)
 {
     iconv_t cd;
     char** pin = &inbuf;
@@ -116,12 +116,25 @@ static std::string to_utf(const std::string &gb2312)
     return std::string();
 #else
     // const static locale loc("zh_CN.GB18030");
-    char outbuf[4080] = "";
-    int outlen = sizeof(outbuf) - 1;
-    int rv = code_convert("gb2312", "utf-8", (char*)gb2312.c_str(), (int)gb2312.length(), outbuf, outlen);
-    if (rv == -1)
-        return string();
-    return string(outbuf);
+    if ((int)gb2312.length() < 4080)
+    {
+        char outbuf[4080] = "";
+        int outlen = sizeof(outbuf) - 1;
+        int rv = code_convert("gb2312", "utf-8", (char*)gb2312.c_str(), (int)gb2312.length(), outbuf, outlen);
+        if (rv == -1)
+            return string();
+        return string(outbuf);
+    }
+    else
+    {
+        int outlen = gb2312.length() * 2 + 2;
+        char* outbuf = (char*)malloc(outlen);
+        memset(outbuf, 0, outlen);
+        int rv = code_convert("gb2312", "utf-8", (char*)gb2312.c_str(), (int)gb2312.length(), outbuf, outlen);
+        if (rv == -1)
+            return string();
+        return string(outbuf);
+    }
 #endif
 }
 
@@ -569,6 +582,7 @@ PYBIND11_MODULE(xctd, m)
     tdapi
         .def(init<>())
         .def("create_td_api", &XcTdApi::create_td_api)
+        .def("create_api", &XcTdApi::create_td_api)
         .def("release", &XcTdApi::release)
         .def("connect", &XcTdApi::connect)
         .def("begin_pack", &XcTdApi::begin_pack)
