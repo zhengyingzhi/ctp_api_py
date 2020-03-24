@@ -30,7 +30,7 @@ int bar_generator_init(bar_generator_t* bargen)
 
 bar_data_t* bar_generator_update_tick(bar_generator_t* bargen, void* apMD)
 {
-    int generated;
+    int generated, new_minute;
     int64_t volume_delta;
     double  turnover_delta;
     bar_data_t* bar;
@@ -38,27 +38,34 @@ bar_data_t* bar_generator_update_tick(bar_generator_t* bargen, void* apMD)
     sim_time_t tick_tm = { 0 };
 
     generated = 0;
+    new_minute = 0;
     volume_delta = 0;
     turnover_delta = 0;
     bar = (bar_data_t*)&bargen->cur_bar;
     lpMD = (CThostFtdcDepthMarketDataField*)apMD;
 
     my_strptime(lpMD->UpdateTime, sizeof(lpMD->UpdateTime) - 1, &tick_tm);
-    if (bargen->bar_tm.tm_min != tick_tm.tm_min || bargen->bar_tm.tm_hour != tick_tm.tm_hour)
-    {
-        if (bargen->fin_bar.InstrumentID[0])
-        {
-            generated = 1;
-        }
-        else
-        {
-            strncpy(bar->InstrumentID, lpMD->InstrumentID, sizeof(bar->InstrumentID) - 1);
-            // strncpy(bar->ExchangeID, lpMD->ExchangeID, sizeof(bar->ExchangeID) - 1);
-            strncpy(bar->Period, "1m", 2);
-        }
-        memcpy(&bargen->fin_bar, &bargen->cur_bar, sizeof(bar_data_t));
 
+    if (!bargen->fin_bar.InstrumentID[0])
+    {
+        new_minute = 1;
+    }
+    else if (bargen->bar_tm.tm_min != tick_tm.tm_min || bargen->bar_tm.tm_hour != tick_tm.tm_hour)
+    {
+        new_minute = 1;
+        generated = 1;
+        memcpy(&bargen->fin_bar, &bargen->cur_bar, sizeof(bar_data_t));
+    }
+
+    if (new_minute)
+    {
         // new bar
+        strncpy(bar->InstrumentID, lpMD->InstrumentID, sizeof(bar->InstrumentID) - 1);
+        strncpy(bar->Period, "1m", 2);
+        strncpy(bargen->fin_bar.InstrumentID, lpMD->InstrumentID, sizeof(bar->InstrumentID) - 1);
+        strncpy(bargen->fin_bar.Period, "1m", 2);
+        bargen->bar_tm = tick_tm;
+
         bar->Open = lpMD->LastPrice;
         bar->High = lpMD->LastPrice;
         bar->Low = lpMD->LastPrice;
@@ -74,13 +81,13 @@ bar_data_t* bar_generator_update_tick(bar_generator_t* bargen, void* apMD)
     bargen->prev_volume = lpMD->Volume;
     bargen->prev_turnover = lpMD->Turnover;
     bargen->tick_count += 1;
-    bargen->tick_tm = tick_tm;
+    bargen->bar_tm = tick_tm;
 
     if (generated)
     {
         bargen->bar_count += 1;
 
-        bargen->bar_tm = tick_tm;
+        // bargen->bar_tm = tick_tm;
         bargen->bar_tm.tm_sec = 0;
         bargen->bar_tm.tm_msec = 0;
 
