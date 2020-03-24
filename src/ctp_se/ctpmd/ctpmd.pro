@@ -53,6 +53,7 @@ LIBS += -L../../api/ctp_se/linux64 -lthostmduserapi_se
 
 # Input
 HEADERS += ctpmd.h \
+    bar_generator.h \
     ../myctp.h \
     ../../api/ctp_se/ThostFtdcMdApi.h \
     ../../api/ctp_se/ThostFtdcTraderApi.h \
@@ -64,5 +65,6 @@ HEADERS += ctpmd.h \
     ../pyscript/ctp_md_header_function.h \
     ../pyscript/ctp_md_header_process.h
 
-SOURCES += ctpmd.cpp
+SOURCES += ctpmd.cpp \
+    bar_generator.cpp 
 

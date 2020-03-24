@@ -215,7 +215,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;CTPMD_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;CTPMD_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\api\ctp_se;..\;..\pyscript;..\..\..\thirdparty\python35\include;..\..\..\thirdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -248,11 +248,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bar_generator.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="ctpmd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\myctp.h" />
+    <ClInclude Include="bar_generator.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="ctpmd.h" />
   </ItemGroup>

@@ -4,6 +4,30 @@
 #include "ctpmd.h"
 
 
+#define CTP_MD_VERSION      "1.1.0"
+
+
+static int str_delimiter(char* apSrc, char** apRetArr, int aArrSize, char aDelimiter)
+{
+    if (!apSrc) {
+        return 0;
+    }
+
+    char* lpCur = apSrc;
+    int n = 0;
+    while (n < aArrSize)
+    {
+        apRetArr[n++] = lpCur;
+        lpCur = strchr(lpCur, aDelimiter);
+        if (!lpCur) {
+            break;
+        }
+
+        *lpCur++ = 0x00;
+    }
+    return n;
+}
+
 ///-------------------------------------------------------------------------------------
 ///C++的回调函数将数据保存到队列中
 ///-------------------------------------------------------------------------------------
@@ -466,6 +490,17 @@ void MdApi::processRspUnSubForQuoteRsp(Task *task)
 
 void MdApi::processRtnDepthMarketData(Task *task)
 {
+    // @202003 below only work for 1m bar mode
+    if (bar_mode)
+    {
+        if (task->task_data)
+        {
+            processBarGen((CThostFtdcDepthMarketDataField*)task->task_data);
+            delete task->task_data;
+        }
+        return;
+    }
+
 	gil_scoped_acquire acquire;
 	dict data;
 	if (task->task_data)
@@ -497,23 +532,27 @@ void MdApi::processRtnDepthMarketData(Task *task)
 		data["BidVolume1"] = task_data->BidVolume1;
 		data["AskPrice1"] = task_data->AskPrice1;
 		data["AskVolume1"] = task_data->AskVolume1;
-		data["BidPrice2"] = task_data->BidPrice2;
-		data["BidVolume2"] = task_data->BidVolume2;
-		data["AskPrice2"] = task_data->AskPrice2;
-		data["AskVolume2"] = task_data->AskVolume2;
-		data["BidPrice3"] = task_data->BidPrice3;
-		data["BidVolume3"] = task_data->BidVolume3;
-		data["AskPrice3"] = task_data->AskPrice3;
-		data["AskVolume3"] = task_data->AskVolume3;
-		data["BidPrice4"] = task_data->BidPrice4;
-		data["BidVolume4"] = task_data->BidVolume4;
-		data["AskPrice4"] = task_data->AskPrice4;
-		data["AskVolume4"] = task_data->AskVolume4;
-		data["BidPrice5"] = task_data->BidPrice5;
-		data["BidVolume5"] = task_data->BidVolume5;
-		data["AskPrice5"] = task_data->AskPrice5;
-		data["AskVolume5"] = task_data->AskVolume5;
-		data["AveragePrice"] = task_data->AveragePrice;
+
+        if (have_level2)
+        {
+            data["BidPrice2"] = task_data->BidPrice2;
+            data["BidVolume2"] = task_data->BidVolume2;
+            data["AskPrice2"] = task_data->AskPrice2;
+            data["AskVolume2"] = task_data->AskVolume2;
+            data["BidPrice3"] = task_data->BidPrice3;
+            data["BidVolume3"] = task_data->BidVolume3;
+            data["AskPrice3"] = task_data->AskPrice3;
+            data["AskVolume3"] = task_data->AskVolume3;
+            data["BidPrice4"] = task_data->BidPrice4;
+            data["BidVolume4"] = task_data->BidVolume4;
+            data["AskPrice4"] = task_data->AskPrice4;
+            data["AskVolume4"] = task_data->AskVolume4;
+            data["BidPrice5"] = task_data->BidPrice5;
+            data["BidVolume5"] = task_data->BidVolume5;
+            data["AskPrice5"] = task_data->AskPrice5;
+            data["AskVolume5"] = task_data->AskVolume5;
+            data["AveragePrice"] = task_data->AveragePrice;
+        }
 		data["ActionDay"] = toUtf(task_data->ActionDay);
 		delete task->task_data;
 	}
@@ -537,6 +576,64 @@ void MdApi::processRtnForQuoteRsp(Task *task)
 	}
 	this->onRtnForQuoteRsp(data);
 };
+
+
+void MdApi::processBarGen(CThostFtdcDepthMarketDataField* apMD)
+{
+    // fprintf(stderr, "bargen %s,%.2lf,%s\n", apMD->InstrumentID, apMD->LastPrice, apMD->UpdateTime);
+    bar_data_t* bar;
+    bar_generator_t* bargen;
+    std::string lInstrumentID(apMD->InstrumentID);
+    if (bar_gen_map.count(lInstrumentID))
+    {
+        bargen = bar_gen_map[lInstrumentID];
+    }
+    else
+    {
+        bargen = (bar_generator_t*)malloc(sizeof(bar_generator_t));
+        bar_generator_init(bargen);
+        bar_gen_map[lInstrumentID] = bargen;
+    }
+
+#if 0
+    if (apMD->OpenPrice > 99999999.0)
+        apMD->OpenPrice = 0.0;
+    if (apMD->HighestPrice > 99999999.0)
+        apMD->HighestPrice = 0.0;
+    if (apMD->LowestPrice > 99999999.0)
+        apMD->LowestPrice = 0.0;
+    if (apMD->ClosePrice > 99999999.0)
+        apMD->ClosePrice = 0.0;
+#endif//0
+    if (apMD->LastPrice > 99999999.0)
+        apMD->LastPrice = 0.0;
+
+    bar = bar_generator_update_tick(bargen, apMD);
+    if (!bar)
+    {
+        bar = &bargen->cur_bar;
+        return;
+    }
+    // fprintf(stderr, "generated bar!\n");
+
+    gil_scoped_acquire acquire;
+    dict data;
+
+    data["InstrumentID"] = toUtf(bar->InstrumentID);
+    data["ExchangeID"] = toUtf(bar->ExchangeID);
+    data["Date"] = toUtf(bar->Date);
+    data["Time"] = toUtf(bar->Time);
+    data["Period"] = toUtf(bar->Period);
+    data["Open"] = bar->Open;
+    data["High"] = bar->High;
+    data["Low"] = bar->Low;
+    data["Close"] = bar->Close;
+    data["Volume"] = bar->Volume;
+    data["Turnover"] = bar->Turnover;
+    data["OpenInterest"] = bar->OpenInterest;
+
+    this->onRtnBarData(data);
+}
 
 ///-------------------------------------------------------------------------------------
 ///主动函数
@@ -576,6 +673,16 @@ int MdApi::exit()
 	this->api->RegisterSpi(NULL);
 	this->api->Release();
 	this->api = NULL;
+
+
+    std::map<std::string, bar_generator_t*>::iterator iter;
+    for (iter = bar_gen_map.begin(); iter != bar_gen_map.end(); ++iter)
+    {
+        if (iter->second)
+            free(iter->second);
+    }
+    bar_gen_map.clear();
+
 	return 1;
 };
 
@@ -598,10 +705,27 @@ void MdApi::registerFront(string pszFrontAddress)
 
 int MdApi::subscribeMarketData(string instrumentID)
 {
-	char* buffer = (char*) instrumentID.c_str();
-	char* myreq[1] = { buffer };
-	int i = this->api->SubscribeMarketData(myreq, 1);
-	return i;
+    if (instrumentID.find(",") == instrumentID.npos)
+    {
+        char* buffer = (char*)instrumentID.c_str();
+        char* myreq[1] = { buffer };
+        int i = this->api->SubscribeMarketData(myreq, 1);
+        return i;
+    }
+    else
+    {
+        int length = instrumentID.length() + 1;
+        char* buffer = (char*)malloc(length);
+        memcpy(buffer, instrumentID.c_str(), length);
+        buffer[length] = '\0';
+
+        char* larr[4090] = { 0 };
+        length = str_delimiter(buffer, larr, 4090, ',');
+        int i = this->api->SubscribeMarketData(larr, length);
+
+        free(buffer);
+        return i;
+    }
 };
 
 int MdApi::unSubscribeMarketData(string instrumentID)
@@ -657,6 +781,20 @@ int MdApi::reqUserLogout(const dict &req, int reqid)
 	return i;
 };
 
+
+int MdApi::subscribeBarData(std::string instrumentID)
+{
+    bar_mode = true;
+    return subscribeMarketData(instrumentID);
+}
+
+void MdApi::set_have_level2(int on)
+{
+    if (on)
+        have_level2 = true;
+    else
+        have_level2 = false;
+}
 
 ///-------------------------------------------------------------------------------------
 ///Boost.Python封装
@@ -799,17 +937,30 @@ public:
 		}
 	};
 
-	void onRtnForQuoteRsp(const dict &data) override
-	{
-		try
-		{
-			PYBIND11_OVERLOAD(void, MdApi, onRtnForQuoteRsp, data);
-		}
-		catch (const error_already_set &e)
-		{
-			cout << e.what() << endl;
-		}
-	};
+    void onRtnForQuoteRsp(const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, MdApi, onRtnForQuoteRsp, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
+
+    void onRtnBarData(const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, MdApi, onRtnBarData, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
+
 };
 
 
@@ -845,5 +996,9 @@ PYBIND11_MODULE(ctpmd, m)
 		.def("onRspUnSubForQuoteRsp", &MdApi::onRspUnSubForQuoteRsp)
 		.def("onRtnDepthMarketData", &MdApi::onRtnDepthMarketData)
 		.def("onRtnForQuoteRsp", &MdApi::onRtnForQuoteRsp)
+
+        .def("subscribeBarData", &MdApi::subscribeBarData)
+        .def("onRtnBarData", &MdApi::onRtnBarData)
+        .def("set_have_level2", &MdApi::set_have_level2)
 		;
 }

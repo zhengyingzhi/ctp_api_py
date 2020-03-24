@@ -3,9 +3,13 @@
 #include "stdafx.h"
 #endif
 
+#include <map>
+#include <vector>
 #include "myctp.h"
 #include "pybind11/pybind11.h"
 #include "ThostFtdcMdApi.h"
+
+#include "bar_generator.h"
 
 
 using namespace pybind11;
@@ -37,6 +41,10 @@ private:
 	thread task_thread;					//工作线程指针（向python中推送数据）
 	TaskQueue task_queue;			    //任务队列
 	bool active = false;				//工作状态
+
+    bool have_level2 = false;
+    bool bar_mode = false;
+    std::map<std::string, bar_generator_t*> bar_gen_map;
 
 public:
 	MdApi()
@@ -129,6 +137,8 @@ public:
 
 	void processRtnForQuoteRsp(Task *task);
 
+    // new add
+    void processBarGen(CThostFtdcDepthMarketDataField* apMD);
 
 	//-------------------------------------------------------------------------------------
 	//data：回调函数的数据字典
@@ -162,6 +172,9 @@ public:
 
 	virtual void onRtnForQuoteRsp(const dict &data) {};
 
+    // new add
+    virtual void onRtnBarData(const dict& data) {}
+
 	//-------------------------------------------------------------------------------------
 	//req:主动函数的请求字典
 	//-------------------------------------------------------------------------------------
@@ -193,4 +206,8 @@ public:
 	int reqUserLogin(const dict &req, int reqid);
 
 	int reqUserLogout(const dict &req, int reqid);
+
+    // new add
+    int subscribeBarData(std::string instrumentID);
+    void set_have_level2(int on);
 };
