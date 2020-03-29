@@ -8,4 +8,6 @@ SUBDIRS += \
 ../../src/kdmd \
 ../../src/xctd \
 ../../src/xcmd \
-../../src/hstrade
+../../src/hstrade \
+../../src/csv_reader \
+../../src/md_utils

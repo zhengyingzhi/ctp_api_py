@@ -4,7 +4,7 @@
 #include "ctpmd.h"
 
 
-#define CTP_MD_VERSION      "1.1.0"
+#define CTP_MD_VERSION      "1.1.1"
 
 
 static int str_delimiter(char* apSrc, char** apRetArr, int aArrSize, char aDelimiter)
@@ -495,7 +495,9 @@ void MdApi::processRtnDepthMarketData(Task *task)
     {
         if (task->task_data)
         {
+#if HAVE_BAR_GENERATOR
             processBarGen((CThostFtdcDepthMarketDataField*)task->task_data);
+#endif//HAVE_BAR_GENERATOR
             delete task->task_data;
         }
         return;
@@ -578,6 +580,7 @@ void MdApi::processRtnForQuoteRsp(Task *task)
 };
 
 
+#if HAVE_BAR_GENERATOR
 void MdApi::processBarGen(CThostFtdcDepthMarketDataField* apMD)
 {
     // fprintf(stderr, "bargen %s,%.2lf,%s\n", apMD->InstrumentID, apMD->LastPrice, apMD->UpdateTime);
@@ -608,7 +611,12 @@ void MdApi::processBarGen(CThostFtdcDepthMarketDataField* apMD)
     if (apMD->LastPrice > 99999999.0)
         apMD->LastPrice = 0.0;
 
-    bar = bar_generator_update_tick(bargen, apMD);
+    int update_time = atoi(apMD->UpdateTime) * 10000 + \
+        atoi(apMD->UpdateTime + 3) * 100 + \
+        atoi(apMD->UpdateTime + 6);
+    bar = bar_generator_update(bargen, apMD->InstrumentID, apMD->ExchangeID,
+        apMD->ActionDay, update_time, apMD->LastPrice, apMD->Volume,
+        apMD->Turnover, (int)apMD->OpenInterest);
     if (!bar)
     {
         bar = &bargen->cur_bar;
@@ -634,6 +642,7 @@ void MdApi::processBarGen(CThostFtdcDepthMarketDataField* apMD)
 
     this->onRtnBarData(data);
 }
+#endif//HAVE_BAR_GENERATOR
 
 ///-------------------------------------------------------------------------------------
 ///Ö÷¶¯º¯Êý
@@ -714,7 +723,7 @@ int MdApi::subscribeMarketData(string instrumentID)
     }
     else
     {
-        int length = instrumentID.length() + 1;
+        int length = (int)instrumentID.length() + 1;
         char* buffer = (char*)malloc(length);
         memcpy(buffer, instrumentID.c_str(), length);
         buffer[length] = '\0';

@@ -9,7 +9,11 @@
 #include "pybind11/pybind11.h"
 #include "ThostFtdcMdApi.h"
 
-#include "bar_generator.h"
+#define HAVE_BAR_GENERATOR 1
+#if HAVE_BAR_GENERATOR
+#include "md_utils/bar_generator.h"
+#include "md_utils/md_utils.h"
+#endif//HAVE_BAR_GENERATOR
 
 
 using namespace pybind11;
@@ -44,7 +48,9 @@ private:
 
     bool have_level2 = false;
     bool bar_mode = false;
+#if HAVE_BAR_GENERATOR
     std::map<std::string, bar_generator_t*> bar_gen_map;
+#endif//HAVE_BAR_GENERATOR
 
 public:
 	MdApi()
@@ -138,7 +144,9 @@ public:
 	void processRtnForQuoteRsp(Task *task);
 
     // new add
+#if HAVE_BAR_GENERATOR
     void processBarGen(CThostFtdcDepthMarketDataField* apMD);
+#endif//HAVE_BAR_GENERATOR
 
 	//-------------------------------------------------------------------------------------
 	//data：回调函数的数据字典
