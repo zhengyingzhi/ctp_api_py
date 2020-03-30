@@ -216,7 +216,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;CTPMD_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\api\ctp_se;..\;..\pyscript;..\..\..\thirdparty\python35\include;..\..\..\thirdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\;..\..\api\ctp_se;..\;..\pyscript;..\..\..\thirdparty\python35\include;..\..\..\thirdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -248,15 +248,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="bar_generator.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="ctpmd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\myctp.h" />
-    <ClInclude Include="bar_generator.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="ctpmd.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\md_utils\md_utils.vcxproj">
+      <Project>{653f2d92-f824-40d6-82fb-9a56b244f30d}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

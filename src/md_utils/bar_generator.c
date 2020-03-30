@@ -88,17 +88,24 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
     if (new_minute)
     {
         // new bar
-        strncpy(bar->InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
-        strncpy(bar->ExchangeID, instrument, sizeof(bar->ExchangeID) - 1);
-        strncpy(bar->Period, "1m", 2);
-        strncpy(bargen->fin_bar.InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
-        strncpy(bargen->fin_bar.ExchangeID, instrument, sizeof(bar->ExchangeID) - 1);
-        strncpy(bargen->fin_bar.Period, "1m", 2);
+        if (!bar->InstrumentID[0])
+        {
+            strncpy(bar->InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
+            strncpy(bar->ExchangeID, instrument, sizeof(bar->ExchangeID) - 1);
+            strncpy(bar->Period, "1m", 2);
+        }
+        if (!bar->InstrumentID[0])
+        {
+            strncpy(bargen->fin_bar.InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
+            strncpy(bargen->fin_bar.ExchangeID, instrument, sizeof(bar->ExchangeID) - 1);
+            strncpy(bargen->fin_bar.Period, "1m", 2);
+        }
         bargen->bar_tm = tick_tm;
 
         bar->Open = last_price;
         bar->High = last_price;
         bar->Low = last_price;
+        bar->Volume = 0;
     }
 
     bar->High = MAX(bar->High, last_price);
