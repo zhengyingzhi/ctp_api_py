@@ -24,7 +24,7 @@ int sjson_add_head(sim_json_t* json);
 int sjson_add_str(sim_json_t* json, const char* key, const char* val, int islast);
 int sjson_add_int32(sim_json_t* json, const char* key, int32_t val, int islast);
 int sjson_add_int64(sim_json_t* json, const char* key, const int64_t val, int islast);
-int sjson_add_float(sim_json_t* json, const char* key, double val, int islast);
+int sjson_add_float(sim_json_t* json, const char* key, const double val, int islast);
 int sjson_add_bool(sim_json_t* json, const char* key, bool val, int islast);
 int sjson_add_null(sim_json_t* json, const char* key, int islast);
 
@@ -47,11 +47,171 @@ static field_names_t default_fieldnames = {
 };
 
 
+typedef struct
+{
+    const char* exchange;
+    const char* code;
+    int32_t pause_times[5];
+}code_pause_time_t;
+
+static code_pause_time_t default_code_pause_time_table[] = {
+    { MD_EXCHANGE_DCE, "a",   { 230000, 101500, 113000, 150000, INVAL_PAUSE_TIME }},
+    { MD_EXCHANGE_DCE, "b",   { 230000, 101500, 113000, 150000, INVAL_PAUSE_TIME }},
+    { MD_EXCHANGE_DCE, "m",   { 230000, 101500, 113000, 150000, INVAL_PAUSE_TIME }},
+    { MD_EXCHANGE_SHFE, "ag", { 23000, 101500, 113000, 150000, INVAL_PAUSE_TIME }},
+    { MD_EXCHANGE_SHFE, "cu", { 10000, 101500, 113000, 150000, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_SHFE, "al", { 10000, 101500, 113000, 150000, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_SHFE, "zn", { 10000, 101500, 113000, 150000, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_SHFE, "pb", { 10000, 101500, 113000, 150000, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_SHFE, "sn", { 10000, 101500, 113000, 150000, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_SHFE, "rb", { 230000, 101500, 113000, 150000, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_SHFE, "ru", { 230000, 101500, 113000, 150000, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_INE,  "sc", { 23000, 101500, 113000, 150000, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_INE,  "nr", { 23000, 101500, 113000, 150000, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "IF",{ 113000, 150000, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "IC",{ 113000, 150000, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "IH",{ 113000, 150000, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "T", { 113000, 150000, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "TS",{ 113000, 150000, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "TF",{ 113000, 150000, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "TT",{ 113000, 150000, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME } },
+    { NULL, NULL, { INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME } }
+};
+
+static const char* codes_2300[] = { "bu", "fu", "hc", "rb", "ru", "sp", "ss", NULL };
+static const char* codes_2330[] = { "a", "b", "m", "eb", "y", "i", "jm", "j", "p", "pg",
+    "RM", "OI", "CF", "CY", "SR", "FG", "MA", "JR", "SF", "WH", "SM", "RS", "RI", "PM", "LR", "AP", "TA", "ZC", NULL };
+static const char* codes_100[] = { "al", "cu", "ni", "pb", "sn", "zn", NULL };
+static const char* codes_230[] = { "ag", "au", "sc", "nr", NULL };
+static const char* codes_fut[] = { "c", "cs", "jd", "l", "v", "pp", "fb", "bb", "wr" };
+
+static int pause_time_2300[] = { 230000, 101500, 113000, 150000, INVAL_PAUSE_TIME };
+static int pause_time_2330[] = { 233000, 101500, 113000, 150000, INVAL_PAUSE_TIME };
+static int pause_time_100[]  = { 10000,  101500, 113000, 150000, INVAL_PAUSE_TIME };
+static int pause_time_230[]  = { 23000,  101500, 113000, 150000, INVAL_PAUSE_TIME };
+static int pause_time_fut[]  = { 101500, 113000, 150000, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME };
+static int pause_time_stk[]  = { 113000, 150000, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME, INVAL_PAUSE_TIME };
+
+
 //////////////////////////////////////////////////////////////////////////
-int bar_generator_init(bar_generator_t* bargen)
+static bool is_code_exist(const char* codes_table[], const char* code)
+{
+    const char* pcur;
+    for (int index = 0; codes_table[index]; ++index)
+    {
+        pcur = codes_table[index];
+        if (strcmp(pcur, code) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+static int* find_code_pause_time(const char* code)
+{
+    if (is_code_exist(codes_2300, code))
+    {
+        return pause_time_2300;
+    }
+    else if (is_code_exist(codes_2330, code))
+    {
+        return pause_time_2330;
+    }
+    else if (is_code_exist(codes_100, code))
+    {
+        return pause_time_100;
+    }
+    else if (is_code_exist(codes_230, code))
+    {
+        return pause_time_230;
+    }
+    else if (is_code_exist(codes_fut, code))
+    {
+        return pause_time_fut;
+    }
+    else
+    {
+        return pause_time_stk;
+    }
+}
+
+static bool filter_data_by_updatetime(const char* instrument, int update_time)
+{
+    if (instrument[0] >= '0' && instrument[0] <= '9')
+    {
+        // cn stocks
+        if ((update_time > 150001 || update_time < 93000) ||
+            (update_time > 113000 && update_time < 130000))
+        {
+            return true;
+        }
+    }
+    else
+    {
+        // cn futures
+        if ((update_time > 150001 && update_time < 210000) ||
+            (update_time > 23001 && update_time < 90000))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+int bar_generator_init(bar_generator_t* bargen, const char* code)
 {
     memset(bargen, 0, sizeof(bar_generator_t));
+    if (code)
+    {
+        // strncpy(bargen->code, code, sizeof(bargen->code) - 1);
+        get_code(bargen->code, code);
+    }
+    memset(bargen->pause_times, INVAL_PAUSE_TIME, sizeof(bargen->pause_times));
+
+    int* pause_times;
+    pause_times = find_code_pause_time(code);
+
+    int index = 0;
+    for (int k = 0; pause_times[k] != INVAL_PAUSE_TIME; ++k)
+    {
+        bargen->pause_times[index++] = pause_times[k];
+        bargen->pause_times[index++] = pause_times[k] + 1;
+    }
+
+    if (bargen->pause_times[0] == INVAL_PAUSE_TIME)
+    {
+        if (is_stock(code))
+        {
+            bargen->pause_times[0] = 113000;
+            bargen->pause_times[1] = 113001;
+            bargen->pause_times[2] = 150000;
+            bargen->pause_times[3] = 150001;
+        }
+        else
+        {
+            bargen->pause_times[0] = 101500;
+            bargen->pause_times[1] = 101501;
+            bargen->pause_times[2] = 113000;
+            bargen->pause_times[3] = 113001;
+            bargen->pause_times[4] = 150000;
+            bargen->pause_times[5] = 150001;
+        }
+    }
+
     return 0;
+}
+
+void MD_UTILS_STDCALL bar_generator_set_pause_times(bar_generator_t* bargen, int pause_times[], int size)
+{
+    int index = 0;
+    for (int k = 0; k < 4 && k < size; ++k)
+    {
+        bargen->pause_times[index++] = pause_times[k];
+        bargen->pause_times[index++] = pause_times[k] + 1;
+        if (index == PAUSE_TIMES_SIZE)
+            break;
+    }
 }
 
 
@@ -61,79 +221,133 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
     int64_t volume, double turnover, int open_interest)
 {
     int generated, new_minute;
-    int64_t volume_delta;
-    double  turnover_delta;
+    bar_data_t* ret_bar;
     bar_data_t* bar;
     sim_time_t tick_tm = { 0 };
     int_to_ptime(&tick_tm, update_time, 0);
 
+    // fprintf(stderr, "bar_update: instr:%s,lastpx:%.2lf, vol:%ld,time:%d\n", 
+    //     instrument, last_price, (long)volume, update_time);
+    if (filter_data_by_updatetime(instrument, update_time))
+    {
+        return NULL;
+    }
+
+    int include_cur_tick_flag = 0;
     generated = 0;
     new_minute = 0;
-    volume_delta = 0;
-    turnover_delta = 0;
+    ret_bar = NULL;
     bar = (bar_data_t*)&bargen->cur_bar;
 
     if (!bargen->fin_bar.InstrumentID[0])
     {
         new_minute = 1;
+
+        // the first md update
+        strncpy(bargen->fin_bar.InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
+        strncpy(bargen->fin_bar.ExchangeID, exchange, sizeof(bar->ExchangeID) - 1);
+        strncpy(bargen->fin_bar.Period, "1m", 2);
+
+        strncpy(bar->InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
+        strncpy(bar->ExchangeID, exchange, sizeof(bar->ExchangeID) - 1);
+        strncpy(bar->Period, "1m", 2);
     }
     else if (bargen->bar_tm.tm_min != tick_tm.tm_min ||
              bargen->bar_tm.tm_hour != tick_tm.tm_hour)
     {
+        // the md minute changed now
+
+        for (int i = 0; i < PAUSE_TIMES_SIZE; ++i)
+        {
+            int temp_time = bargen->pause_times[i];
+            if (temp_time == update_time)
+            {
+                // hits tick data need merged into fin_bar
+                include_cur_tick_flag = 1;
+                break;
+            }
+            else if (temp_time == INVAL_PAUSE_TIME)
+            {
+                break;
+            }
+        }
+
         new_minute = 1;
         generated = 1;
-        memcpy(&bargen->fin_bar, &bargen->cur_bar, sizeof(bar_data_t));
+        bargen->bar_count += 1;
+
+        ret_bar = &bargen->fin_bar;
+        // memcpy(ret_bar, &bargen->cur_bar, sizeof(bar_data_t));
+        ret_bar->Open = bar->Open;
+        ret_bar->High = bar->High;
+        ret_bar->Low  = bar->Low;
+        ret_bar->Close = bar->Close;
+        ret_bar->OpenInterest = bar->OpenInterest;
+
+        if (include_cur_tick_flag)
+        {
+            fprintf(stderr, "#include current tick %.2lf,%ld,%d\n", last_price, (long)volume, update_time);
+            ret_bar->High = MAX(ret_bar->High, last_price);
+            ret_bar->Low = MIN(ret_bar->Low, last_price);
+            ret_bar->Close = last_price;
+            ret_bar->OpenInterest = (int)open_interest;
+            ret_bar->Volume = volume - bargen->begin_volume;
+            ret_bar->Turnover = turnover - bargen->begin_turnover;
+
+            ret_bar->EndTime = update_time;
+
+            bargen->begin_volume = volume;
+            bargen->begin_turnover = turnover;
+        }
+        else
+        {
+            // because current tick (14:54:00.300) is belong to next minute bar,
+            // we use prev's volume, 14:53:59.800 ~ 14:54:59.800 is this bar (14:54:00)
+            ret_bar->Volume = bargen->prev_volume - bargen->begin_volume;
+            ret_bar->Turnover = bargen->prev_turnover - bargen->begin_turnover;
+
+            ret_bar->EndTime = bargen->prev_update_time;
+
+            bargen->begin_volume = bargen->prev_volume;
+            bargen->begin_turnover = bargen->prev_turnover;
+        }
+
+        memcpy(ret_bar->Date, date, 8);
+        // sprintf(ret_bar->Time, "%02d:%02d:00", bargen->bar_tm.tm_hour, bargen->bar_tm.tm_min);
+        sprintf(ret_bar->Time, "%02d:%02d:00", tick_tm.tm_hour, tick_tm.tm_min);
     }
 
     if (new_minute)
     {
-        // new bar
-        if (!bar->InstrumentID[0])
+        if (!include_cur_tick_flag)
         {
-            strncpy(bar->InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
-            strncpy(bar->ExchangeID, instrument, sizeof(bar->ExchangeID) - 1);
-            strncpy(bar->Period, "1m", 2);
+            // here is the next new bar data
+            bar->Open = last_price;
+            bar->High = last_price;
+            bar->Low = last_price;
+            bar->Volume = 0;
+            bar->StartTime = bargen->prev_update_time;
         }
-        if (!bar->InstrumentID[0])
-        {
-            strncpy(bargen->fin_bar.InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
-            strncpy(bargen->fin_bar.ExchangeID, instrument, sizeof(bar->ExchangeID) - 1);
-            strncpy(bargen->fin_bar.Period, "1m", 2);
-        }
-        bargen->bar_tm = tick_tm;
+    }
+    else
+    {
+        bar->High = MAX(bar->High, last_price);
+        bar->Low = MIN(bar->Low, last_price);
+        bar->Close = last_price;
+        bar->OpenInterest = (int)open_interest;
 
-        bar->Open = last_price;
-        bar->High = last_price;
-        bar->Low = last_price;
-        bar->Volume = 0;
+        // bar->Volume += MAX(0, volume - bargen->prev_volume);
+        // bar->Turnover += MAX(0, turnover - bargen->prev_turnover);
     }
 
-    bar->High = MAX(bar->High, last_price);
-    bar->Low = MIN(bar->Low, last_price);
-    bar->Close = last_price;
-    bar->OpenInterest = (int)open_interest;
-    bar->Volume += MAX(0, volume - bargen->prev_volume);
-    bar->Turnover += MAX(0, turnover - bargen->prev_turnover);
-
-    bargen->prev_volume = volume;
-    bargen->prev_turnover = turnover;
     bargen->tick_count += 1;
     bargen->bar_tm = tick_tm;
 
-    if (generated)
-    {
-        bargen->bar_count += 1;
+    bargen->prev_volume = volume;
+    bargen->prev_turnover = turnover;
+    bargen->prev_update_time = update_time;
 
-        bargen->bar_tm.tm_sec = 0;
-        bargen->bar_tm.tm_msec = 0;
-
-        strncpy(bargen->fin_bar.Date, date, 8);
-        sprintf(bargen->fin_bar.Time, "%02d:%02d:00",
-            bargen->bar_tm.tm_hour, bargen->bar_tm.tm_min);
-        return &bargen->fin_bar;
-    }
-
-    return NULL;
+    return ret_bar;
 }
 
 const char* MD_UTILS_STDCALL bar_generator_version()
@@ -152,33 +366,33 @@ int MD_UTILS_STDCALL bar_data_as_json(
     if (!fieldnames)
         fieldnames = &default_fieldnames;
 
+    int islast = 0;
     sim_json_t json;
     sjson_json_init(&json, json_buffer, size, indent);
     sjson_add_head(&json);
-    sjson_add_str(&json, fieldnames->Instrument, bar->InstrumentID, 0);
-    sjson_add_str(&json, fieldnames->Exchange, bar->ExchangeID, 0);
-    sjson_add_float(&json, fieldnames->Open, bar->Open, 0);
-    sjson_add_float(&json, fieldnames->High, bar->High, 0);
-    sjson_add_float(&json, fieldnames->Low, bar->Low, 0);
-    sjson_add_float(&json, fieldnames->Close, bar->Close, 0);
-    sjson_add_float(&json, fieldnames->Turnover, bar->Turnover, 0);
-    sjson_add_float(&json, fieldnames->OpenInterest, bar->OpenInterest, 0);
-    sjson_add_int64(&json, fieldnames->Volume, bar->Volume, 0);
+    sjson_add_str(&json, fieldnames->Instrument, bar->InstrumentID, islast);
+    sjson_add_str(&json, fieldnames->Exchange, bar->ExchangeID, islast);
+    sjson_add_float(&json, fieldnames->Open, bar->Open, islast);
+    sjson_add_float(&json, fieldnames->High, bar->High, islast);
+    sjson_add_float(&json, fieldnames->Low, bar->Low, islast);
+    sjson_add_float(&json, fieldnames->Close, bar->Close, islast);
+    sjson_add_float(&json, fieldnames->Turnover, bar->Turnover, islast);
+    sjson_add_int32(&json, fieldnames->OpenInterest, bar->OpenInterest, islast);
+    sjson_add_int64(&json, fieldnames->Volume, bar->Volume, islast);
 
-    int end = 0;
     if (!bar->Period)
-        end = 1;
+        islast = 1;
 
     if (fieldnames->DateTime)
     {
         char dt[64] = "";
-        snprintf(dt, 63, "%s %s", bar->Date, bar->Time);
-        sjson_add_str(&json, fieldnames->DateTime, dt, end);
+        snprintf(dt, sizeof(dt) - 1, "%s %s", bar->Date, bar->Time);
+        sjson_add_str(&json, fieldnames->DateTime, dt, islast);
     }
     else
     {
         sjson_add_str(&json, fieldnames->Date, bar->Date, 0);
-        sjson_add_str(&json, fieldnames->Time, bar->Time, end);
+        sjson_add_str(&json, fieldnames->Time, bar->Time, islast);
     }
 
     if (bar->Period)
@@ -316,7 +530,7 @@ int sjson_add_int64(sim_json_t* json, const char* key, const int64_t val, int is
     return len + len2;
 }
 
-int sjson_add_float(sim_json_t* json, const char* key, double val, int islast)
+int sjson_add_float(sim_json_t* json, const char* key, const double val, int islast)
 {
     if (json->capacity - json->len < 8)
     {

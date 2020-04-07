@@ -21,12 +21,18 @@
     <ClCompile Include="md_utils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="contract_generator.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bar_generator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="md_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="contract_generator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

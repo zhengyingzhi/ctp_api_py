@@ -46,8 +46,10 @@ LIBS += -lpthread -lrt
 
 # Input
 HEADERS += bar_generator.h \
+    contract_generator.h \
     md_utils.h
 
 SOURCES += bar_generator.c \
+    contract_generator.c \
     md_utils.c
 

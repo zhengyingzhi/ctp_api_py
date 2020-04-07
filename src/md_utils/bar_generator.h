@@ -9,6 +9,10 @@ extern "C" {
 #endif//__cplusplus
 
 
+#define PAUSE_TIMES_SIZE    8
+#define INVAL_PAUSE_TIME   -1
+
+
 typedef struct field_names_s
 {
     const char* Instrument;
@@ -40,28 +44,44 @@ typedef struct
     int64_t Volume;
     double  Turnover;
     int32_t OpenInterest;
-    char    Date[9];
-    char    Time[9];
+    char    Date[12];
+    char    Time[12];
     char    Period[4];
+
+    // below just for easy debug
+    int32_t StartTime;
+    int32_t EndTime;
 }bar_data_t;
 
 struct bar_generator_s
 {
+    char        code[16];
     uint32_t    tick_count;
     uint32_t    bar_count;
 
+    int64_t     begin_volume;
+    double      begin_turnover;
     int64_t     prev_volume;
     double      prev_turnover;
+    int32_t     prev_update_time;
     bar_data_t  cur_bar;
     bar_data_t  fin_bar;
     sim_time_t  bar_tm;
+
+    // 
+    int32_t     pause_times[PAUSE_TIMES_SIZE];
+    int32_t     pack;
 };
 
 typedef struct bar_generator_s bar_generator_t;
 
 
-MD_UTILS_API int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen);
+/* init a bar generator,
+ * code: the product code, like a,rb,IF,CF,000001,600004
+ */
+MD_UTILS_API int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen, const char* code);
 
+MD_UTILS_API void MD_UTILS_STDCALL bar_generator_set_pause_times(bar_generator_t* bargen, int pause_times[], int size);
 
 MD_UTILS_API bar_data_t* MD_UTILS_STDCALL bar_generator_update(
     bar_generator_t* bargen, const char* instrument, const char* exchange,

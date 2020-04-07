@@ -594,7 +594,7 @@ void MdApi::processBarGen(CThostFtdcDepthMarketDataField* apMD)
     else
     {
         bargen = (bar_generator_t*)malloc(sizeof(bar_generator_t));
-        bar_generator_init(bargen);
+        bar_generator_init(bargen, apMD->InstrumentID);
         bar_gen_map[lInstrumentID] = bargen;
     }
 
@@ -639,6 +639,9 @@ void MdApi::processBarGen(CThostFtdcDepthMarketDataField* apMD)
     data["Volume"] = bar->Volume;
     data["Turnover"] = bar->Turnover;
     data["OpenInterest"] = bar->OpenInterest;
+
+    // data["StartTime"] = bar->StartTime;
+    // data["EndTime"] = bar->EndTime;
 
     this->onRtnBarData(data);
 }

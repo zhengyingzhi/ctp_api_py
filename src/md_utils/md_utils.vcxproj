@@ -147,10 +147,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bar_generator.c" />
+    <ClCompile Include="contract_generator.c" />
     <ClCompile Include="md_utils.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bar_generator.h" />
+    <ClInclude Include="contract_generator.h" />
     <ClInclude Include="md_utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
