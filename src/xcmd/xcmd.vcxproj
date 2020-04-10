@@ -109,7 +109,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\api;..\..\thirdparty\python35\include;..\..\thirdparty</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;..\api;..\..\thirdparty\python35\include;..\..\thirdparty</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -145,7 +145,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\api;..\..\thirdparty\python35\include;..\..\thirdparty</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;..\api;..\..\thirdparty\python35\include;..\..\thirdparty</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -162,6 +162,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="xcmd.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\md_utils\md_utils.vcxproj">
+      <Project>{653f2d92-f824-40d6-82fb-9a56b244f30d}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

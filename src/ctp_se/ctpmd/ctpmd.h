@@ -9,7 +9,10 @@
 #include "pybind11/pybind11.h"
 #include "ThostFtdcMdApi.h"
 
+#ifndef HAVE_BAR_GENERATOR
 #define HAVE_BAR_GENERATOR 1
+#endif//HAVE_BAR_GENERATOR
+
 #if HAVE_BAR_GENERATOR
 #include "md_utils/bar_generator.h"
 #include "md_utils/md_utils.h"
@@ -215,7 +218,9 @@ public:
 
 	int reqUserLogout(const dict &req, int reqid);
 
+#if HAVE_BAR_GENERATOR
     // new add
     int subscribeBarData(std::string instrumentID);
+#endif//HAVE_BAR_GENERATOR
     void set_have_level2(int on);
 };

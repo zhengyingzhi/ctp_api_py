@@ -793,12 +793,13 @@ int MdApi::reqUserLogout(const dict &req, int reqid)
 	return i;
 };
 
-
+#if HAVE_BAR_GENERATOR
 int MdApi::subscribeBarData(std::string instrumentID)
 {
     bar_mode = true;
     return subscribeMarketData(instrumentID);
 }
+#endif//HAVE_BAR_GENERATOR
 
 void MdApi::set_have_level2(int on)
 {

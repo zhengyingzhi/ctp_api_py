@@ -174,7 +174,7 @@ int MD_UTILS_STDCALL make_sure_symbol_spec(char instrument[], const char* exchan
     return 0;
 }
 
-MD_UTILS_API int MD_UTILS_STDCALL get_code(char code[], const char* instrument)
+MD_UTILS_API int MD_UTILS_STDCALL get_product_code(char code[], const char* instrument)
 {
     if (isdigit(instrument[0]))
     {
@@ -197,7 +197,7 @@ MD_UTILS_API int MD_UTILS_STDCALL get_code(char code[], const char* instrument)
 const char* MD_UTILS_STDCALL lookup_exchange(const char* instrument)
 {
     char code[32] = "";
-    get_code(code, instrument);
+    get_product_code(code, instrument);
 
     code_exchange_t* pce;
     for (int i = 0; code_exchange_table[i].code; ++i)

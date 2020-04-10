@@ -36,7 +36,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.2.0"
+#define XC_MDAPI_VERSION    "1.3.0"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -276,6 +276,11 @@ void XcMdApi::OnIssueEnd(QWORD qQuoteID)
 
     XcDepthMarketData* pMD;
 
+    if (bar_mode)
+    {
+        return;
+    }
+
     if (m_thread_mode)
     {
         for (int i = 0; i < (int)m_pendings.size(); ++i)
@@ -359,10 +364,6 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
     XcDebugInfo(XcDbgFd, "OnRespSecurity Code:%s,Name:%s,PreClose:%.2lf, UpperLimit:%.2lf, LowerLimit:%.2lf\n",
         pSecurity->SecCode, pSecurity->SecName, pSecurity->SecurityClosePx, pSecurity->DailyPriceUpLimit, pSecurity->DailyPriceDownLimit);
 
-    char buf[64] = "";
-    sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
-    string lXcSymbol(buf);
-
     XcSecurityInfo lSecInfo;
     memset(&lSecInfo, 0, sizeof(lSecInfo));
     strcpy(lSecInfo.ExchangeID, pSecurity->MarketCode);
@@ -371,7 +372,16 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
     lSecInfo.PreClosePrice = pSecurity->SecurityClosePx;
     lSecInfo.UpperLimitPrice = pSecurity->DailyPriceUpLimit;
     lSecInfo.LowerLimitPrice = pSecurity->DailyPriceDownLimit;
+
+#if MD_MAP_STRING_KEY
+    char buf[64] = "";
+    sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
+    string lXcSymbol(buf);
     secmap[lXcSymbol] = lSecInfo;
+#else
+    int lXcSymbol = atoi(pSecurity->SecCode);
+    secmap[lXcSymbol] = lSecInfo;
+#endif//MD_MAP_STRING_KEY
 
     int index = 32;
     while (index > 0)
@@ -429,10 +439,6 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
     XcDebugInfo(XcDbgFd, "OnRespSecurity_Sz Code:%s,Name:%s,PreClose:%.2lf\n",
         pSecurity->SecCode, pSecurity->SecName, pSecurity->PrevClosePx);
 
-    char buf[64] = "";
-    sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
-    string lXcSymbol(buf);
-
     XcSecurityInfo lSecInfo;
     memset(&lSecInfo, 0, sizeof(lSecInfo));
     strcpy(lSecInfo.ExchangeID, pSecurity->MarketCode);
@@ -462,7 +468,15 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
         lSecInfo.LowerLimitPrice = atof(buf);
     }
 
+#if MD_MAP_STRING_KEY
+    char buf[64] = "";
+    sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
+    string lXcSymbol(buf);
     secmap[lXcSymbol] = lSecInfo;
+#else
+    int lXcSymbol = atoi(pSecurity->SecCode);
+    secmap[lXcSymbol] = lSecInfo;
+#endif//MD_MAP_STRING_KEY
 
     int index = 20;
     while (index > 0)
@@ -514,9 +528,19 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         return;
     }
 
-    // fprintf(stderr, "OnRespDyna%ld: %s\n", (long)qQuoteID, pDyna->SecCode);
+    // fprintf(stderr, "OnRespDyna%ld: %s,%.2lf,%d\n", (long)qQuoteID, pDyna->SecCode, pDyna->New / PRICE_DIV, pDyna->Time);
+
+#if HAVE_BAR_GENERATOR
+    if (bar_mode)
+    {
+        process_bar_gen(pDyna);
+        return;
+    }
+#endif//HAVE_BAR_GENERATOR
+
 
     int32_t isfirst = 0;
+#if MD_MAP_STRING_KEY
     char buf[64] = "";
     sprintf(buf, "%s.%s", pDyna->SecCode, pDyna->MarketCode);
     string lXcSymbol(buf);
@@ -532,6 +556,24 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         isfirst = 1;
     }
     pMD = &mdmap[lXcSymbol];
+#else
+    int lXcSymbol = atoi(pDyna->SecCode);
+    if (lXcSymbol == 0) {
+        return;
+    }
+    if (mdmap.count(lXcSymbol) == 0)
+    {
+        XcDepthMarketData lMD;
+        memset(&lMD, 0, sizeof(lMD));
+        // XcDebugInfo(XcDbgFd, "---->>>>%s,%s\n", pDyna->SecCode, pDyna->MarketCode);
+        strcpy(lMD.InstrumentID, pDyna->SecCode);
+        strcpy(lMD.ExchangeID, pDyna->MarketCode);
+        mdmap[lXcSymbol] = lMD;
+
+        isfirst = 1;
+    }
+    pMD = &mdmap[lXcSymbol];
+#endif//MD_MAP_STRING_KEY
 
 #if 0
     // reset depth field ?
@@ -586,9 +628,9 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
             pMD->UpperLimitPrice = pExtend->UpLimit / PRICE_DIV;
             pMD->LowerLimitPrice = pExtend->DownLimit / PRICE_DIV;
         }
-        else if (secmap.count(lXcSymbol))
+        else if (get_sec_info(lXcSymbol))
         {
-            XcSecurityInfo* psec_info = &secmap[lXcSymbol];
+            XcSecurityInfo* psec_info = get_sec_info(lXcSymbol);
             pMD->UpperLimitPrice = psec_info->UpperLimitPrice;
             pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
         }
@@ -600,9 +642,9 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     }
     else
     {
-        if (secmap.count(lXcSymbol))
+        XcSecurityInfo* psec_info = get_sec_info(lXcSymbol);
+        if (psec_info)
         {
-            XcSecurityInfo* psec_info = &secmap[lXcSymbol];
             pMD->UpperLimitPrice = psec_info->UpperLimitPrice;
             pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
         }
@@ -624,7 +666,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     if (log_level == XC_SPEC_LOG_LV && pDyna->Time >= 91500 && pDyna->Time <= 151500)
     {
         write_data(log_level, "RespDyna %ld,%s,%s,%.2lf,%.2lf,%.2lf,%.2lf,%ld,%.2lf,%.2lf,%.2lf,bid:%.2lf,%d,ask:%.2lf,%d,n:%d",
-            (long)qQuoteID, pMD->UpdateTime, lXcSymbol, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
+            (long)qQuoteID, pMD->UpdateTime, pMD->InstrumentID, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
             (long)pMD->Volume, pMD->UpperLimitPrice, pMD->LowerLimitPrice, pMD->PreClosePrice, pMD->BidPrice1, pMD->BidVolume1,
             pMD->AskPrice1, pMD->AskVolume1, m_pendings.size());
     }
@@ -639,6 +681,7 @@ void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socke
 
     XcDepthMarketData* pMD;
 
+#if MD_MAP_STRING_KEY
     char buf[64] = "";
     sprintf(buf, "%s.%s", SecCode, MarketCode);
     string lXcSymbol(buf);
@@ -647,6 +690,18 @@ void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socke
         return;
     }
     pMD = &mdmap[lXcSymbol];
+#else
+    int lXcSymbol = atoi(SecCode);
+    if (mdmap.count(lXcSymbol) == 0)
+    {
+        return;
+    }
+    pMD = &mdmap[lXcSymbol];
+#endif//MD_MAP_STRING_KEY
+
+    if (!pMD) {
+        return;
+    }
 
     // double* dstpx;
     // int* dstvol;
@@ -897,7 +952,7 @@ int XcMdApi::subscribe_md(string instrumentID, int depth_order, int each_flag)
     interface_struct_Subscribe sub_flag;
     sub_flag.Dyna_flag = true;
     sub_flag.DepthOrder_flag = depth_order ? true : false;
-    sub_flag.Depth_flag = true;
+    sub_flag.Depth_flag = depth_flag;
     sub_flag.EachDeal_flag = each_flag ? true : false;
     sub_flag.EachOrder_flag = each_flag ? true : false;
 
@@ -1441,6 +1496,62 @@ int XcMdApi::get_ratio_count(double ratio, int cond)
     return count;
 }
 
+#if HAVE_BAR_GENERATOR
+int XcMdApi::subscribe_bar_md(std::string instrument)
+{
+    depth_flag = false;
+    bar_mode = true;
+    return subscribe_md(instrument, 0, 0);
+}
+
+void XcMdApi::process_bar_gen(socket_struct_Dyna* apMD)
+{
+    // fprintf(stderr, "bargen %s,%.2lf,%s\n", apMD->InstrumentID, apMD->LastPrice, apMD->UpdateTime);
+    bar_data_t* bar;
+    bar_generator_t* bargen;
+    // std::string lInstrumentID(apMD->InstrumentID);
+    int lInstrumentID = atoi(apMD->SecCode);
+    if (bar_gen_map.count(lInstrumentID))
+    {
+        bargen = bar_gen_map[lInstrumentID];
+    }
+    else
+    {
+        bargen = (bar_generator_t*)malloc(sizeof(bar_generator_t));
+        bar_generator_init(bargen, apMD->SecCode);
+        bar_gen_map[lInstrumentID] = bargen;
+    }
+
+    int update_time = apMD->Time;
+    bar = bar_generator_update(bargen, apMD->SecCode, apMD->MarketCode,
+        "", update_time, apMD->New / PRICE_DIV, apMD->Volume,
+        apMD->Amount / PRICE_DIV, 0);
+    if (!bar)
+    {
+        bar = &bargen->cur_bar;
+        return;
+    }
+    // fprintf(stderr, "generated bar!\n");
+
+    gil_scoped_acquire acquire;
+    dict data;
+
+    data["InstrumentID"] = to_utf(bar->InstrumentID);
+    data["ExchangeID"] = to_utf(bar->ExchangeID);
+    data["Date"] = to_utf(bar->Date);
+    data["Time"] = to_utf(bar->Time);
+    data["Period"] = to_utf(bar->Period);
+    data["Open"] = bar->Open;
+    data["High"] = bar->High;
+    data["Low"] = bar->Low;
+    data["Close"] = bar->Close;
+    data["Volume"] = bar->Volume;
+    data["Turnover"] = bar->Turnover;
+
+    this->on_rtn_bar_data(data);
+}
+
+#endif//HAVE_BAR_GENERATOR
 
 //////////////////////////////////////////////////////////////////////////
 void XcMdApi::processTask()
@@ -1644,6 +1755,22 @@ void XcMdApi::processOnRtnMarketData(Task *task, int isIOThread)
 }
 
 
+#if MD_MAP_STRING_KEY
+XcSecurityInfo* XcMdApi::get_sec_info(const std::string& symbol)
+{
+    if (secmap.count(symbol))
+        return &secmap[symbol];
+    return NULL;
+}
+#else
+XcSecurityInfo* XcMdApi::get_sec_info(int isymbol)
+{
+    if (secmap.count(isymbol))
+        return &secmap[isymbol];
+    return NULL;
+}
+#endif//MD_MAP_STRING_KEY
+
 
 ///-------------------------------------------------------------------------------------
 ///Boost.Python·â×°
@@ -1773,6 +1900,18 @@ public:
             cout << e.what() << endl;
         }
     };
+
+    void on_rtn_bar_data(const dict &data) override
+    {
+        try
+        {
+            PYBIND11_OVERLOAD(void, XcMdApi, on_rtn_bar_data, data);
+        }
+        catch (const error_already_set &e)
+        {
+            cout << e.what() << endl;
+        }
+    };
 };
 
 
@@ -1802,6 +1941,10 @@ PYBIND11_MODULE(xcmd, m)
         .def("req_qry_data_batch", &XcMdApi::req_qry_data_batch)
         // .def("reqUserLogin", &XcMdApi::reqUserLogin)
 
+#if HAVE_BAR_GENERATOR
+        .def("subscribe_bar_md", &XcMdApi::subscribe_bar_md)
+#endif//HAVE_BAR_GENERATOR
+
         .def("on_front_connected", &XcMdApi::on_front_connected)
         .def("on_front_disconnected", &XcMdApi::on_front_disconnected)
         .def("on_rsp_user_login", &XcMdApi::on_rsp_user_login)
@@ -1812,5 +1955,6 @@ PYBIND11_MODULE(xcmd, m)
         .def("on_rtn_each_deal", &XcMdApi::on_rtn_each_deal)
         .def("on_msg", &XcMdApi::on_msg)
         .def("on_rsp_market", &XcMdApi::on_rsp_market)
+        .def("on_rtn_bar_data", &XcMdApi::on_rtn_bar_data)
         ;
 }

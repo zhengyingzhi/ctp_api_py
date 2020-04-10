@@ -16,6 +16,17 @@
 #include <pybind11/stl.h>
 #include <XcMarketApi/XcMarketApi.h>
 
+
+#ifndef HAVE_BAR_GENERATOR
+#define HAVE_BAR_GENERATOR 1
+#endif//HAVE_BAR_GENERATOR
+
+#if HAVE_BAR_GENERATOR
+#include "md_utils/bar_generator.h"
+#include "md_utils/md_utils.h"
+#endif//HAVE_BAR_GENERATOR
+
+
 using namespace std;
 using namespace pybind11;
 
@@ -200,10 +211,20 @@ struct XcDepthMarketData
     price_status_t LimitStatus;        // 涨跌停状态
     double      UpDownRatio;        // 涨跌比例
 };
-typedef map<string, XcDepthMarketData>   MDMapType;
-typedef map<QWORD, XcDepthMarketData*>   QuoteIDMapType;
 
+
+#ifndef MD_MAP_STRING_KEY
+#define MD_MAP_STRING_KEY   0
+#endif
+
+#if MD_MAP_STRING_KEY
 typedef map<string, XcSecurityInfo>      SecInfoMapType;
+typedef map<string, XcDepthMarketData>   MDMapType;
+#else
+typedef map<int, XcSecurityInfo>      SecInfoMapType;
+typedef map<int, XcDepthMarketData>   MDMapType;
+#endif//MD_MAP_STRING_KEY
+typedef map<QWORD, XcDepthMarketData*>   QuoteIDMapType;
 
 
 //任务结构体
@@ -293,6 +314,12 @@ public:
     bool m_active = false;
     int m_thread_mode = 0;
 
+    bool depth_flag = true;
+    bool bar_mode = false;
+#if HAVE_BAR_GENERATOR
+    std::map<int, bar_generator_t*> bar_gen_map;
+#endif//HAVE_BAR_GENERATOR
+
 private:
     void processTask();
     void processOnUserLogin(Task *task);
@@ -301,6 +328,12 @@ private:
     void processOnRspMarket(Task *task);
     void processOnRspQryData(Task *task);
     void processOnRtnMarketData(Task *task, int isIOThread=0);
+
+#if MD_MAP_STRING_KEY
+    XcSecurityInfo* get_sec_info(const std::string& symbol);
+#else
+    XcSecurityInfo* get_sec_info(int isymbol);
+#endif//MD_MAP_STRING_KEY
 
 public:
     void OnUserLogin(socket_struct_Msg* pMsg);
@@ -337,6 +370,9 @@ public:
 
     virtual void on_msg(int ref_id, const dict& data) {}
     virtual void on_rsp_market(int ref_id, const dict& data) {}
+
+    // new add
+    virtual void on_rtn_bar_data(const dict& data) {}
 
 public:
     void create_md_api(string str = "");
@@ -383,6 +419,12 @@ public:
 
     void statistic_md(XcDepthMarketData* pMD, int32_t isfirst);
     int get_ratio_count(double ratio, int cond);
+
+#if HAVE_BAR_GENERATOR
+    // new add
+    int subscribe_bar_md(std::string instrument);
+    void process_bar_gen(socket_struct_Dyna* apMD);
+#endif//HAVE_BAR_GENERATOR
 
 private:
     int write_data(int reserve, const char* fmt, ...);

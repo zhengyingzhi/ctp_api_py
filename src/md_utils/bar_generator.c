@@ -110,7 +110,11 @@ static bool is_code_exist(const char* codes_table[], const char* code)
 
 static int* find_code_pause_time(const char* code)
 {
-    if (is_code_exist(codes_2300, code))
+    if (is_stock(code))
+    {
+        return pause_time_stk;
+    }
+    else if (is_code_exist(codes_2300, code))
     {
         return pause_time_2300;
     }
@@ -142,7 +146,7 @@ static bool filter_data_by_updatetime(const char* instrument, int update_time)
     {
         // cn stocks
         if ((update_time > 150001 || update_time < 93000) ||
-            (update_time > 113000 && update_time < 130000))
+            (update_time > 113001 && update_time < 130000))
         {
             return true;
         }
@@ -165,7 +169,7 @@ int bar_generator_init(bar_generator_t* bargen, const char* code)
     if (code)
     {
         // strncpy(bargen->code, code, sizeof(bargen->code) - 1);
-        get_code(bargen->code, code);
+        get_product_code(bargen->code, code);
     }
     memset(bargen->pause_times, INVAL_PAUSE_TIME, sizeof(bargen->pause_times));
 
@@ -286,7 +290,7 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
 
         if (include_cur_tick_flag)
         {
-            fprintf(stderr, "#include current tick %.2lf,%ld,%d\n", last_price, (long)volume, update_time);
+            // fprintf(stderr, "#include current tick %.2lf,%ld,%d\n", last_price, (long)volume, update_time);
             ret_bar->High = MAX(ret_bar->High, last_price);
             ret_bar->Low = MIN(ret_bar->Low, last_price);
             ret_bar->Close = last_price;
@@ -312,7 +316,7 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
             bargen->begin_turnover = bargen->prev_turnover;
         }
 
-        memcpy(ret_bar->Date, date, 8);
+        strncpy(ret_bar->Date, date, 8);
         // sprintf(ret_bar->Time, "%02d:%02d:00", bargen->bar_tm.tm_hour, bargen->bar_tm.tm_min);
         sprintf(ret_bar->Time, "%02d:%02d:00", tick_tm.tm_hour, tick_tm.tm_min);
     }

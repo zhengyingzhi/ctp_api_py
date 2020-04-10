@@ -57,7 +57,7 @@ MD_UTILS_API int MD_UTILS_STDCALL conv_czce_instrument(char instrument[], int cu
 
 MD_UTILS_API int MD_UTILS_STDCALL make_sure_symbol_spec(char instrument[], const char* exchange);
 
-MD_UTILS_API int MD_UTILS_STDCALL get_code(char code[], const char* instrument);
+MD_UTILS_API int MD_UTILS_STDCALL get_product_code(char code[], const char* instrument);
 
 MD_UTILS_API const char* MD_UTILS_STDCALL lookup_exchange(const char* instrument);
 
