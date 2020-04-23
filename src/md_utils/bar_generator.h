@@ -61,12 +61,17 @@ struct bar_generator_s
 
     int64_t     begin_volume;
     double      begin_turnover;
+    int32_t     begin_open_interest;
+    int32_t     begin_update_time;
+
     int64_t     prev_volume;
     double      prev_turnover;
+    int32_t     prev_open_interest;
     int32_t     prev_update_time;
+    sim_time_t  prev_tm;
+
     bar_data_t  cur_bar;
     bar_data_t  fin_bar;
-    sim_time_t  bar_tm;
 
     // 
     int32_t     pause_times[PAUSE_TIMES_SIZE];

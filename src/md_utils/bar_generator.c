@@ -3,7 +3,7 @@
 #include "bar_generator.h"
 
 
-#define BAR_GENERATOR_VERSION   "1.0.0"
+#define BAR_GENERATOR_VERSION   "1.0.1"
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -145,7 +145,7 @@ static bool filter_data_by_updatetime(const char* instrument, int update_time)
     if (instrument[0] >= '0' && instrument[0] <= '9')
     {
         // cn stocks
-        if ((update_time > 150001 || update_time < 93000) ||
+        if ((update_time > 150001 || update_time < 92500) ||
             (update_time > 113001 && update_time < 130000))
         {
             return true;
@@ -154,8 +154,8 @@ static bool filter_data_by_updatetime(const char* instrument, int update_time)
     else
     {
         // cn futures
-        if ((update_time > 150001 && update_time < 210000) ||
-            (update_time > 23001 && update_time < 90000))
+        if ((update_time > 150001 && update_time < 205900) ||
+            (update_time > 23001 && update_time < 85900))
         {
             return true;
         }
@@ -163,9 +163,13 @@ static bool filter_data_by_updatetime(const char* instrument, int update_time)
     return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 int bar_generator_init(bar_generator_t* bargen, const char* code)
 {
     memset(bargen, 0, sizeof(bar_generator_t));
+    bargen->begin_update_time = INVAL_PAUSE_TIME;
+    bargen->prev_update_time = INVAL_PAUSE_TIME;
     if (code)
     {
         // strncpy(bargen->code, code, sizeof(bargen->code) - 1);
@@ -224,7 +228,8 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
     const char* date, int update_time, double last_price,
     int64_t volume, double turnover, int open_interest)
 {
-    int generated, new_minute;
+    int include_cur_data_flag;
+    int generated;
     bar_data_t* ret_bar;
     bar_data_t* bar;
     sim_time_t tick_tm = { 0 };
@@ -237,100 +242,124 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
         return NULL;
     }
 
-    int include_cur_tick_flag = 0;
+    include_cur_data_flag = 0;
     generated = 0;
-    new_minute = 0;
     ret_bar = NULL;
     bar = (bar_data_t*)&bargen->cur_bar;
 
-    if (!bargen->fin_bar.InstrumentID[0])
+    if (!bar->InstrumentID[0])
     {
-        new_minute = 1;
-
         // the first md update
-        strncpy(bargen->fin_bar.InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
-        strncpy(bargen->fin_bar.ExchangeID, exchange, sizeof(bar->ExchangeID) - 1);
-        strncpy(bargen->fin_bar.Period, "1m", 2);
-
         strncpy(bar->InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
         strncpy(bar->ExchangeID, exchange, sizeof(bar->ExchangeID) - 1);
         strncpy(bar->Period, "1m", 2);
-    }
-    else if (bargen->bar_tm.tm_min != tick_tm.tm_min ||
-             bargen->bar_tm.tm_hour != tick_tm.tm_hour)
-    {
-        // the md minute changed now
 
-        for (int i = 0; i < PAUSE_TIMES_SIZE; ++i)
+        if (!bargen->fin_bar.InstrumentID[0])
         {
-            int temp_time = bargen->pause_times[i];
-            if (temp_time == update_time)
-            {
-                // hits tick data need merged into fin_bar
-                include_cur_tick_flag = 1;
-                break;
-            }
-            else if (temp_time == INVAL_PAUSE_TIME)
-            {
-                break;
-            }
+            strncpy(bargen->fin_bar.InstrumentID, instrument, sizeof(bar->InstrumentID) - 1);
+            strncpy(bargen->fin_bar.ExchangeID, exchange, sizeof(bar->ExchangeID) - 1);
+            strncpy(bargen->fin_bar.Period, "1m", 2);
         }
 
-        new_minute = 1;
-        generated = 1;
-        bargen->bar_count += 1;
+        // start new bar data
+        bar->Open = last_price;
+        bar->High = last_price;
+        bar->Low = last_price;
+        bar->Close = last_price;
+        bar->StartTime = bargen->prev_update_time;
 
-        ret_bar = &bargen->fin_bar;
-        // memcpy(ret_bar, &bargen->cur_bar, sizeof(bar_data_t));
-        ret_bar->Open = bar->Open;
-        ret_bar->High = bar->High;
-        ret_bar->Low  = bar->Low;
-        ret_bar->Close = bar->Close;
-        ret_bar->OpenInterest = bar->OpenInterest;
+        bargen->begin_volume = volume;
+        bargen->begin_turnover = turnover;
+        bargen->begin_open_interest = open_interest;
+        bargen->begin_update_time = update_time;
+    }
+    else if (bargen->prev_tm.tm_min != tick_tm.tm_min ||
+             bargen->prev_tm.tm_hour != tick_tm.tm_hour)
+    {
+        // ---- md minute changed now ----
 
-        if (include_cur_tick_flag)
+        // previous is auction time or not
+        if ((bargen->prev_update_time >= 85900 && bargen->prev_update_time <= 85959) ||
+            (bargen->prev_update_time >= 205900 && bargen->prev_update_time <= 205959))
         {
-            // fprintf(stderr, "#include current tick %.2lf,%ld,%d\n", last_price, (long)volume, update_time);
-            ret_bar->High = MAX(ret_bar->High, last_price);
-            ret_bar->Low = MIN(ret_bar->Low, last_price);
-            ret_bar->Close = last_price;
-            ret_bar->OpenInterest = (int)open_interest;
-            ret_bar->Volume = volume - bargen->begin_volume;
-            ret_bar->Turnover = turnover - bargen->begin_turnover;
+            generated = 0;
 
-            ret_bar->EndTime = update_time;
+            bar->High = MAX(bar->High, last_price);
+            bar->Low = MIN(bar->Low, last_price);
+            bar->Close = last_price;
+            bar->OpenInterest = open_interest;
 
-            bargen->begin_volume = volume;
-            bargen->begin_turnover = turnover;
+            // the auction data belongs to first bar
+            bar->StartTime = bargen->prev_update_time;
+            bargen->begin_volume = 0;
+            bargen->begin_turnover = 0;
         }
         else
         {
-            // because current tick (14:54:00.300) is belong to next minute bar,
-            // we use prev's volume, 14:53:59.800 ~ 14:54:59.800 is this bar (14:54:00)
-            ret_bar->Volume = bargen->prev_volume - bargen->begin_volume;
-            ret_bar->Turnover = bargen->prev_turnover - bargen->begin_turnover;
+            bargen->bar_count += 1;
 
-            ret_bar->EndTime = bargen->prev_update_time;
+            // current update time is pause time or not
+            for (int i = 0; i < PAUSE_TIMES_SIZE; ++i)
+            {
+                int temp_time = bargen->pause_times[i];
+                if (temp_time == update_time)
+                {
+                    // this tick data need merged into fin_bar
+                    include_cur_data_flag = 1;
 
-            bargen->begin_volume = bargen->prev_volume;
-            bargen->begin_turnover = bargen->prev_turnover;
-        }
+                    bar->High = MAX(bar->High, last_price);
+                    bar->Low = MIN(bar->Low, last_price);
+                    bar->Close = last_price;
+                    bar->OpenInterest = open_interest;
+                    break;
+                }
+                else if (temp_time == INVAL_PAUSE_TIME)
+                {
+                    break;
+                }
+            }
 
-        strncpy(ret_bar->Date, date, 8);
-        // sprintf(ret_bar->Time, "%02d:%02d:00", bargen->bar_tm.tm_hour, bargen->bar_tm.tm_min);
-        sprintf(ret_bar->Time, "%02d:%02d:00", tick_tm.tm_hour, tick_tm.tm_min);
-    }
+            // the generated bar
+            ret_bar = &bargen->fin_bar;
+            ret_bar->Open = bar->Open;
+            ret_bar->High = bar->High;
+            ret_bar->Low = bar->Low;
+            ret_bar->Close = bar->Close;
+            ret_bar->OpenInterest = bar->OpenInterest;
+            strncpy(ret_bar->Date, date, 8);
+            sprintf(ret_bar->Time, "%02d:%02d:00", tick_tm.tm_hour, tick_tm.tm_min);
 
-    if (new_minute)
-    {
-        if (!include_cur_tick_flag)
-        {
-            // here is the next new bar data
-            bar->Open = last_price;
-            bar->High = last_price;
-            bar->Low = last_price;
-            bar->Volume = 0;
-            bar->StartTime = bargen->prev_update_time;
+            if (include_cur_data_flag)
+            {
+                ret_bar->Volume = volume - bargen->begin_volume;
+                ret_bar->Turnover = turnover - bargen->begin_turnover;
+                ret_bar->OpenInterest = open_interest;
+                ret_bar->StartTime = bar->StartTime;
+                ret_bar->EndTime = update_time;
+
+                // here, next bar must be new start
+                bar->InstrumentID[0] = '\0';
+                bar->StartTime = update_time;
+                bargen->begin_volume = volume;
+                bargen->begin_turnover = turnover;
+            }
+            else
+            {
+                ret_bar->Volume = bargen->prev_volume - bargen->begin_volume;
+                ret_bar->Turnover = bargen->prev_turnover - bargen->begin_turnover;
+                ret_bar->OpenInterest = bargen->prev_open_interest;
+                ret_bar->StartTime = bar->StartTime;
+                ret_bar->EndTime = bargen->prev_update_time;
+
+                // current update data belongs to next bar
+                bar->Open = last_price;
+                bar->High = last_price;
+                bar->Low = last_price;
+                bar->Close = last_price;
+                bar->StartTime = bargen->prev_update_time;
+                bargen->begin_volume = bargen->prev_volume;
+                bargen->begin_turnover = bargen->prev_turnover;
+            }
         }
     }
     else
@@ -338,18 +367,15 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
         bar->High = MAX(bar->High, last_price);
         bar->Low = MIN(bar->Low, last_price);
         bar->Close = last_price;
-        bar->OpenInterest = (int)open_interest;
-
-        // bar->Volume += MAX(0, volume - bargen->prev_volume);
-        // bar->Turnover += MAX(0, turnover - bargen->prev_turnover);
+        bar->OpenInterest = open_interest;
     }
 
     bargen->tick_count += 1;
-    bargen->bar_tm = tick_tm;
-
     bargen->prev_volume = volume;
     bargen->prev_turnover = turnover;
+    bargen->prev_open_interest = open_interest;
     bargen->prev_update_time = update_time;
+    bargen->prev_tm = tick_tm;
 
     return ret_bar;
 }
