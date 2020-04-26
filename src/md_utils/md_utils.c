@@ -84,11 +84,17 @@ static code_exchange_t code_exchange_table[] = {
 
 int MD_UTILS_STDCALL str_to_ptime(sim_time_t* ptm, const char* buf, int len)
 {
+#if 0
     // 14:50:50.500
     ptm->tm_hour = atoi(buf);
     ptm->tm_min = atoi(buf + 3);
     ptm->tm_sec = atoi(buf + 6);
     // ptm->ms = atoi(buf + 9);
+#else
+    ptm->tm_hour = (buf[0] - '0') * 10 + (buf[1] - '0');
+    ptm->tm_min = (buf[3] - '0') * 10 + (buf[4] - '0');
+    ptm->tm_sec = (buf[6] - '0') * 10 + (buf[7] - '0');
+#endif
     return 0;
 }
 

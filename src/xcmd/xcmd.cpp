@@ -183,10 +183,6 @@ XcMdApi::XcMdApi()
 {
     m_pendings.reserve(1024);
 
-    time_t now = time(NULL);
-    struct tm* ptm = localtime(&now);
-    sprintf(trading_day, "%04d%02d%02d", (ptm->tm_year + 1900), (ptm->tm_mon + 1), ptm->tm_mday);
-
     refid = 1;
     flush_count = 0;
     have_level10 = 0;
@@ -1518,17 +1514,16 @@ void XcMdApi::process_bar_gen(socket_struct_Dyna* apMD)
     else
     {
         bargen = (bar_generator_t*)malloc(sizeof(bar_generator_t));
-        bar_generator_init(bargen, apMD->SecCode);
+        bar_generator_init(bargen, apMD->MarketCode, apMD->SecCode);
         bar_gen_map[lInstrumentID] = bargen;
     }
 
     int update_time = apMD->Time;
-    bar = bar_generator_update(bargen, apMD->SecCode, apMD->MarketCode,
-        "", update_time, apMD->New / PRICE_DIV, apMD->Volume,
-        apMD->Amount / PRICE_DIV, 0);
+    bar = bar_generator_update(bargen, trading_day, update_time,
+        apMD->New / PRICE_DIV, apMD->Volume, apMD->Amount / PRICE_DIV, apMD->OpenInt);
     if (!bar)
     {
-        bar = &bargen->cur_bar;
+        // bar = &bargen->cur_bar;
         return;
     }
     // fprintf(stderr, "generated bar!\n");
@@ -1609,6 +1604,11 @@ void XcMdApi::processTask()
 
 void XcMdApi::processOnUserLogin(Task *task)
 {
+    time_t now = time(NULL);
+    struct tm* ptm = localtime(&now);
+    sprintf(trading_day, "%04d%02d%02d",
+        (ptm->tm_year + 1900), (ptm->tm_mon + 1), ptm->tm_mday);
+
     gil_scoped_acquire acquire;
     this->on_front_connected();
 

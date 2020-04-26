@@ -4,7 +4,7 @@
 #include "ctpmd.h"
 
 
-#define CTP_MD_VERSION      "1.1.1"
+#define CTP_MD_VERSION      "1.1.2"
 
 
 static int str_delimiter(char* apSrc, char** apRetArr, int aArrSize, char aDelimiter)
@@ -594,7 +594,7 @@ void MdApi::processBarGen(CThostFtdcDepthMarketDataField* apMD)
     else
     {
         bargen = (bar_generator_t*)malloc(sizeof(bar_generator_t));
-        bar_generator_init(bargen, apMD->InstrumentID);
+        bar_generator_init(bargen, apMD->ExchangeID, apMD->InstrumentID);
         bar_gen_map[lInstrumentID] = bargen;
     }
 
@@ -614,9 +614,10 @@ void MdApi::processBarGen(CThostFtdcDepthMarketDataField* apMD)
     int update_time = atoi(apMD->UpdateTime) * 10000 + \
         atoi(apMD->UpdateTime + 3) * 100 + \
         atoi(apMD->UpdateTime + 6);
-    bar = bar_generator_update(bargen, apMD->InstrumentID, apMD->ExchangeID,
-        apMD->ActionDay, update_time, apMD->LastPrice, apMD->Volume,
-        apMD->Turnover, (int)apMD->OpenInterest);
+
+    // FIXME: the ActionDay maybe error
+    bar = bar_generator_update(bargen, apMD->ActionDay, update_time,
+            apMD->LastPrice, apMD->Volume, apMD->Turnover, (int)apMD->OpenInterest);
     if (!bar)
     {
         bar = &bargen->cur_bar;
@@ -659,6 +660,14 @@ void MdApi::createFtdcMdApi(string pszFlowPath)
 
 void MdApi::release()
 {
+#if HAVE_BAR_GENERATOR
+    bar_generator_t* bargen;
+    std::map<std::string, bar_generator_t*>::iterator iter;
+    for (iter = bar_gen_map.begin(); iter != bar_gen_map.end(); ++iter)
+    {
+        bar_generator_reset(iter->second);
+    }
+#endif//HAVE_BAR_GENERATOR
 	this->api->Release();
 };
 

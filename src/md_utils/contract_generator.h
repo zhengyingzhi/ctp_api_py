@@ -9,16 +9,6 @@ extern "C" {
 #endif//__cplusplus
 
 
-#define MD_EXCHANGE_DCE     "DCE"
-#define MD_EXCHANGE_CZCE    "CZCE"
-#define MD_EXCHANGE_SHFE    "SHFE"
-#define MD_EXCHANGE_INE     "INE"
-#define MD_EXCHANGE_CFFEX   "CFFEX"
-
-#define PAUSE_TIMES_SIZE    8
-#define INVAL_PAUSE_TIME   -1
-
-
 typedef struct
 {
     int     cur_index;

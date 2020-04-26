@@ -28,6 +28,8 @@
 #define MD_EXCHANGE_SHFE    "SHFE"
 #define MD_EXCHANGE_INE     "INE"
 #define MD_EXCHANGE_CFFEX   "CFFEX"
+#define MD_EXCHANGE_SSE     "SSE"
+#define MD_EXCHANGE_SZSE    "SZSE"
 
 
 typedef struct
@@ -51,6 +53,7 @@ MD_UTILS_API int MD_UTILS_STDCALL int_to_ptime(sim_time_t* ptm, int time, int ha
 /* convert czce instrument
  * like: CF008 -> CF2008
  * or  : CF2008 -> CF008
+ * cur_year_month: 202003
  * return: result length
  */
 MD_UTILS_API int MD_UTILS_STDCALL conv_czce_instrument(char instrument[], int cur_year_month);
