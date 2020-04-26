@@ -178,10 +178,10 @@ static code_pause_time_t default_code_pause_time_table[] = {
     { MD_EXCHANGE_CFFEX, "IF",{ 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
     { MD_EXCHANGE_CFFEX, "IC",{ 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
     { MD_EXCHANGE_CFFEX, "IH",{ 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "T", { 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "TS",{ 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "TF",{ 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "TT",{ 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "T", { 113000, 151500, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "TS",{ 113000, 151500, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "TF",{ 113000, 151500, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
+    { MD_EXCHANGE_CFFEX, "TT",{ 113000, 151500, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
     { NULL, NULL, { BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } }
 };
 
@@ -284,6 +284,8 @@ int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen, const char* exc
 
     if (instrument)
     {
+        bargen->have_end_auction = is_stock(instrument);
+
         strncpy(bargen->instrument, instrument, sizeof(bargen->instrument) - 1);
         get_product_code(bargen->code, instrument);
 
@@ -367,6 +369,7 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
     double last_price, int64_t volume, double turnover, int open_interest)
 {
     int include_cur_data_flag;
+    int market_close_flag;
     int generated;
     bar_data_t* ret_bar;
     bar_data_t* bar;
@@ -381,6 +384,7 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
     }
 
     include_cur_data_flag = 0;
+    market_close_flag = 0;
     generated = 0;
     ret_bar = NULL;
     bar = (bar_data_t*)&bargen->cur_bar;
@@ -463,6 +467,9 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
                 {
                     // this tick data need merged into fin_bar
                     include_cur_data_flag = 1;
+                    if (bargen->pause_times[i + 1] == BG_INVAL_PAUSE_TIME ||
+                        bargen->pause_times[i + 2] == BG_INVAL_PAUSE_TIME)
+                        market_close_flag = 1;
 
                     bar->High = MAX(bar->High, last_price);
                     bar->Low = MIN(bar->Low, last_price);
@@ -521,10 +528,30 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update(
                 bar->High = last_price;
                 bar->Low = last_price;
                 bar->Close = last_price;
+                bar->OpenInterest = open_interest;
                 bargen->begin_volume = bargen->prev_volume;
                 bargen->begin_turnover = bargen->prev_turnover;
                 bargen->begin_open_interest = bargen->prev_open_interest;
                 bargen->begin_update_time = bargen->prev_update_time;
+            }
+
+            if (market_close_flag && bargen->have_end_auction)
+            {
+#if BG_BAR_DEBUG
+                bar->EndTime = update_time;
+                bar->StartTime = bargen->prev_update_time;
+#endif//BG_BAR_DEBUG
+
+                bar->Open = last_price;
+                bar->High = last_price;
+                bar->Low = last_price;
+                bar->Close = last_price;
+                bar->Volume = volume - bargen->prev_volume;
+                bar->Turnover = turnover - bargen->prev_turnover;
+                bar->OpenInterest = open_interest;
+                memcpy(ret_bar, bar, sizeof(bar_data_t));
+                strncpy(ret_bar->Date, date, 8);
+                sprintf(ret_bar->Time, "%02d:%02d:00", tick_tm.tm_hour, tick_tm.tm_min);
             }
         }
     }

@@ -9,7 +9,7 @@ extern "C" {
 #endif//__cplusplus
 
 
-#define BG_PAUSE_TIMES_SIZE     8
+#define BG_PAUSE_TIMES_SIZE     10
 #define BG_INVAL_PAUSE_TIME     -1
 
 #define BG_ENABLE_CTP_MD        1
@@ -72,6 +72,7 @@ struct bar_generator_s
     uint32_t    bar_count;
     int32_t     generated;
     int32_t     first_update_flag;
+    int32_t     have_end_auction;
 
     int64_t     begin_volume;
     double      begin_turnover;
