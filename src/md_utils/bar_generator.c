@@ -363,8 +363,12 @@ void MD_UTILS_STDCALL bar_generator_set_pause_times(bar_generator_t* bargen, int
     }
 }
 
+void MD_UTILS_STDCALL bar_generator_set_end_auction(bar_generator_t* bargen, int end_auction_flag)
+{
+    bargen->have_end_auction = end_auction_flag;
+}
 
-bar_data_t* MD_UTILS_STDCALL bar_generator_update(
+bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
     bar_generator_t* bargen, const char* date, int update_time,
     double last_price, int64_t volume, double turnover, int open_interest)
 {
@@ -637,8 +641,8 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_by_ctp(
         atoi(pmd->UpdateTime + 6);
 
     // FIXME: the ActionDay maybe error for DCE night trading
-    bar = bar_generator_update(bargen, pmd->ActionDay, update_time,
-        pmd->LastPrice, pmd->Volume, pmd->Turnover, (int)pmd->OpenInterest);
+    bar = bar_generator_update_data(bargen, pmd->ActionDay, update_time,
+            pmd->LastPrice, pmd->Volume, pmd->Turnover, (int)pmd->OpenInterest);
 
     return bar;
 }

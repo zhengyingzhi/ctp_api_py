@@ -41,8 +41,13 @@ DEFINES += __STDC_FORMAT_MACROS
 
 
 INCLUDEPATH += ..
+INCLUDEPATH += ../../thirdparty
+# INCLUDEPATH += ../../thirdparty/python35/linux_include
+INCLUDEPATH += ../../thirdparty/python36/linux_include
 
 LIBS += -lpthread -lrt
+# LIBS += -L../../thirdparty/python35/linux64 -lpython3.5m
+LIBS += -L../../thirdparty/python36/linux64 -lpython3.6m
 
 # Input
 HEADERS += bar_generator.h \
@@ -50,6 +55,7 @@ HEADERS += bar_generator.h \
     md_utils.h
 
 SOURCES += bar_generator.c \
+    bar_generator_py.c \
     contract_generator.c \
     md_utils.c
 

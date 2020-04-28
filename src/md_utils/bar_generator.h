@@ -17,7 +17,7 @@ extern "C" {
 #if _DEBUG
 #define BG_BAR_DEBUG            1
 #else
-#define BG_BAR_DEBUG            1
+#define BG_BAR_DEBUG            0
 #endif//_DEBUG
 
 
@@ -95,7 +95,8 @@ struct bar_generator_s
     int32_t     pause_times[BG_PAUSE_TIMES_SIZE];
     int32_t     pack;
 
-    bool (*filter_data_by_updatetime)(const char* instrument, int update_time);
+    bool      (*filter_data_by_updatetime)(const char* instrument, int update_time);
+    void*       udata;
 };
 
 typedef struct bar_generator_s bar_generator_t;
@@ -113,10 +114,14 @@ MD_UTILS_API int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen,
  */
 MD_UTILS_API void MD_UTILS_STDCALL bar_generator_set_pause_times(bar_generator_t* bargen, int pause_times[], int size);
 
+/* set have end acution for this instrument or not, default have for cn stocks
+ */
+MD_UTILS_API void MD_UTILS_STDCALL bar_generator_set_end_auction(bar_generator_t* bargen, int end_auction_flag);
+
 /* try generate a new bar by the new updated tick data,
  * return: the bar data if generated
  */
-MD_UTILS_API bar_data_t* MD_UTILS_STDCALL bar_generator_update(
+MD_UTILS_API bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
     bar_generator_t* bargen, const char* date, int update_time,
     double last_price, int64_t volume, double turnover, int open_interest);
 

@@ -24,6 +24,9 @@
     <ClCompile Include="contract_generator.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="bar_generator_py.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bar_generator.h">
