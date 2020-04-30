@@ -85,7 +85,7 @@
     <IntDir>$(SolutionDir)..\$(Platform)\objs\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)..\$(Platform)\$(Configuration)\</OutDir>
     <TargetName>$(ProjectName)</TargetName>
-    <TargetExt>.pyd</TargetExt>
+    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -154,15 +154,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bardata_series.c" />
     <ClCompile Include="bar_generator.c" />
     <ClCompile Include="bar_generator_py.c" />
     <ClCompile Include="contract_generator.c" />
+    <ClCompile Include="cdeque.c" />
     <ClCompile Include="md_utils.c" />
+    <ClCompile Include="md_utils_py.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bardata_series.h" />
     <ClInclude Include="bar_generator.h" />
     <ClInclude Include="contract_generator.h" />
+    <ClInclude Include="cdeque.h" />
     <ClInclude Include="md_utils.h" />
+    <ClInclude Include="md_utils_py.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

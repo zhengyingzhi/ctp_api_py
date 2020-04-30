@@ -51,11 +51,17 @@ LIBS += -L../../thirdparty/python36/linux64 -lpython3.6m
 
 # Input
 HEADERS += bar_generator.h \
+    bardata_series.h \
+    cdeque.h \
     contract_generator.h \
-    md_utils.h
+    md_utils.h \
+    md_utils_py.h
 
 SOURCES += bar_generator.c \
+    bardata_series.c \
     bar_generator_py.c \
+    cdeque.c \
     contract_generator.c \
-    md_utils.c
+    md_utils.c \
+    md_utils_py.c
 

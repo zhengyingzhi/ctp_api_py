@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="py">
+      <UniqueIdentifier>{99849ef7-7667-4406-b6f2-da797adecf35}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bar_generator.c">
@@ -25,6 +28,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="bar_generator_py.c">
+      <Filter>py</Filter>
+    </ClCompile>
+    <ClCompile Include="md_utils_py.c">
+      <Filter>py</Filter>
+    </ClCompile>
+    <ClCompile Include="cdeque.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bardata_series.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -36,6 +48,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="contract_generator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="md_utils_py.h">
+      <Filter>py</Filter>
+    </ClInclude>
+    <ClInclude Include="cdeque.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bardata_series.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
