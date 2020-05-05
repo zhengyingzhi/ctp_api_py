@@ -154,19 +154,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bardata_list.c" />
     <ClCompile Include="bardata_series.c" />
     <ClCompile Include="bar_generator.c" />
     <ClCompile Include="bar_generator_py.c" />
     <ClCompile Include="contract_generator.c" />
     <ClCompile Include="cdeque.c" />
+    <ClCompile Include="md_dict.c" />
     <ClCompile Include="md_utils.c" />
     <ClCompile Include="md_utils_py.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bardata_list.h" />
     <ClInclude Include="bardata_series.h" />
     <ClInclude Include="bar_generator.h" />
     <ClInclude Include="contract_generator.h" />
     <ClInclude Include="cdeque.h" />
+    <ClInclude Include="md_dict.h" />
     <ClInclude Include="md_utils.h" />
     <ClInclude Include="md_utils_py.h" />
   </ItemGroup>

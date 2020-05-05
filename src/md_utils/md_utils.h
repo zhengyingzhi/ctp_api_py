@@ -32,6 +32,16 @@
 #define MD_EXCHANGE_SZSE    "SZSE"
 
 
+typedef union
+{
+    int64_t i64;
+    double  f64;
+    void*   ptr;
+    float   f32;
+    int     i32;
+}union_dtype_t;
+
+
 typedef struct
 {
     int32_t tm_hour;
@@ -46,14 +56,16 @@ extern "C" {
 #endif//__cplusplus
 
 
+MD_UTILS_API const char* MD_UTILS_STDCALL md_utils_version();
+
 MD_UTILS_API int MD_UTILS_STDCALL str_to_ptime(sim_time_t* ptm, const char* buf, int len);
 
 MD_UTILS_API int MD_UTILS_STDCALL int_to_ptime(sim_time_t* ptm, int time, int have_millisec);
 
-/* convert czce instrument
+/* convert CZCE exchange's instrument
  * like: CF008 -> CF2008
  * or  : CF2008 -> CF008
- * cur_year_month: 202003
+ * cur_year_month: 202003 (without month day)
  * return: result length
  */
 MD_UTILS_API int MD_UTILS_STDCALL conv_czce_instrument(char instrument[], int cur_year_month);

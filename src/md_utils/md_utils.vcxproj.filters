@@ -39,6 +39,12 @@
     <ClCompile Include="bardata_series.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="bardata_list.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="md_dict.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bar_generator.h">
@@ -57,6 +63,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="bardata_series.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bardata_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="md_dict.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
