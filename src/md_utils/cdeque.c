@@ -227,6 +227,7 @@ static bool _cdeque_min_int_cmp(cdeque_t* dq, data_object_t min_val, data_object
 #else
 static bool _cdeque_max_double_cmp(cdeque_t* dq, void* val1, void* val2)
 {
+    (void)dq;
     double* p1 = (double*)val1;
     double* p2 = (double*)val2;
     return *p1 < *p2 ? true : false;
@@ -234,34 +235,39 @@ static bool _cdeque_max_double_cmp(cdeque_t* dq, void* val1, void* val2)
 
 static bool _cdeque_min_double_cmp(cdeque_t* dq, void* val1, void* val2)
 {
+    (void)dq;
     double* p1 = (double*)val1;
     double* p2 = (double*)val2;
     return *p1 > *p2 ? true : false;
 }
 
-static bool _cdeque_max_int64_cmp(cdeque_t* dq, int64_t* val1, int64_t* val2)
+static bool _cdeque_max_int64_cmp(cdeque_t* dq, void* val1, void* val2)
 {
+    (void)dq;
     int64_t* p1 = (int64_t*)val1;
     int64_t* p2 = (int64_t*)val2;
     return *p1 < *p2 ? true : false;
 }
 
-static bool _cdeque_min_int64_cmp(cdeque_t* dq, int64_t* val1, int64_t* val2)
+static bool _cdeque_min_int64_cmp(cdeque_t* dq, void* val1, void* val2)
 {
+    (void)dq;
     int64_t* p1 = (int64_t*)val1;
     int64_t* p2 = (int64_t*)val2;
     return *p1 > *p2 ? true : false;
 }
 
-static bool _cdeque_max_int32_cmp(cdeque_t* dq, int32_t* val1, int32_t* val2)
+static bool _cdeque_max_int32_cmp(cdeque_t* dq, void* val1, void* val2)
 {
+    (void)dq;
     int32_t* p1 = (int32_t*)val1;
     int32_t* p2 = (int32_t*)val2;
     return *p1 < *p2 ? true : false;
 }
 
-static bool _cdeque_min_int32_cmp(cdeque_t* dq, int32_t* val1, int32_t* val2)
+static bool _cdeque_min_int32_cmp(cdeque_t* dq, void* val1, void* val2)
 {
+    (void)dq;
     int32_t* p1 = (int32_t*)val1;
     int32_t* p2 = (int32_t*)val2;
     return *p1 > *p2 ? true : false;
@@ -283,7 +289,7 @@ int MD_UTILS_STDCALL cdeque_get_data(cdeque_t* dq, void* pdata, CDEQUE_Method me
     case DQ_METH_MinDouble: cmp_func = _cdeque_min_double_cmp; break;
     case DQ_METH_MaxInt64:  cmp_func = _cdeque_max_int64_cmp;  break;
     case DQ_METH_MinInt64:  cmp_func = _cdeque_min_int64_cmp;  break;
-    case DQ_METH_MaxInt32:  cmp_func = _cdeque_min_int32_cmp;  break;
+    case DQ_METH_MaxInt32:  cmp_func = _cdeque_max_int32_cmp;  break;
     case DQ_METH_MinInt32:  cmp_func = _cdeque_min_int32_cmp;  break;
     default:
         return -1;
@@ -294,7 +300,8 @@ int MD_UTILS_STDCALL cdeque_get_data(cdeque_t* dq, void* pdata, CDEQUE_Method me
     pend = dq->pend;
     index = 0;
 
-    for (int i = 0; pcur < pend; ++i)
+    int i;
+    for (i = 0; pcur < pend; ++i)
     {
         if (cmp_func(dq, pval, pcur))
         {

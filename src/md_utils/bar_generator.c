@@ -204,7 +204,8 @@ static int pause_time_stk[]  = { 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_P
 static bool is_code_exist(const char* codes_table[], const char* code)
 {
     const char* pcur;
-    for (int index = 0; codes_table[index]; ++index)
+    int index;
+    for (index = 0; codes_table[index]; ++index)
     {
         pcur = codes_table[index];
         if (strcmp(pcur, code) == 0)
@@ -313,8 +314,8 @@ int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen, const char* exc
     int* pause_times;
     pause_times = find_code_pause_time(bargen->code);
 
-    int index = 0;
-    for (int k = 0; pause_times[k] != BG_INVAL_PAUSE_TIME; ++k)
+    int index = 0, k;
+    for (k = 0; pause_times[k] != BG_INVAL_PAUSE_TIME; ++k)
     {
         bargen->pause_times[index++] = pause_times[k];
         bargen->pause_times[index++] = pause_times[k] + 1;
@@ -353,8 +354,8 @@ int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen, const char* exc
 
 void MD_UTILS_STDCALL bar_generator_set_pause_times(bar_generator_t* bargen, int pause_times[], int size)
 {
-    int index = 0;
-    for (int k = 0; k < 4 && k < size; ++k)
+    int index = 0, k;
+    for (k = 0; k < 4 && k < size; ++k)
     {
         bargen->pause_times[index++] = pause_times[k];
         bargen->pause_times[index++] = pause_times[k] + 1;
@@ -398,8 +399,8 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
         // the first md update, start new bar data
 
         int pause_time_flag = 0;
-        int pause_time;
-        for (int i = 0; i < BG_PAUSE_TIMES_SIZE; ++i)
+        int pause_time, i;
+        for (i = 0; i < BG_PAUSE_TIMES_SIZE; ++i)
         {
             pause_time = bargen->pause_times[i];
             if (pause_time == update_time)
@@ -463,8 +464,8 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
             bargen->bar_count += 1;
 
             // current update time is pause time or not
-            int pause_time;
-            for (int i = 0; i < BG_PAUSE_TIMES_SIZE; ++i)
+            int pause_time, i;
+            for (i = 0; i < BG_PAUSE_TIMES_SIZE; ++i)
             {
                 pause_time = bargen->pause_times[i];
                 if (pause_time == update_time)
@@ -626,6 +627,7 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_without_data(
 bar_data_t* MD_UTILS_STDCALL bar_generator_update_by_ctp(
     bar_generator_t* bargen, void* apmd, int size)
 {
+    (void)size;
     assert(size == sizeof(struct CThostFtdcDepthMarketDataField));
 
     int update_time;
@@ -768,7 +770,9 @@ void sjson_json_init(sim_json_t* json, char* buf, int size, int indent)
     }
     json->indent = indent;
     memset(json->indent_buf, 0, sizeof(json->indent_buf));
-    for (int i = 0; i < indent; ++i)
+
+    int i;
+    for (i = 0; i < indent; ++i)
         json->indent_buf[i] = ' ';
 }
 

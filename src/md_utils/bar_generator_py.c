@@ -35,6 +35,7 @@ static PyObject* _bg_convert_bar(bar_data_t* bar)
 
 PyObject* bg_create(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     bar_generator_t* bargen;
     const char* exchange;
@@ -58,6 +59,7 @@ PyObject* bg_create(PyObject* self, PyObject* args)
 
 PyObject* bg_set_end_auction(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     bar_generator_t* bargen;
     int have_end_auction;
@@ -77,6 +79,7 @@ PyObject* bg_set_end_auction(PyObject* self, PyObject* args)
 
 PyObject* bg_reset(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     bar_generator_t* bargen;
 
@@ -94,6 +97,7 @@ PyObject* bg_reset(PyObject* self, PyObject* args)
 
 PyObject* bg_release(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     bar_generator_t* bargen;
 
@@ -112,6 +116,7 @@ PyObject* bg_release(PyObject* self, PyObject* args)
 
 PyObject* bg_update_data(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     bar_generator_t* bargen;
     bar_data_t* bar;
@@ -146,6 +151,7 @@ PyObject* bg_update_data(PyObject* self, PyObject* args)
 
 PyObject* bg_update_without_data(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     bar_generator_t* bargen;
     bar_data_t* bar;
@@ -176,6 +182,8 @@ PyObject* bg_update_without_data(PyObject* self, PyObject* args)
 
 PyObject* bg_version(PyObject* self, PyObject* args)
 {
+    (void)self;
+    (void)args;
     return Py_BuildValue("s", bar_generator_version());
 }
 

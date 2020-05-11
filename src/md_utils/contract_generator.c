@@ -48,7 +48,7 @@ int MD_UTILS_STDCALL generate_contracts(contract_generator_t* contr_gen,
     }
 
     char* pcur = contr_gen->buff;
-    char* pend = contr_gen->buff + sizeof(contr_gen->buff);
+    // char* pend = contr_gen->buff + sizeof(contr_gen->buff);
 
     time_t now = time(NULL);
     struct tm* ptm = localtime(&now);
@@ -56,7 +56,8 @@ int MD_UTILS_STDCALL generate_contracts(contract_generator_t* contr_gen,
     int cur_month = ptm->tm_mon + 1;
 
     char instrument[8] = "";
-    for (int i = 0; i < size; ++i)
+    int i;
+    for (i = 0; i < size; ++i)
     {
         int mon = months[i];
         int year_month;
@@ -115,16 +116,17 @@ int generate_contracts_cffex(contract_generator_t* contr_gen,
     char lBuffer[64] = "";
     const char* lpVarietyArr[] = { "IF", "IC", "IH", "T", "TF", "TS", "TT", NULL };
 
+    int i, k;
     int index = 0;
     char* pcur = contr_gen->buff;
 
-    for (int i = 0; lpVarietyArr[i]; ++i)
+    for (i = 0; lpVarietyArr[i]; ++i)
     {
         if (code && strcmp(code, lpVarietyArr[i]) != 0) {
             continue;
         }
 
-        for (int k = 0; k < 5 && lYearMM[k]; ++k)
+        for (k = 0; k < 5 && lYearMM[k]; ++k)
         {
             char* lpInstr = lBuffer;
 

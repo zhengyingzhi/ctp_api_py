@@ -47,7 +47,8 @@ void MD_UTILS_STDCALL bardata_list_init(bardata_list_t* bl, int size, void* addr
         bl->sm = (struct_mem_t*)(bl->base_addr);
         bar = (bar_data_t*)struct_mem_data(bl->sm);
 
-        for (uint32_t i = 0; i < bl->sm->count; ++i)
+        uint32_t i;
+        for (i = 0; i < bl->sm->count; ++i)
         {
             bl->bar_datas[bl->index++] = bar;
             bar += 1;
@@ -82,7 +83,7 @@ void MD_UTILS_STDCALL bardata_list_reset(bardata_list_t* bl)
 }
 
 int MD_UTILS_STDCALL bardata_list_push_bar(bardata_list_t* bl,
-    const char* exchange, const char* instruent, const char* date, int update_time,
+    const char* exchange, const char* instrument, const char* date, int update_time,
     double open, double high, double low, double close,
     int64_t volume, double turnover, int open_interest)
 {
@@ -97,8 +98,8 @@ int MD_UTILS_STDCALL bardata_list_push_bar(bardata_list_t* bl,
     }
 
     strncpy(dst_bar->ExchangeID, exchange, sizeof(dst_bar->ExchangeID) - 1);
-    strncpy(dst_bar->InstrumentID, exchange, sizeof(dst_bar->InstrumentID) - 1);
-    strncpy(dst_bar->Date, exchange, sizeof(dst_bar->Date) - 1);
+    strncpy(dst_bar->InstrumentID, instrument, sizeof(dst_bar->InstrumentID) - 1);
+    strncpy(dst_bar->Date, date, sizeof(dst_bar->Date) - 1);
     dst_bar->Open = open;
     dst_bar->High = high;
     dst_bar->Low = low;

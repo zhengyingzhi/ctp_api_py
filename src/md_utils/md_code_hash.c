@@ -16,7 +16,7 @@
 #define FLAG_SP       5
 #define FLAG_SPC      6
 #define FLAG_SPD      7
-static const char*    flag_name[] = { "", "C", "P", "-C-", "-P-", "SP ", "SPC ", "SPD " };
+// static const char*    flag_name[] = { "", "C", "P", "-C-", "-P-", "SP ", "SPC ", "SPD " };
 
 // market number
 #define F_MKT_NONE    0
@@ -63,6 +63,7 @@ typedef struct stFCode
 }FCode;/* 58bit */
 
 
+#if 0
 static uint32_t MurMurHash2(const void *key, int len)
 {
     const unsigned int m = 0x5bd1e995;
@@ -98,6 +99,7 @@ static uint32_t MurMurHash2(const void *key, int len)
     h ^= h >> 15;
     return h;
 }
+#endif//0
 
 static inline bool IsNumericString(const char* str, int aLength)
 {
@@ -130,6 +132,7 @@ static inline uint8_t CharToIndex(char ch)
     return 0;
 }
 
+#if 0
 static inline char IndexToChar(uint8_t idx)
 {
     if (idx == 0) {
@@ -143,6 +146,7 @@ static inline char IndexToChar(uint8_t idx)
     }
     return 0;
 }
+#endif//0
 
 static inline int GetUnderlyingLength(const char* apInstrID)
 {

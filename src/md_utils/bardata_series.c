@@ -9,7 +9,7 @@
 
 void MD_UTILS_STDCALL bardata_series_init(bardata_series_t* bards, int32_t size)
 {
-    memset(&bards, 0, sizeof(bardata_series_t));
+    memset(bards, 0, sizeof(bardata_series_t));
     cdeque_init(&bards->opens, size, 0, sizeof(double));
     cdeque_init(&bards->highs, size, 0, sizeof(double));
     cdeque_init(&bards->lows,  size, 0, sizeof(double));

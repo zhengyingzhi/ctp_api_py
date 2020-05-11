@@ -93,6 +93,7 @@ const char* MD_UTILS_STDCALL md_utils_version()
 
 int MD_UTILS_STDCALL str_to_ptime(sim_time_t* ptm, const char* buf, int len)
 {
+    (void)len;
 #if 0
     // 14:50:50.500
     ptm->tm_hour = atoi(buf);
@@ -215,7 +216,8 @@ const char* MD_UTILS_STDCALL lookup_exchange(const char* instrument)
     get_product_code(code, instrument);
 
     code_exchange_t* pce;
-    for (int i = 0; code_exchange_table[i].code; ++i)
+    int i;
+    for (i = 0; code_exchange_table[i].code; ++i)
     {
         pce = &code_exchange_table[i];
         if (strcmp(pce->code, code) == 0)

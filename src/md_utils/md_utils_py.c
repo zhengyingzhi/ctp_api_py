@@ -58,6 +58,8 @@ extern PyObject* mdd_version(PyObject* self, PyObject* args);
 /* ---------- md utils py interfaces begin ---------- */
 static PyObject* mu_version(PyObject* self, PyObject* args)
 {
+    (void)self;
+    (void)args;
     return Py_BuildValue("s", md_utils_version());
 }
 

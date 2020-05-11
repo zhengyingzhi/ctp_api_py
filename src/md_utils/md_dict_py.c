@@ -14,6 +14,8 @@
 
 PyObject* mdd_create(PyObject* self, PyObject* args)
 {
+    (void)self;
+    (void)args;
     md_union_dtype_t v;
     md_dict_t* mdd;
     PyObject* res;
@@ -28,6 +30,7 @@ PyObject* mdd_create(PyObject* self, PyObject* args)
 
 PyObject* mdd_reset(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     md_dict_t* mdd;
 
@@ -43,6 +46,7 @@ PyObject* mdd_reset(PyObject* self, PyObject* args)
 
 PyObject* mdd_release(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     md_dict_t* mdd;
 
@@ -60,6 +64,7 @@ PyObject* mdd_release(PyObject* self, PyObject* args)
 
 PyObject* mdd_hash(PyObject* self, PyObject* args)
 {
+    (void)self;
     char* exchange;
     char* instrument;
     int64_t hashid;
@@ -75,6 +80,7 @@ PyObject* mdd_hash(PyObject* self, PyObject* args)
 
 PyObject* mdd_add(PyObject* self, PyObject* args)
 {
+    (void)self;
     int rv;
     md_union_dtype_t v;
     md_dict_t* mdd;
@@ -97,6 +103,7 @@ PyObject* mdd_add(PyObject* self, PyObject* args)
 
 PyObject* mdd_add2(PyObject* self, PyObject* args)
 {
+    (void)self;
     int rv;
     md_union_dtype_t v;
     md_dict_t* mdd;
@@ -120,6 +127,7 @@ PyObject* mdd_add2(PyObject* self, PyObject* args)
 
 PyObject* mdd_find(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     md_dict_t* mdd;
     int64_t hashid;
@@ -142,6 +150,7 @@ PyObject* mdd_find(PyObject* self, PyObject* args)
 
 PyObject* mdd_find2(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     md_dict_t* mdd;
     char* exchange;
@@ -165,6 +174,7 @@ PyObject* mdd_find2(PyObject* self, PyObject* args)
 
 PyObject* mdd_size(PyObject* self, PyObject* args)
 {
+    (void)self;
     md_union_dtype_t v;
     md_dict_t* mdd;
 
@@ -178,6 +188,8 @@ PyObject* mdd_size(PyObject* self, PyObject* args)
 
 PyObject* mdd_version(PyObject* self, PyObject* args)
 {
+    (void)self;
+    (void)args;
     return Py_BuildValue("s", md_dict_version());
 }
 
