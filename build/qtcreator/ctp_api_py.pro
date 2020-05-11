@@ -9,5 +9,5 @@ SUBDIRS += \
 ../../src/xctd \
 ../../src/xcmd \
 ../../src/hstrade \
-../../src/csv_reader \
+../../src/csv_loader \
 ../../src/md_utils

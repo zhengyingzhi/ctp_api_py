@@ -28,10 +28,10 @@ QMAKE_LFLAGS += -static-libstdc++
 
 build_pass:CONFIG(debug, debug|release) {
         DEFINES += DEBUG _DEBUG
-        DESTDIR = ../../../build/debug
+        DESTDIR = ../../build/debug
 } else {
         DEFINES += NDEBUG
-        DESTDIR = ../../../build/release
+        DESTDIR = ../../build/release
 }
 
 # QMAKE_CFLAGS += -std=c99
