@@ -45,6 +45,12 @@
     <ClCompile Include="md_dict.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="md_code_hash.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="md_dict_py.c">
+      <Filter>py</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bar_generator.h">
@@ -69,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="md_dict.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="md_code_hash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

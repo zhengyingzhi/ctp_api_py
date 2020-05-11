@@ -35,7 +35,7 @@ static PyObject* _bg_convert_bar(bar_data_t* bar)
 
 PyObject* bg_create(PyObject* self, PyObject* args)
 {
-    union_dtype_t v;
+    md_union_dtype_t v;
     bar_generator_t* bargen;
     const char* exchange;
     const char* instrument;
@@ -58,7 +58,7 @@ PyObject* bg_create(PyObject* self, PyObject* args)
 
 PyObject* bg_set_end_auction(PyObject* self, PyObject* args)
 {
-    union_dtype_t v;
+    md_union_dtype_t v;
     bar_generator_t* bargen;
     int have_end_auction;
 
@@ -77,7 +77,7 @@ PyObject* bg_set_end_auction(PyObject* self, PyObject* args)
 
 PyObject* bg_reset(PyObject* self, PyObject* args)
 {
-    union_dtype_t v;
+    md_union_dtype_t v;
     bar_generator_t* bargen;
 
     if (!PyArg_ParseTuple(args, "L", &v.i64)) {
@@ -94,7 +94,7 @@ PyObject* bg_reset(PyObject* self, PyObject* args)
 
 PyObject* bg_release(PyObject* self, PyObject* args)
 {
-    union_dtype_t v;
+    md_union_dtype_t v;
     bar_generator_t* bargen;
 
     if (!PyArg_ParseTuple(args, "L", &v.i64)) {
@@ -112,7 +112,7 @@ PyObject* bg_release(PyObject* self, PyObject* args)
 
 PyObject* bg_update_data(PyObject* self, PyObject* args)
 {
-    union_dtype_t v;
+    md_union_dtype_t v;
     bar_generator_t* bargen;
     bar_data_t* bar;
     const char* date;
@@ -146,7 +146,7 @@ PyObject* bg_update_data(PyObject* self, PyObject* args)
 
 PyObject* bg_update_without_data(PyObject* self, PyObject* args)
 {
-    union_dtype_t v;
+    md_union_dtype_t v;
     bar_generator_t* bargen;
     bar_data_t* bar;
     const char* date;

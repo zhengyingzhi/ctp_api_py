@@ -107,13 +107,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;MD_UTILS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\thirdparty;..\..\thirdparty\python35\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\thirdparty;..\..\thirdparty\ZToolLib\include;..\..\thirdparty\python35\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\..\thirdparty\python35\win64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>python35.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\thirdparty\python35\win64;..\..\thirdparty\ZToolLib\win64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>python35.lib;ZToolLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -142,15 +142,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;MD_UTILS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\thirdparty;..\..\thirdparty\python35\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\thirdparty;..\..\thirdparty\ZToolLib\include;..\..\thirdparty\python35\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\..\thirdparty\python35\win64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>python35.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\thirdparty\python35\win64;..\..\thirdparty\ZToolLib\win64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>python35.lib;ZToolLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -160,7 +160,9 @@
     <ClCompile Include="bar_generator_py.c" />
     <ClCompile Include="contract_generator.c" />
     <ClCompile Include="cdeque.c" />
+    <ClCompile Include="md_code_hash.c" />
     <ClCompile Include="md_dict.c" />
+    <ClCompile Include="md_dict_py.c" />
     <ClCompile Include="md_utils.c" />
     <ClCompile Include="md_utils_py.c" />
   </ItemGroup>
@@ -170,6 +172,7 @@
     <ClInclude Include="bar_generator.h" />
     <ClInclude Include="contract_generator.h" />
     <ClInclude Include="cdeque.h" />
+    <ClInclude Include="md_code_hash.h" />
     <ClInclude Include="md_dict.h" />
     <ClInclude Include="md_utils.h" />
     <ClInclude Include="md_utils_py.h" />

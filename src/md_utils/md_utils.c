@@ -253,3 +253,30 @@ int MD_UTILS_STDCALL is_stock(const char* instrument)
         return 1;
     return 0;
 }
+
+int MD_UTILS_STDCALL convert_market_id(const char* exchange)
+{
+    if (strcmp(exchange, MD_EXCHANGE_SSE) == 0) {
+        return MD_MI_SSE;
+    }
+    else if (strcmp(exchange, MD_EXCHANGE_SZSE) == 0) {
+        return MD_MI_SZSE;
+    }
+    else if (strcmp(exchange, MD_EXCHANGE_CFFEX) == 0) {
+        return MD_MI_CFFEX;
+    }
+    else if (strcmp(exchange, MD_EXCHANGE_SHFE) == 0) {
+        return MD_MI_SHFE;
+    }
+    else if (strcmp(exchange, MD_EXCHANGE_DCE) == 0) {
+        return MD_MI_DCE;
+    }
+    else if (strcmp(exchange, MD_EXCHANGE_CZCE) == 0) {
+        return MD_MI_CZCE;
+    }
+    else if (strcmp(exchange, MD_EXCHANGE_INE) == 0) {
+        return MD_MI_INE;
+    }
+
+    return MD_MI_NONE;
+}

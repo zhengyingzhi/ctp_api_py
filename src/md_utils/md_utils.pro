@@ -34,34 +34,43 @@ build_pass:CONFIG(debug, debug|release) {
         DESTDIR = ../../../build/release
 }
 
-QMAKE_CFLAGS += -std=c99
-QMAKE_CXXFLAGS += -std=c++0x -fPIC -Wno-unused-parameter -fvisibility=hidden -fvisibility-inlines-hidden
+# QMAKE_CFLAGS += -std=c99
+QMAKE_CXXFLAGS += -std=gnu11 -fPIC -Wno-unused-parameter -fvisibility=hidden -fvisibility-inlines-hidden
 
 DEFINES += __STDC_FORMAT_MACROS
 
 
 INCLUDEPATH += ..
 INCLUDEPATH += ../../thirdparty
+INCLUDEPATH += ../../thirdparty/ZToolLib/include
 # INCLUDEPATH += ../../thirdparty/python35/linux_include
 INCLUDEPATH += ../../thirdparty/python36/linux_include
 
 LIBS += -lpthread -lrt
+LIBS += ../../thirdparty/ZToolLib/linux64/libztoollib.a
 # LIBS += -L../../thirdparty/python35/linux64 -lpython3.5m
 LIBS += -L../../thirdparty/python36/linux64 -lpython3.6m
 
 # Input
 HEADERS += bar_generator.h \
+    bardata_list.h \
     bardata_series.h \
     cdeque.h \
     contract_generator.h \
+    md_code_hash.h \
+    md_dict.h \
     md_utils.h \
     md_utils_py.h
 
 SOURCES += bar_generator.c \
+    bardata_list.c \
     bardata_series.c \
     bar_generator_py.c \
     cdeque.c \
     contract_generator.c \
+    md_code_hash.c \
+    md_dict.c \
+    md_dict_py.c \
     md_utils.c \
     md_utils_py.c
 
