@@ -16,6 +16,9 @@
     <Filter Include="py">
       <UniqueIdentifier>{99849ef7-7667-4406-b6f2-da797adecf35}</UniqueIdentifier>
     </Filter>
+    <Filter Include="other">
+      <UniqueIdentifier>{711b5c73-5367-4c1c-add8-47d75889f148}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bar_generator.c">
@@ -51,6 +54,9 @@
     <ClCompile Include="md_dict_py.c">
       <Filter>py</Filter>
     </ClCompile>
+    <ClCompile Include="slq_reader_py.c">
+      <Filter>other</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bar_generator.h">
@@ -79,6 +85,9 @@
     </ClInclude>
     <ClInclude Include="md_code_hash.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="slq_reader.h">
+      <Filter>other</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

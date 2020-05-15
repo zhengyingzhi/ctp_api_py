@@ -38,6 +38,7 @@ build_pass:CONFIG(debug, debug|release) {
 QMAKE_CXXFLAGS += -std=gnu11 -fPIC -Wno-unused-parameter -fvisibility=hidden -fvisibility-inlines-hidden
 
 DEFINES += __STDC_FORMAT_MACROS
+DEFINES += MD_UTILS_PY36
 
 
 INCLUDEPATH += ..
@@ -60,7 +61,8 @@ HEADERS += bar_generator.h \
     md_code_hash.h \
     md_dict.h \
     md_utils.h \
-    md_utils_py.h
+    md_utils_py.h \
+    slq_reader.h 
 
 SOURCES += bar_generator.c \
     bardata_list.c \
@@ -72,5 +74,6 @@ SOURCES += bar_generator.c \
     md_dict.c \
     md_dict_py.c \
     md_utils.c \
-    md_utils_py.c
+    md_utils_py.c \
+    slq_reader_py.c 
 

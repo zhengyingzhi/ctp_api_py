@@ -699,7 +699,7 @@ bool ztl_shm_trylock_exclusive(ztl_shm_t* zshm)
 
     if (ZTL_SHT_FILEMAP == zshm->m_ShmType || ZTL_SHT_SHMOPEN == zshm->m_ShmType)
     {
-        int lRet = lockf(m_Handle, F_TLOCK, 0);
+        int lRet = lockf(zshm->m_Handle, F_TLOCK, 0);
         if (lRet == 0)
         {
             return true;
@@ -734,7 +734,7 @@ bool ztl_shm_unlock_file(ztl_shm_t* zshm)
 
     if (ZTL_SHT_FILEMAP == zshm->m_ShmType || ZTL_SHT_SHMOPEN == zshm->m_ShmType)
     {
-        int lRet = lockf(m_Handle, F_ULOCK, 0);
+        int lRet = lockf(zshm->m_Handle, F_ULOCK, 0);
         if (lRet == 0)
         {
             return true;

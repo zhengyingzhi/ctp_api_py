@@ -55,6 +55,14 @@ extern PyObject* mdd_version(PyObject* self, PyObject* args);
 /* ---------- md dict py interfaces end   ---------- */
 
 
+/* ---------- slq reader py interfaces begin ---------- */
+// for Samadhi, no use at other where
+PyObject* slqr_create(PyObject* self, PyObject* args);
+PyObject* slqr_release(PyObject* self, PyObject* args);
+PyObject* slqr_next(PyObject* self, PyObject* args);
+PyObject* slqr_count(PyObject* self, PyObject* args);
+/* ---------- slq reader py interfaces end   ---------- */
+
 /* ---------- md utils py interfaces begin ---------- */
 static PyObject* mu_version(PyObject* self, PyObject* args)
 {
@@ -77,6 +85,7 @@ static PyObject* mu_version(PyObject* self, PyObject* args)
 //////////////////////////////////////////////////////////////////////////
 static PyMethodDef MdUtilsModuleMethods[] = {
     { "mu_version", mu_version,     METH_NOARGS , "md utils module version" },
+
     { "bg_create",  bg_create,      METH_VARARGS, BG_CREATE_DOC },
     { "bg_release", bg_release,     METH_VARARGS, BG_RELEASE_DOC },
     { "bg_reset",   bg_reset,       METH_VARARGS, BG_RESET_DOC },
@@ -95,6 +104,11 @@ static PyMethodDef MdUtilsModuleMethods[] = {
     { "mdd_size",   mdd_size,       METH_VARARGS, MDD_SIZE_DOC },
     { "mdd_hash",   mdd_hash,       METH_VARARGS, MDD_HASH_DOC },
     { "mdd_version",mdd_version,    METH_NOARGS,  MDD_VERSION_DOC },
+
+    { "slqr_create", slqr_create,   METH_VARARGS, "" },
+    { "slqr_release",slqr_release,  METH_VARARGS, "" },
+    { "slqr_next",   slqr_next,     METH_VARARGS, "" },
+    { "slqr_count",  slqr_count,    METH_VARARGS, "" },
     { NULL, NULL, 0, NULL }
 };
 
