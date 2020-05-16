@@ -78,6 +78,10 @@ MD_UTILS_API int MD_UTILS_STDCALL str_to_ptime(sim_time_t* ptm, const char* buf,
 
 MD_UTILS_API int MD_UTILS_STDCALL int_to_ptime(sim_time_t* ptm, int time, int have_millisec);
 
+/* convert 10:16:45 -->> 101645
+ */
+MD_UTILS_API int MD_UTILS_STDCALL to_int_time(const char* time_str);
+
 /* convert CZCE exchange's instrument
  * like: CF008 -> CF2008
  * or  : CF2008 -> CF008

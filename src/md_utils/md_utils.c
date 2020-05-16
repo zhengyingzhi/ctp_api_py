@@ -3,7 +3,7 @@
 #include <time.h>
 #include "md_utils.h"
 
-#define MD_UTILS_VERSION    "1.0.0"
+#define MD_UTILS_VERSION    "1.0.1"
 
 
 typedef struct
@@ -118,6 +118,13 @@ int MD_UTILS_STDCALL int_to_ptime(sim_time_t* ptm, int time, int have_millisec)
     ptm->tm_min = (time / 100) % 100;
     ptm->tm_sec = time % 100;
     return 0;
+}
+
+int MD_UTILS_STDCALL to_int_time(const char* time_str)
+{
+    sim_time_t stime;
+    str_to_ptime(&stime, time_str, 8);
+    return stime.tm_hour * 10000 + stime.tm_min * 100 + stime.tm_sec;
 }
 
 int MD_UTILS_STDCALL conv_czce_instrument(char instrument[], int cur_year_month)

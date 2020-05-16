@@ -4,7 +4,7 @@
 #include "bar_generator.h"
 
 
-#define BAR_GENERATOR_VERSION   "1.0.2"
+#define BAR_GENERATOR_VERSION   "1.0.3"
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -621,6 +621,13 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_without_data(
     bargen->begin_turnover = bargen->prev_turnover;
 
     return ret_bar;
+}
+
+bar_data_t* MD_UTILS_STDCALL bar_generator_current_bar(bar_generator_t* bargen)
+{
+    if (bargen->generated)
+        return &bargen->fin_bar;
+    return &bargen->cur_bar;
 }
 
 #if BG_ENABLE_CTP_MD

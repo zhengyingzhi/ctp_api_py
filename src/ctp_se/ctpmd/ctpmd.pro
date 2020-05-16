@@ -50,7 +50,7 @@ LIBS += -lpthread -lrt
 
 LIBS += -L../../../thirdparty/python35/linux64 -lpython3.5m
 LIBS += -L../../api/ctp_se/linux64 -lthostmduserapi_se
-LIBS += -L$${DESTDIR} -lmd_utils$${BuildSuff}
+# LIBS += -L$${DESTDIR} -lmd_utils$${BuildSuff}
 
 
 # Input

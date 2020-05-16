@@ -4,7 +4,7 @@
 #include "ctpmd.h"
 
 
-#define CTP_MD_VERSION      "1.1.2"
+#define CTP_MD_VERSION      "1.1.3"
 
 
 static int str_delimiter(char* apSrc, char** apRetArr, int aArrSize, char aDelimiter)
@@ -695,7 +695,7 @@ int MdApi::exit()
 	this->api->Release();
 	this->api = NULL;
 
-
+#if HAVE_BAR_GENERATOR
     std::map<std::string, bar_generator_t*>::iterator iter;
     for (iter = bar_gen_map.begin(); iter != bar_gen_map.end(); ++iter)
     {
@@ -703,6 +703,7 @@ int MdApi::exit()
             free(iter->second);
     }
     bar_gen_map.clear();
+#endif//HAVE_BAR_GENERATOR
 
 	return 1;
 };
@@ -1018,8 +1019,9 @@ PYBIND11_MODULE(ctpmd, m)
 		.def("onRspUnSubForQuoteRsp", &MdApi::onRspUnSubForQuoteRsp)
 		.def("onRtnDepthMarketData", &MdApi::onRtnDepthMarketData)
 		.def("onRtnForQuoteRsp", &MdApi::onRtnForQuoteRsp)
-
+#if HAVE_BAR_GENERATOR
         .def("subscribeBarData", &MdApi::subscribeBarData)
+#endif//HAVE_BAR_GENERATOR
         .def("onRtnBarData", &MdApi::onRtnBarData)
         .def("set_have_level2", &MdApi::set_have_level2)
 		;

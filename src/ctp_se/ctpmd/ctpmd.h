@@ -10,7 +10,7 @@
 #include "ThostFtdcMdApi.h"
 
 #ifndef HAVE_BAR_GENERATOR
-#define HAVE_BAR_GENERATOR 1
+// #define HAVE_BAR_GENERATOR 1
 #endif//HAVE_BAR_GENERATOR
 
 #if HAVE_BAR_GENERATOR

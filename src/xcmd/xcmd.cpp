@@ -36,7 +36,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.3.0"
+#define XC_MDAPI_VERSION    "1.3.1"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 

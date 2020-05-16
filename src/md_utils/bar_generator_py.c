@@ -7,7 +7,7 @@
 #include "md_utils_py.h"
 
 
-#define BAR_GENERATOR_PY_VERSION    "1.0.0"
+#define BAR_GENERATOR_PY_VERSION    "1.0.1"
 
 #if HAVE_PY_WRAPPER
 
@@ -169,6 +169,34 @@ PyObject* bg_update_without_data(PyObject* self, PyObject* args)
     }
 
     bar = bar_generator_update_without_data(bargen, date, update_time);
+    if (bar)
+    {
+        PyObject* dp;
+        dp = _bg_convert_bar(bar);
+        return dp;
+    }
+
+    return Py_None;
+    // return Py_BuildValue("i", 0);
+}
+
+PyObject* bg_current_bar(PyObject* self, PyObject* args)
+{
+    (void)self;
+    md_union_dtype_t v;
+    bar_generator_t* bargen;
+    bar_data_t* bar;
+
+    if (!PyArg_ParseTuple(args, "L", &v.i64)) {
+        return Py_BuildValue("i", -1);
+    }
+    bargen = (bar_generator_t*)v.ptr;
+
+    if (!bargen) {
+        return Py_BuildValue("i", -2);
+    }
+
+    bar = bar_generator_current_bar(bargen);
     if (bar)
     {
         PyObject* dp;

@@ -131,6 +131,10 @@ MD_UTILS_API bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
 MD_UTILS_API bar_data_t* MD_UTILS_STDCALL bar_generator_update_without_data(
     bar_generator_t* bargen, const char* date, int update_time);
 
+/* try return the current bar data
+ */
+MD_UTILS_API bar_data_t* MD_UTILS_STDCALL bar_generator_current_bar(bar_generator_t* bargen);
+
 #if BG_ENABLE_CTP_MD
 /* try generate a new bar by the CTP data (struct CThostFtdcDepthMarketDataField),
  * return: the bar data if generated

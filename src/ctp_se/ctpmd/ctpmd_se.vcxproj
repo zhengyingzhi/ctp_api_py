@@ -256,11 +256,6 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="ctpmd.h" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\md_utils\md_utils.vcxproj">
-      <Project>{653f2d92-f824-40d6-82fb-9a56b244f30d}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
