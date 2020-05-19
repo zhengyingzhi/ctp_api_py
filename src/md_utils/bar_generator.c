@@ -4,7 +4,7 @@
 #include "bar_generator.h"
 
 
-#define BAR_GENERATOR_VERSION   "1.0.3"
+#define BAR_GENERATOR_VERSION   "1.0.4"
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -309,6 +309,8 @@ int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen, const char* exc
         strncpy(bargen->cur_bar.ExchangeID, exchange, sizeof(bargen->cur_bar.ExchangeID) - 1);
         strncpy(bargen->fin_bar.ExchangeID, exchange, sizeof(bargen->fin_bar.ExchangeID) - 1);
     }
+
+    bargen->included_cur_data_flag = 0;
     memset(bargen->pause_times, BG_INVAL_PAUSE_TIME, sizeof(bargen->pause_times));
 
     int* pause_times;
@@ -373,7 +375,6 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
     bar_generator_t* bargen, const char* date, int update_time,
     double last_price, int64_t volume, double turnover, int open_interest)
 {
-    int include_cur_data_flag;
     int market_close_flag;
     int generated;
     bar_data_t* ret_bar;
@@ -388,7 +389,7 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
         return NULL;
     }
 
-    include_cur_data_flag = 0;
+    bargen->included_cur_data_flag = 0;
     market_close_flag = 0;
     generated = 0;
     ret_bar = NULL;
@@ -471,7 +472,7 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
                 if (pause_time == update_time)
                 {
                     // this tick data need merged into fin_bar
-                    include_cur_data_flag = 1;
+                    bargen->included_cur_data_flag = 1;
                     if (bargen->pause_times[i + 1] == BG_INVAL_PAUSE_TIME ||
                         bargen->pause_times[i + 2] == BG_INVAL_PAUSE_TIME)
                         market_close_flag = 1;
@@ -498,7 +499,7 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
             strncpy(ret_bar->Date, date, 8);
             sprintf(ret_bar->Time, "%02d:%02d:00", tick_tm.tm_hour, tick_tm.tm_min);
 
-            if (include_cur_data_flag)
+            if (bargen->included_cur_data_flag)
             {
                 ret_bar->Volume = volume - bargen->begin_volume;
                 ret_bar->Turnover = turnover - bargen->begin_turnover;
@@ -628,6 +629,11 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_current_bar(bar_generator_t* bargen)
     if (bargen->generated)
         return &bargen->fin_bar;
     return &bargen->cur_bar;
+}
+
+int MD_UTILS_STDCALL bar_generator_included_data_flag(bar_generator_t* bargen)
+{
+    return bargen->included_cur_data_flag;
 }
 
 #if BG_ENABLE_CTP_MD

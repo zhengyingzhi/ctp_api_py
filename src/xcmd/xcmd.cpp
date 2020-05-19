@@ -36,7 +36,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.3.1"
+#define XC_MDAPI_VERSION    "1.4.0"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -52,7 +52,8 @@ static  inline void XcPrintNull(FILE* fd, const char* fmt, ...) { (void)fd; (voi
 #define XcDbgFd stderr
 
 
-#define PRICE_DIV               1000.0
+#define PRICE_DIV_STOCK         1000.0
+#define PRICE_DIV_OPTION        10000.0
 #define DEFAULT_MAX_REQ_SIZE    256
 
 #define IS_UP(ratio)            ((ratio) > 0.000001)
@@ -90,56 +91,26 @@ static string to_utf(const string &gb2312)
 #endif
 }
 
-static bool get_symbol_market(char symbol[], char market[], const std::string& instrument)
+static bool get_symbol_market(char instrument[], char market[], const std::string& symbol)
 {
-    std::size_t lDotIndex = instrument.find('.');
+    std::size_t lDotIndex = symbol.find('.');
     if (lDotIndex == std::string::npos || lDotIndex < 1 || lDotIndex > 9)
     {
         return false;
     }
 
     // 000001.SZSE
-    strncpy(symbol, instrument.c_str(), lDotIndex);
+    strncpy(instrument, symbol.c_str(), lDotIndex);
+    strcpy(market, symbol.c_str() + lDotIndex + 1);
 
-    if (instrument.find("SSE") != string::npos ||
-        instrument.find("SH") != string::npos ||
-        instrument.find("SHA") != string::npos)
-    {
-        strcpy(market, Scdm_SSE);
-    }
-    else if (instrument.find("SZSE") != string::npos ||
-        instrument.find("SZ") != string::npos ||
-        instrument.find("SZA") != string::npos)
-    {
-        strcpy(market, Scdm_SZSE);
-    }
-    else
-    {
-#if 0
-        // unknown market
-        if (strncmp(symbol, "60", 2) == 0 ||
-            strncmp(symbol, "68", 2) == 0)
-        {
-            strcpy(market, Scdm_SSE);
-        }
-        else if (strncmp(symbol, "00", 2) == 0 ||
-            strncmp(symbol, "30", 2) == 0)
-        {
-            strcpy(market, Scdm_SZSE);
-        }
-        else {
-            return false;
-        }
-#else
-        return false;
-#endif
-    }
     return true;
 }
 
-static int get_ratio_index(double aUpdownRatio)
+static double get_price_div(const char* market)
 {
-    return int32_t(abs(aUpdownRatio) * 100);
+    if (strcmp(market, "SSEOPT") == 0 || strcmp(market, "SZSEOPT") == 0)
+        return PRICE_DIV_OPTION;
+    return PRICE_DIV_STOCK;
 }
 
 #ifdef _MSC_VER
@@ -186,16 +157,8 @@ XcMdApi::XcMdApi()
     refid = 1;
     flush_count = 0;
     have_level10 = 0;
-    statistic_mode = 0;
     log_level = 0;
     fp = NULL;
-
-    memset(m_UpStatistics, 0, sizeof(m_UpStatistics));
-    memset(m_DownStatistics, 0, sizeof(m_DownStatistics));
-    m_UpCount = 0;
-    m_DownCount = 0;
-    m_UpLimitCount = 0;
-    m_DownLimitCount = 0;
 }
 
 XcMdApi::~XcMdApi()
@@ -272,10 +235,12 @@ void XcMdApi::OnIssueEnd(QWORD qQuoteID)
 
     XcDepthMarketData* pMD;
 
+#if HAVE_BAR_GENERATOR
     if (bar_mode)
     {
         return;
     }
+#endif//HAVE_BAR_GENERATOR
 
     if (m_thread_mode)
     {
@@ -365,6 +330,15 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
     strcpy(lSecInfo.ExchangeID, pSecurity->MarketCode);
     strcpy(lSecInfo.InstrumentID, pSecurity->SecCode);
     strcpy(lSecInfo.SecName, pSecurity->SecName);
+    strcpy(lSecInfo.SecType, pSecurity->SecType);
+    strcpy(lSecInfo.StartDate, pSecurity->StartDate);
+    strcpy(lSecInfo.EndDate, pSecurity->EndDate);
+    strcpy(lSecInfo.SecurityStatusFlag, pSecurity->SecurityStatusFlag);
+    strcpy(lSecInfo.Bz, pSecurity->Bz);
+    lSecInfo.BuyUnit = (int)pSecurity->BuyUnit;
+    lSecInfo.SellUnit = (int)pSecurity->SellUnit;
+    lSecInfo.ExRightRatio = pSecurity->ExRightRatio;
+    lSecInfo.DividendAmount = pSecurity->DividendAmount;
     lSecInfo.PreClosePrice = pSecurity->SecurityClosePx;
     lSecInfo.UpperLimitPrice = pSecurity->DailyPriceUpLimit;
     lSecInfo.LowerLimitPrice = pSecurity->DailyPriceDownLimit;
@@ -391,7 +365,7 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
     }
 
     // only keep the AShares
-    if (statistic_mode && lSecInfo.InstrumentID[0] == '6')
+    if (0 && lSecInfo.InstrumentID[0] == '6')
     {
         socket_struct_SubscribeDetail sub;
         strcpy(sub.MarketCode, lSecInfo.ExchangeID);
@@ -421,10 +395,78 @@ void XcMdApi::OnRespSecurity(QWORD qQuoteID, void* pParam)
 void XcMdApi::OnRespSecurity_Opt(QWORD qQuoteID, void* pParam)
 {
     // 上海期权证券行情响应
-    socket_struct_Security_Opt* pSecurity = (socket_struct_Security_Opt*)pParam;
-    socket_struct_Security_Opt_Extend* pExtend = (socket_struct_Security_Opt_Extend*)pSecurity->Extend_fields;
-    (void)pSecurity;
-    (void)pExtend;
+    socket_struct_Security_Opt* pSecurityOpt = (socket_struct_Security_Opt*)pParam;
+    socket_struct_Security_Opt_Extend* pExtend = (socket_struct_Security_Opt_Extend*)pSecurityOpt->Extend_fields;
+
+    XcSecurityInfo lSecInfo;
+    memset(&lSecInfo, 0, sizeof(lSecInfo));
+    strcpy(lSecInfo.ExchangeID, pSecurityOpt->MarketCode);
+    strcpy(lSecInfo.InstrumentID, pSecurityOpt->SecCode);
+    strcpy(lSecInfo.SecName, pSecurityOpt->SecName);
+    strcpy(lSecInfo.SecType, pSecurityOpt->SecType);
+    strcpy(lSecInfo.StartDate, pSecurityOpt->StartDate);
+    strcpy(lSecInfo.EndDate, pSecurityOpt->EndDate);
+    strcpy(lSecInfo.SecurityStatusFlag, pSecurityOpt->SecurityStatusFlag);
+    lSecInfo.PreClosePrice = pSecurityOpt->SecurityClosePx;
+    lSecInfo.UpperLimitPrice = pSecurityOpt->DailyPriceUpLimit;
+    lSecInfo.LowerLimitPrice = pSecurityOpt->DailyPriceDownLimit;
+
+    strcpy(lSecInfo.SecType, pSecurityOpt->SecType);
+    strcpy(lSecInfo.ContractID, pSecurityOpt->ContractID);
+    strcpy(lSecInfo.Underlying, pSecurityOpt->UnderlyingSecCode);
+    strcpy(lSecInfo.UnderlyingName, pSecurityOpt->UnderlyingSymbol);
+    strcpy(lSecInfo.UnderlyingType, pSecurityOpt->UnderlyingType);
+    strcpy(lSecInfo.OptionType, pSecurityOpt->OptionType);
+    strcpy(lSecInfo.CallOrPut, pSecurityOpt->CallOrPut);
+    strcpy(lSecInfo.StrikeDate, pSecurityOpt->ExerciseDate);
+    strcpy(lSecInfo.DeliveryDate, pSecurityOpt->DeliveryDate);
+    strcpy(lSecInfo.ExpireDate, pSecurityOpt->ExpireDate);
+    strcpy(lSecInfo.UpdateVersion, pSecurityOpt->UpdateVersion);
+    lSecInfo.Multiplier = (int)pSecurityOpt->ContractMultiplierUnit;
+    lSecInfo.StrikePrice = pSecurityOpt->ExercisePrice;
+    lSecInfo.TotalLongPosition = (uint32_t)pSecurityOpt->TotalLongPosition;
+    lSecInfo.UnderlyingPreClose = pSecurityOpt->UnderlyingClosePx;
+    lSecInfo.PreSettlePrice = pSecurityOpt->SettlePricePx;
+    lSecInfo.MarginUnit = pSecurityOpt->MarginUnit;
+    lSecInfo.MarginRatioParam1 = pSecurityOpt->MarginRatioParam1;
+    lSecInfo.MarginRatioParam2 = pSecurityOpt->MarginRatioParam2;
+
+#if MD_MAP_STRING_KEY
+    char buf[64] = "";
+    sprintf(buf, "%s.%s", pSecurityOpt->SecCode, pSecurityOpt->MarketCode);
+    string lXcSymbol(buf);
+    secmap[lXcSymbol] = lSecInfo;
+#else
+    int lXcSymbol = atoi(pSecurityOpt->SecCode);
+    secmap[lXcSymbol] = lSecInfo;
+#endif//MD_MAP_STRING_KEY
+
+    int index = 32;
+    while (index > 0)
+    {
+        if (lSecInfo.SecName[index] != ' ')
+        {
+            break;
+        }
+        lSecInfo.SecName[index] = '\0';
+        --index;
+    }
+
+    Task task = Task();
+    task.task_name = ONRSPQRYDATA;
+    task.task_id = (int)qQuoteID;
+    XcSecurityInfo* task_data = new XcSecurityInfo();
+    *task_data = lSecInfo;
+    task.task_data = task_data;
+
+    if (m_thread_mode)
+    {
+        m_task_queue.push(task);
+    }
+    else
+    {
+        processOnRspQryData(&task);
+    }
 }
 
 void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
@@ -440,6 +482,11 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
     strcpy(lSecInfo.ExchangeID, pSecurity->MarketCode);
     strcpy(lSecInfo.InstrumentID, pSecurity->SecCode);
     strcpy(lSecInfo.SecName, pSecurity->SecName);
+    strcpy(lSecInfo.SecType, pSecurity->SecType);
+    strcpy(lSecInfo.StartDate, pSecurity->ListDate);
+    strcpy(lSecInfo.EndDate, pSecurity->MaturityDate);      // FIXME
+    strcpy(lSecInfo.SecurityStatusFlag, pSecurity->SecurityStatus);
+
     lSecInfo.PreClosePrice = pSecurity->PrevClosePx;
     if (pExtend->T_LimitUpRate < 0.0001)
     {
@@ -464,6 +511,27 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
         lSecInfo.LowerLimitPrice = atof(buf);
     }
 
+    if (strcmp(lSecInfo.SecType, "OPT") == 0)
+    {
+        // strcpy(lSecInfo.ContractID, pSecurity->ContractID);
+        strcpy(lSecInfo.Underlying, pSecurity->UnderlyingSecurityID);
+        // strcpy(lSecInfo.UnderlyingName, pSecurity->UnderlyingSymbol);
+        // strcpy(lSecInfo.UnderlyingType, pSecurity->UnderlyingType);
+        // strcpy(lSecInfo.OptionType, pSecurity->OptionType);
+        lSecInfo.CallOrPut[0] = pSecurity->CallOrPut;
+        strcpy(lSecInfo.StrikeDate, pSecurity->ExerciseBeginDate);
+        // strcpy(lSecInfo.DeliveryDate, pSecurity->DeliveryDate);
+        strcpy(lSecInfo.ExpireDate, pSecurity->LastTradeDay);
+        lSecInfo.Multiplier = (int32_t)pSecurity->ContractUnit;
+        lSecInfo.StrikePrice = pSecurity->ExercisePrice;
+        lSecInfo.TotalLongPosition = (uint32_t)pSecurity->ContractPosition;
+        // lSecInfo.UnderlyingPreClose = pSecurity->UnderlyingClosePx;
+        lSecInfo.PreSettlePrice = pSecurity->PrevClearingPrice;
+        // lSecInfo.MarginUnit = pSecurity->MarginUnit;
+        // lSecInfo.MarginRatioParam1 = pSecurity->MarginRatioParam1;
+        // lSecInfo.MarginRatioParam2 = pSecurity->MarginRatioParam2;
+    }
+
 #if MD_MAP_STRING_KEY
     char buf[64] = "";
     sprintf(buf, "%s.%s", pSecurity->SecCode, pSecurity->MarketCode);
@@ -486,7 +554,7 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
     }
 
     // only keep the AShares
-    if (statistic_mode && (strncmp(lSecInfo.InstrumentID, "00", 2) == 0 || strncmp(lSecInfo.InstrumentID, "30", 2) == 0))
+    if (0 && (strncmp(lSecInfo.InstrumentID, "00", 2) == 0 || strncmp(lSecInfo.InstrumentID, "30", 2) == 0))
     {
         socket_struct_SubscribeDetail sub;
         strcpy(sub.MarketCode, lSecInfo.ExchangeID);
@@ -524,7 +592,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         return;
     }
 
-    // fprintf(stderr, "OnRespDyna%ld: %s,%.2lf,%d\n", (long)qQuoteID, pDyna->SecCode, pDyna->New / PRICE_DIV, pDyna->Time);
+    // fprintf(stderr, "OnRespDyna%ld: %s,%d,%d\n", (long)qQuoteID, pDyna->SecCode, pDyna->New, pDyna->Time);
 
 #if HAVE_BAR_GENERATOR
     if (bar_mode)
@@ -547,6 +615,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         // XcDebugInfo(XcDbgFd, "---->>>>%s,%s\n", pDyna->SecCode, pDyna->MarketCode);
         strcpy(lMD.InstrumentID, pDyna->SecCode);
         strcpy(lMD.ExchangeID, pDyna->MarketCode);
+        lMD.PriceDiv = get_price_div(lMD.ExchangeID);
         mdmap[lXcSymbol] = lMD;
 
         isfirst = 1;
@@ -564,6 +633,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         // XcDebugInfo(XcDbgFd, "---->>>>%s,%s\n", pDyna->SecCode, pDyna->MarketCode);
         strcpy(lMD.InstrumentID, pDyna->SecCode);
         strcpy(lMD.ExchangeID, pDyna->MarketCode);
+        lMD.PriceDiv = get_price_div(lMD.ExchangeID);
         mdmap[lXcSymbol] = lMD;
 
         isfirst = 1;
@@ -595,16 +665,17 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     pMD->AskVolume5 = 0;
 #endif//0
 
-    pMD->PreClosePrice = pDyna->PreClose / PRICE_DIV;
-    pMD->LastPrice = pDyna->New / PRICE_DIV;
-    pMD->OpenPrice = pDyna->Open / PRICE_DIV;
-    pMD->HighestPrice = pDyna->High / PRICE_DIV;
-    pMD->LowestPrice = pDyna->Low / PRICE_DIV;
-    pMD->ClosePrice = pDyna->Close / PRICE_DIV;
+    double price_div = pMD->PriceDiv;
+    pMD->PreClosePrice = pDyna->PreClose / price_div;
+    pMD->LastPrice = pDyna->New / price_div;
+    pMD->OpenPrice = pDyna->Open / price_div;
+    pMD->HighestPrice = pDyna->High / price_div;
+    pMD->LowestPrice = pDyna->Low / price_div;
+    pMD->ClosePrice = pDyna->Close / price_div;
 
     pMD->Volume = (int)pDyna->Volume;
-    pMD->Turnover = pDyna->Amount / PRICE_DIV;
-    pMD->OpenInterest = pDyna->OpenInt / PRICE_DIV;
+    pMD->Turnover = pDyna->Amount / price_div;
+    pMD->OpenInterest = pDyna->OpenInt / price_div;
 
     int hour = int(pDyna->Time / 10000);
     int minute = int(pDyna->Time / 100) % 100;
@@ -612,7 +683,8 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     sprintf(pMD->UpdateTime, "%02d:%02d:%02d", hour, minute, second);
     pMD->UpdateMillisec = 0;
     pMD->Time = pDyna->Time;
-    pMD->TickCount = pDyna->TickCount;
+    pMD->TickCount = (uint32_t)pDyna->TickCount;
+    pMD->RefPrice = pDyna->RefPrice / price_div;
     memcpy(pMD->TradingPhaseCode, pDyna->TradingPhaseCode, sizeof(pMD->TradingPhaseCode));
 
     if (memcmp(pDyna->MarketCode, "SZSE", 4) == 0)
@@ -621,8 +693,8 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         socket_struct_Dyna_Extend2* pExtend = (socket_struct_Dyna_Extend2*)pDyna->Extend_fields;
         if (pExtend->DownLimit > 100)
         {
-            pMD->UpperLimitPrice = pExtend->UpLimit / PRICE_DIV;
-            pMD->LowerLimitPrice = pExtend->DownLimit / PRICE_DIV;
+            pMD->UpperLimitPrice = pExtend->UpLimit / price_div;
+            pMD->LowerLimitPrice = pExtend->DownLimit / price_div;
         }
         else if (get_sec_info(lXcSymbol))
         {
@@ -636,7 +708,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
             pMD->LowerLimitPrice = 0;
         }
     }
-    else
+    else // if (strcmp(pDyna->MarketCode, "SSE") == 0)
     {
         XcSecurityInfo* psec_info = get_sec_info(lXcSymbol);
         if (psec_info)
@@ -646,18 +718,11 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         }
     }
 
-    if (!statistic_mode)
-    {
-        strcpy(pMD->TradingDay, trading_day);
-        strcpy(pMD->ActionDay, trading_day);
+    strcpy(pMD->TradingDay, trading_day);
+    strcpy(pMD->ActionDay, trading_day);
 
-        // keep it firstly, and notify when issue end
-        m_pendings.push_back(pMD);
-    }
-    else
-    {
-        statistic_md(pMD, isfirst);
-    }
+    // keep it firstly, and notify when issue end
+    m_pendings.push_back(pMD);
 
     if (log_level == XC_SPEC_LOG_LV && pDyna->Time >= 91500 && pDyna->Time <= 151500)
     {
@@ -702,7 +767,7 @@ void XcMdApi::OnRespDepth(QWORD qQuoteID, char* MarketCode, char* SecCode, socke
     // double* dstpx;
     // int* dstvol;
 
-    double price = pDepth->Price / PRICE_DIV;
+    double price = pDepth->Price / pMD->PriceDiv;
     int    quantity = (int)pDepth->Quantity;
 
     switch (pDepth->Grade)
@@ -802,7 +867,12 @@ void XcMdApi::OnRespDepthOrder(QWORD qQuoteID, char* MarketCode, char* SecCode, 
     data["ExchangeID"] = to_utf(MarketCode);
     data["InstrumentID"] = to_utf(SecCode);
     data["Grade"] = Grade;
-    data["Price"] = Price / PRICE_DIV;
+    if (strcmp(MarketCode, "SZSE") == 0 || strcmp(MarketCode, "SSE") == 0) {
+        data["Price"] = Price / PRICE_DIV_STOCK;
+    }
+    else {
+        data["Price"] = Price / PRICE_DIV_OPTION;
+    }
     data["OrderID"] = pDepthOrder->OrderID;
     data["Quantity"] = pDepthOrder->Quantity;
     data["Status"] = pDepthOrder->Status;
@@ -820,18 +890,26 @@ void XcMdApi::OnRespEachOrder(QWORD qQuoteID, void* pParam)
     dict data;
     data["ExchangeID"] = to_utf(pEachOrder->MarketCode);
     data["InstrumentID"] = to_utf(pEachOrder->SecCode);
-    data["Price"] = pEachOrder->Price / PRICE_DIV;
+    if (strcmp(pEachOrder->MarketCode, "SZSE") == 0 || strcmp(pEachOrder->MarketCode, "SSE") == 0)
+    {
+        data["Price"] = pEachOrder->Price / PRICE_DIV_STOCK;
+        data["Amount"] = pEachOrder->Amount / PRICE_DIV_STOCK;
+        if (strcmp(pEachOrder->MarketCode, Scdm_SZSE) == 0)
+        {
+            socket_struct_EachOrder_Extend2* pExtend2;
+            pExtend2 = (socket_struct_EachOrder_Extend2*)pEachOrder->Extend_fields;
+            data["OrderType"] = pExtend2->OrderType;
+        }
+    }
+    else
+    {
+        data["Price"] = pEachOrder->Price / PRICE_DIV_OPTION;
+        data["Amount"] = pEachOrder->Amount / PRICE_DIV_OPTION;
+    }
     data["Volume"] = pEachOrder->Volume;
-    data["Amount"] = pEachOrder->Amount / PRICE_DIV;
     data["OrderNo"] = pEachOrder->OrderNo;
     data["Side"] = pEachOrder->Side;
     data["Time"] = pEachOrder->Time;
-    if (strcmp(pEachOrder->MarketCode, Scdm_SZSE) == 0)
-    {
-        socket_struct_EachOrder_Extend2* pExtend2;
-        pExtend2 = (socket_struct_EachOrder_Extend2*)pEachOrder->Extend_fields;
-        data["OrderType"] = pExtend2->OrderType;
-    }
     this->on_rtn_each_order(data);
 }
 
@@ -844,21 +922,30 @@ void XcMdApi::OnRespEachDeal(QWORD qQuoteID, void* pParam)
     dict data;
     data["ExchangeID"] = to_utf(pEachDeal->MarketCode);
     data["InstrumentID"] = to_utf(pEachDeal->SecCode);
-    data["Price"] = pEachDeal->Price / PRICE_DIV;
+
+    if (strcmp(pEachDeal->MarketCode, "SZSE") == 0 || strcmp(pEachDeal->MarketCode, "SSE") == 0)
+    {
+        data["Price"] = pEachDeal->Price / PRICE_DIV_STOCK;
+        data["Amount"] = pEachDeal->Amount / PRICE_DIV_STOCK;
+        if (strcmp(pEachDeal->MarketCode, Scdm_SSE) == 0)
+        {
+            socket_struct_EachDeal_Extend1* pExtend2;
+            pExtend2 = (socket_struct_EachDeal_Extend1*)pEachDeal->Extend_fields;
+            data["BsFlag"] = pExtend2->BsFlag;
+        }
+    }
+    else
+    {
+        data["Price"] = pEachDeal->Price / PRICE_DIV_OPTION;
+        data["Amount"] = pEachDeal->Amount / PRICE_DIV_OPTION;
+    }
     data["Volume"] = pEachDeal->Volume;
-    data["Amount"] = pEachDeal->Amount / PRICE_DIV;
     data["BuyNo"] = pEachDeal->BuyNo;
     data["SellNo"] = pEachDeal->SellNo;
     data["BuyNo"] = pEachDeal->BuyNo;
     data["DealNo"] = pEachDeal->DealNo;
     data["Type"] = pEachDeal->Type;     // 成交类型 F：成交 4：撤销
     data["Time"] = pEachDeal->Time;
-    if (strcmp(pEachDeal->MarketCode, Scdm_SSE) == 0)
-    {
-        socket_struct_EachDeal_Extend1* pExtend2;
-        pExtend2 = (socket_struct_EachDeal_Extend1*)pEachDeal->Extend_fields;
-        data["BsFlag"] = pExtend2->BsFlag;
-    }
 
     this->on_rtn_each_deal(data);
 }
@@ -960,62 +1047,7 @@ int XcMdApi::subscribe_md(string instrumentID, int depth_order, int each_flag)
     }
     // fprintf(stderr, "subscribe_md symbol:%s, market:%s\n", symbol, market);
 
-    if (strcmp(market, Scdm_SZSE) == 0)
-    {
-        // do once query for get limit price
-        // int rv = req_qry_data(instrumentID);
-        // fprintf(stderr, "auto qry rv:%d\n", rv);
-        // sleepms(50);
-    }
-
     int rv;
-    if (strcmp(symbol, "*") == 0)
-    {
-        sub_flag.Depth_flag = false;    // FIXME
-        sub_flag.DepthOrder_flag = false;
-        sub_flag.EachDeal_flag = false;
-        sub_flag.EachOrder_flag = false;
-
-        int count = 0;
-
-        std::lock_guard<std::mutex> lk(m_Lock);
-        if (m_SubList.size() == 0)
-        {
-            fprintf(stderr, "[WARN] no security info to subsribe!\n");
-            return -1;
-        }
-        fprintf(stderr, "subscribe_md total count:%d\n", (int)m_SubList.size());
-
-        socket_struct_SubscribeDetail SubList[MaxSize];
-        for (int i = 0; i < (int)m_SubList.size(); ++i)
-        {
-            if (i + 1 == MaxSize)
-            {
-                rv = this->api->Subscribe(refid++, &sub_flag, SubList, count);
-                if (rv < 0)
-                {
-                    XcDebugInfo(XcDbgFd, "xcmdapi Subscribe %d failed!\n", count);
-                    return rv;
-                }
-                count = 0;
-            }
-            strcpy(SubList[count].MarketCode, m_SubList[i].MarketCode);
-            strcpy(SubList[count].SecCode, m_SubList[i].SecCode);
-            ++count;
-        }
-
-        if (count > 0)
-        {
-            rv = this->api->Subscribe(refid++, &sub_flag, SubList, count);
-            if (rv < 0)
-            {
-                XcDebugInfo(XcDbgFd, "xcmdapi Subscribe %d failed!\n", count);
-                return rv;
-            }
-        }
-
-        return 0;
-    }
 
     // 订阅
     socket_struct_SubscribeDetail SubList[MaxSize];
@@ -1064,14 +1096,14 @@ int XcMdApi::subscribe_md_batch(const std::vector<std::string>& reqs, int depth_
     socket_struct_SubscribeDetail SubList[DEFAULT_MAX_REQ_SIZE];
     for (int32_t i = 0; i < (int32_t)reqs.size() && i < DEFAULT_MAX_REQ_SIZE; ++i)
     {
-        std::string instrument = reqs[i];
-        if (!get_symbol_market(SubList[count].SecCode, SubList[count].MarketCode, instrument)) {
+        std::string symbol = reqs[i];
+        if (!get_symbol_market(SubList[count].SecCode, SubList[count].MarketCode, symbol)) {
             continue;
         }
 
         if (strcmp(SubList[count].MarketCode, Scdm_SSE) == 0)
         {
-            need_qry_instruments.push_back(instrument);
+            need_qry_instruments.push_back(symbol);
         }
 
         ++count;
@@ -1134,18 +1166,12 @@ int XcMdApi::unsubscribe_all()
     return api->Cancel(5, &sub_flag, SubList, 2);
 }
 
-int XcMdApi::req_qry_data(string instrument)
+int XcMdApi::req_qry_data(const string& symbol)
 {
     socket_struct_RequireDetail req[1];
-    if (!get_symbol_market(req[0].SecCode, req[0].MarketCode, instrument))
+    if (!get_symbol_market(req[0].SecCode, req[0].MarketCode, symbol))
     {
         return -11;
-    }
-
-    if (strcmp(req[0].SecCode, "*") == 0)
-    {
-        std::lock_guard<std::mutex> lk(m_Lock);
-        m_SubList.clear();
     }
 
     return api->Require(refid++, req, 1);
@@ -1181,11 +1207,6 @@ int XcMdApi::req_qry_data_batch(const std::vector<std::string>& reqs)
 void XcMdApi::set_have_level10(int on)
 {
     have_level10 = on;
-}
-
-void XcMdApi::set_statistic_mode()
-{
-    statistic_mode = 1;
 }
 
 string XcMdApi::get_api_version()
@@ -1287,211 +1308,6 @@ int XcMdApi::write_data(int reserve, const char* fmt, ...)
     return 0;
 }
 
-int XcMdApi::get_statistics(dict out)
-{
-    out["UpCount"] = m_UpCount;
-    out["DownCount"] = m_DownCount;
-    out["UpLimitCount"] = m_UpLimitCount;
-    out["DownLimitCount"] = m_DownLimitCount;
-    return 0;
-}
-
-void XcMdApi::statistic_md(XcDepthMarketData* pMD, int32_t isfirst)
-{
-    // 涨跌额
-    double updown = pMD->LastPrice - pMD->PreClosePrice;
-    double updown_ratio = updown / pMD->PreClosePrice;
-    int32_t updown_ratio_index = get_ratio_index(updown_ratio);
-    // fprintf(stderr, "** updown_ratio for %s, %.4lf, %d\n", pMD->InstrumentID, updown_ratio, updown_ratio_index);
-
-    // 涨跌家数
-    if (isfirst)
-    {
-        if (IS_UP(updown_ratio))
-        {
-            m_UpCount += 1;
-            pMD->PriceStatus = PS_Up;
-        }
-        else if (IS_DOWN(updown_ratio))
-        {
-            m_DownCount += 1;
-            pMD->PriceStatus = PS_Down;
-        }
-        else
-        {
-            pMD->PriceStatus = PS_None;
-        }
-    }
-    else
-    {
-        if (IS_UP(updown_ratio))
-        {
-            // 当前是上涨，但上一次不是
-            if (pMD->UpDownRatio <= 0.000001)
-                m_UpCount += 1;
-            if (IS_DOWN(pMD->UpDownRatio))
-                m_DownCount -= 1;
-            pMD->PriceStatus = PS_Up;
-        }
-        else if (IS_DOWN(updown_ratio))
-        {
-            // 当前是下跌，但上一次不是
-            if (pMD->UpDownRatio >= -0.000001)
-                m_DownCount += 1;
-            if (IS_UP(pMD->UpDownRatio))
-                m_UpCount -= 1;
-            pMD->PriceStatus = PS_Down;
-        }
-        else
-        {
-            pMD->PriceStatus = PS_None;
-        }
-    }
-
-    // 涨跌停家数
-    if (pMD->UpperLimitPrice > 0.1)
-    {
-        if (abs(pMD->LastPrice - pMD->UpperLimitPrice) < 0.0001)
-        {
-            // 涨停
-            if (pMD->LimitStatus == PS_UpLimit)
-            {
-                // 上次已涨停
-            }
-            else if (pMD->LimitStatus == PS_None)
-            {
-                // 上次未涨跌停
-                m_UpLimitCount += 1;
-
-                // fprintf(stderr, "# %s涨停, upcnt:%d, lowcnt:%d\n", pMD->InstrumentID, m_UpLimitCount, m_DownLimitCount);
-                if (log_level == XC_LIMIT_LOG_LV)
-                {
-                    write_data(log_level, "statistic_md # %s涨停:%.2lf time:%s, upcnt:%d, lowcnt:%d",
-                        pMD->InstrumentID, pMD->UpperLimitPrice, pMD->UpdateTime, m_UpLimitCount, m_DownLimitCount);
-                }
-            }
-            else if (pMD->LimitStatus == PS_DownLimit)
-            {
-                // 上次跌停
-                m_UpLimitCount += 1;
-                m_DownLimitCount -= 1;
-            }
-            pMD->LimitStatus = PS_UpLimit;
-        }
-        else if (abs(pMD->LastPrice - pMD->LowerLimitPrice) < 0.0001)
-        {
-            // 跌停
-            if (pMD->LimitStatus == PS_UpLimit)
-            {
-                // 上次涨停
-                m_UpLimitCount -= 1;
-                m_DownLimitCount += 1;
-            }
-            else if (pMD->LimitStatus == PS_None)
-            {
-                // 上次未涨跌停
-                m_DownLimitCount += 1;
-                // fprintf(stderr, "$ %s跌停, upcnt:%d, lowcnt:%d\n", pMD->InstrumentID, m_UpLimitCount, m_DownLimitCount);
-                if (log_level == XC_LIMIT_LOG_LV)
-                {
-                    write_data(log_level, "statistic_md $ %s跌停:%.2lf time:%s, upcnt:%d, lowcnt:%d",
-                        pMD->InstrumentID, pMD->UpperLimitPrice, pMD->UpdateTime, m_UpLimitCount, m_DownLimitCount);
-                }
-            }
-            else if (pMD->LimitStatus == PS_DownLimit)
-            {
-                // 已跌停
-            }
-            pMD->LimitStatus = PS_DownLimit;
-        }
-        else
-        {
-            // 未涨跌停，但上次处于涨跌停
-            if (pMD->LimitStatus == PS_UpLimit)
-            {
-                m_UpLimitCount -= 1;
-            }
-            else if (pMD->LimitStatus == PS_DownLimit)
-            {
-                m_DownLimitCount -= 1;
-            }
-            pMD->LimitStatus = PS_None;
-        }
-    }
-
-#if 0
-    static const char* upper_symbols[] = {
-        "300071", "300362", "002591", "000158", "300032", "300795", "300551",
-        "300200", "300562", "300552", "300793", "002891", "002291", "300468",
-        "300379", "002494", "000851", "000633", NULL
-        };
-    for (int index = 0; upper_symbols[index]; ++index)
-    {
-        const char* pcur = upper_symbols[index];
-        if (strcmp(pMD->InstrumentID, pcur) == 0)
-        {
-            fprintf(stderr, "the symbol %s limit status is %d, last:%.2lf, upper:%.2lf!!\n", pMD->InstrumentID, pMD->LimitStatus, pMD->LastPrice, pMD->UpperLimitPrice);
-            if (pMD->LimitStatus != PS_UpLimit)
-                fprintf(stderr, "error limit status for %s!!\n", pcur);
-        }
-    }
-#endif//0
-
-    // 各股票涨跌幅度
-    int32_t old_ratio_index = get_ratio_index(pMD->UpDownRatio);
-    if (old_ratio_index != updown_ratio_index || isfirst)
-    {
-        if (updown_ratio > 0)
-            m_UpStatistics[updown_ratio_index] += 1;
-        else if (updown_ratio < 0)
-            m_DownStatistics[updown_ratio_index] += 1;
-
-        if (!isfirst)
-        {
-            if (updown_ratio > 0)
-                m_UpStatistics[old_ratio_index] -= 1;
-            else if (updown_ratio < 0)
-                m_DownStatistics[old_ratio_index] -= 1;
-        }
-    }
-    pMD->UpDownRatio = updown_ratio;
-}
-
-int XcMdApi::get_ratio_count(double ratio, int cond)
-{
-    // fprintf(stderr, "now upcount:%d, downcound:%d\n", m_UpCount, m_DownCount);
-
-    int32_t ratio_int = int32_t(ratio * 100);
-    if (ratio_int < -10 || ratio_int > 10)
-    {
-        return 0;
-    }
-
-    uint32_t count = 0;
-#if 0
-    switch (ratio)
-    {
-        case
-    }
-#endif//0
-
-    if (ratio_int >= 0)
-    {
-        for (int32_t i = ratio_int; i < MAX_UPDOWN_LEVEL; ++i)
-        {
-            count += m_UpStatistics[i];
-        }
-    }
-    else
-    {
-        for (int32_t i = abs(ratio_int); i < MAX_UPDOWN_LEVEL; ++i)
-        {
-            count += m_DownStatistics[i];
-        }
-    }
-    return count;
-}
-
 #if HAVE_BAR_GENERATOR
 int XcMdApi::subscribe_bar_md(std::string instrument)
 {
@@ -1520,7 +1336,7 @@ void XcMdApi::process_bar_gen(socket_struct_Dyna* apMD)
 
     int update_time = apMD->Time;
     bar = bar_generator_update(bargen, trading_day, update_time,
-        apMD->New / PRICE_DIV, apMD->Volume, apMD->Amount / PRICE_DIV, apMD->OpenInt);
+        apMD->New / apMD->PriceDiv, apMD->Volume, apMD->Amount / apMD->PriceDiv, apMD->OpenInt);
     if (!bar)
     {
         // bar = &bargen->cur_bar;
@@ -1547,6 +1363,40 @@ void XcMdApi::process_bar_gen(socket_struct_Dyna* apMD)
 }
 
 #endif//HAVE_BAR_GENERATOR
+
+
+int XcMdApi::Subscribe(const std::string& exchange, const std::string& instrument, int dyna_flag, int depth_flag, int depth_order, int each_flag)
+{
+    interface_struct_Subscribe sub_flag;
+    sub_flag.Dyna_flag = dyna_flag ? true : false;
+    sub_flag.DepthOrder_flag = depth_order ? true : false;
+    sub_flag.Depth_flag = depth_flag ? true : false;
+    sub_flag.EachDeal_flag = each_flag ? true : false;
+    sub_flag.EachOrder_flag = each_flag ? true : false;
+
+    // 订阅
+    socket_struct_SubscribeDetail SubList[MaxSize];
+    strncpy(SubList[0].MarketCode, exchange.c_str(), sizeof(SubList[0].MarketCode) - 1);
+    strncpy(SubList[0].SecCode, instrument.c_str(), sizeof(SubList[0].SecCode) - 1);
+    int SubSize = 1;
+    int rv = this->api->Subscribe(refid++, &sub_flag, SubList, SubSize);
+    if (rv < 0)
+    {
+        XcDebugInfo(XcDbgFd, "xcmdapi Subscribe failed!!\n");
+        return rv;
+    }
+
+    return rv;
+}
+
+
+int XcMdApi::Require(int ref_id, const std::string& exchange, const std::string& instrument)
+{
+    socket_struct_RequireDetail req[1];
+    strncpy(req->MarketCode, exchange.c_str(), sizeof(req->MarketCode) - 1);
+    strncpy(req->SecCode, instrument.c_str(), sizeof(req->SecCode) - 1);
+    return api->Require(ref_id, req, 1);
+}
 
 //////////////////////////////////////////////////////////////////////////
 void XcMdApi::processTask()
@@ -1663,9 +1513,44 @@ void XcMdApi::processOnRspQryData(Task *task)
     data["ExchangeID"] = to_utf(lpSecInfo->ExchangeID);
     data["InstrumentID"] = to_utf(lpSecInfo->InstrumentID);
     data["SecName"] = to_utf(lpSecInfo->SecName);
+    data["SecType"] = to_utf(lpSecInfo->SecType);
+    data["StartDate"] = to_utf(lpSecInfo->StartDate);
+    data["EndDate"] = to_utf(lpSecInfo->EndDate);
     data["PreClosePrice"] = lpSecInfo->PreClosePrice;
     data["UpperLimitPrice"] = lpSecInfo->UpperLimitPrice;
     data["LowerLimitPrice"] = lpSecInfo->LowerLimitPrice;
+    data["SecurityStatusFlag"] = to_utf(lpSecInfo->SecurityStatusFlag);
+    if (strcmp(lpSecInfo->ExchangeID, "SSE") == 0)
+    {
+        data["BuyUnit"] = lpSecInfo->BuyUnit;
+        data["SellUnit"] = lpSecInfo->SellUnit;
+        data["ExRightRatio"] = lpSecInfo->ExRightRatio;
+        data["DividendAmount"] = lpSecInfo->DividendAmount;
+    }
+    else if (strcmp(lpSecInfo->ExchangeID, "SZSE") == 0)
+    {
+    }
+    else
+    {
+        data["ContractID"] = to_utf(lpSecInfo->ContractID);
+        data["Underlying"] = to_utf(lpSecInfo->Underlying);
+        data["UnderlyingName"] = to_utf(lpSecInfo->UnderlyingName);
+        data["UnderlyingType"] = to_utf(lpSecInfo->UnderlyingType);
+        data["OptionType"] = to_utf(lpSecInfo->OptionType);
+        data["CallOrPut"] = to_utf(lpSecInfo->CallOrPut);
+        data["StrikeDate"] = to_utf(lpSecInfo->StrikeDate);
+        data["DeliveryDate"] = to_utf(lpSecInfo->DeliveryDate);
+        data["ExpireDate"] = to_utf(lpSecInfo->ExpireDate);
+        data["UpdateVersion"] = to_utf(lpSecInfo->UpdateVersion);
+
+        data["TotalLongPosition"] = lpSecInfo->TotalLongPosition;
+        data["PreSettlePrice"] = lpSecInfo->PreSettlePrice;
+        data["UnderlyingPreClose"] = lpSecInfo->UnderlyingPreClose;
+        data["MarginUnit"] = lpSecInfo->MarginUnit;
+        data["MarginRatioParam1"] = lpSecInfo->MarginRatioParam1;
+        data["MarginRatioParam2"] = lpSecInfo->MarginRatioParam2;
+    }
+
     delete lpSecInfo;
     this->on_rsp_qry_data(data);
 }
@@ -1695,6 +1580,7 @@ void XcMdApi::processOnRtnMarketData(Task *task, int isIOThread)
 
     data["Time"] = pMD->Time;
     data["TickCount"] = pMD->TickCount;
+    data["RefPrice"] = pMD->RefPrice;
 
     data["UpperLimitPrice"] = pMD->UpperLimitPrice;
     data["LowerLimitPrice"] = pMD->LowerLimitPrice;
@@ -1930,8 +1816,6 @@ PYBIND11_MODULE(xcmd, m)
         .def("get_api_version", &XcMdApi::get_api_version)
         .def("open_debug", &XcMdApi::open_debug)
         .def("write_line", &XcMdApi::write_line)
-        .def("set_statistic_mode", &XcMdApi::set_statistic_mode)
-        .def("get_statistics", &XcMdApi::get_statistics)
         .def("subscribe_md", &XcMdApi::subscribe_md)
         .def("subscribe_md_batch", &XcMdApi::subscribe_md_batch, pybind11::return_value_policy::reference)
         .def("unsubscribe_md_batch", &XcMdApi::unsubscribe_md_batch, pybind11::return_value_policy::reference)
@@ -1939,7 +1823,8 @@ PYBIND11_MODULE(xcmd, m)
         .def("unsubscribe_all", &XcMdApi::unsubscribe_all)
         .def("req_qry_data", &XcMdApi::req_qry_data)
         .def("req_qry_data_batch", &XcMdApi::req_qry_data_batch)
-        // .def("reqUserLogin", &XcMdApi::reqUserLogin)
+        .def("Require", &XcMdApi::Require)
+        .def("Subscribe", &XcMdApi::Subscribe)
 
 #if HAVE_BAR_GENERATOR
         .def("subscribe_bar_md", &XcMdApi::subscribe_bar_md)

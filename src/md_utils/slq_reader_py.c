@@ -323,7 +323,7 @@ PyObject* slqr_next(PyObject* self, PyObject* args)
         PyDict_SetItemString(dp, "Volume", Py_BuildValue("i", ctp_info.Volume));
         PyDict_SetItemString(dp, "Turnover", Py_BuildValue("f", ctp_info.Turnover));
         PyDict_SetItemString(dp, "OpenInterest", Py_BuildValue("i", ctp_info.OpenInterest));
-        PyDict_SetItemString(dp, "UpperLimitPrice", Py_BuildValue("f", ctp_info.LowerLimitPrice));
+        PyDict_SetItemString(dp, "UpperLimitPrice", Py_BuildValue("f", ctp_info.UpperLimitPrice));
         PyDict_SetItemString(dp, "LowerLimitPrice", Py_BuildValue("f", ctp_info.LowerLimitPrice));
         PyDict_SetItemString(dp, "UpdateTime", Py_BuildValue("s", ctp_info.UpdateTime));
         PyDict_SetItemString(dp, "UpdateMillisec", Py_BuildValue("i", ctp_info.UpdateMillisec));

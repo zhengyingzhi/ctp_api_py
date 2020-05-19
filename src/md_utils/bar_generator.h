@@ -93,7 +93,7 @@ struct bar_generator_s
 
     // 
     int32_t     pause_times[BG_PAUSE_TIMES_SIZE];
-    int32_t     pack;
+    int32_t     included_cur_data_flag; // whether included current update data into generated bar
 
     bool      (*filter_data_by_updatetime)(const char* instrument, int update_time);
     void*       udata;
@@ -134,6 +134,10 @@ MD_UTILS_API bar_data_t* MD_UTILS_STDCALL bar_generator_update_without_data(
 /* try return the current bar data
  */
 MD_UTILS_API bar_data_t* MD_UTILS_STDCALL bar_generator_current_bar(bar_generator_t* bargen);
+
+/* whether included current update data into the bar when last updated
+ */
+MD_UTILS_API int MD_UTILS_STDCALL bar_generator_included_data_flag(bar_generator_t* bargen);
 
 #if BG_ENABLE_CTP_MD
 /* try generate a new bar by the CTP data (struct CThostFtdcDepthMarketDataField),

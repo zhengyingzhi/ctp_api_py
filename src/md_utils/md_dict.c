@@ -12,7 +12,7 @@
 #include "md_code_hash.h"
 
 
-#define MD_DICT_VERSION     "1.0.0"
+#define MD_DICT_VERSION     "1.0.1"
 
 
 struct md_dict_s
@@ -139,6 +139,23 @@ int MD_UTILS_STDCALL md_dict_add2(md_dict_t* mdd, uint64_t hashid, int date, int
     dt = date * 1000000 + update_time;
 
     return md_dict_add(mdd, hashid, dt);
+}
+
+int MD_UTILS_STDCALL md_dict_add_ptr(md_dict_t* mdd, uint64_t hashid, void* data_ptr)
+{
+    md_union_dtype_t data;
+    data.i64 = data_ptr;
+    md_dict_value_t val = data.i64;
+    return md_dict_add(mdd, hashid, val);
+}
+
+void* MD_UTILS_STDCALL md_dict_find_ptr(md_dict_t* mdd, uint64_t hashid)
+{
+    md_union_dtype_t data;
+    md_dict_value_t val;
+    val = md_dict_find(mdd, hashid);
+    data.i64 = val;
+    return data.ptr;
 }
 
 uint32_t MD_UTILS_STDCALL md_dict_size(md_dict_t* mdd)

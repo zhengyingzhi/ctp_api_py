@@ -18,6 +18,7 @@ extern PyObject* bg_release(PyObject* self, PyObject* args);
 extern PyObject* bg_update_data(PyObject* self, PyObject* args);
 extern PyObject* bg_update_without_data(PyObject* self, PyObject* args);
 extern PyObject* bg_current_bar(PyObject* self, PyObject* args);
+extern PyObject* bg_included_data_flag(PyObject* self, PyObject* args);
 extern PyObject* bg_version(PyObject* self, PyObject* args);
 
 #define BG_CREATE_DOC           "create bar generator object for one instrument.\n\
@@ -109,6 +110,7 @@ static PyMethodDef MdUtilsModuleMethods[] = {
     { "bg_update_data",             bg_update_data,         METH_VARARGS, BG_UPDATE_DATA_DOC },
     { "bg_update_without_data",     bg_update_without_data, METH_VARARGS, BG_UPDATE_WITHOUT_DATA_DOC },
     { "bg_current_bar",             bg_current_bar       ,  METH_VARARGS, BG_CURRENT_BAR_DOC },
+    { "bg_included_data_flag",      bg_included_data_flag,  METH_VARARGS, "whether the last updated data included in or not" },
     { "bg_set_end_auction",         bg_set_end_auction,     METH_VARARGS, BG_SET_END_AUCTION_DOC },
     { "bg_version", bg_version,     METH_NOARGS,  BG_VERSION_DOC },
 

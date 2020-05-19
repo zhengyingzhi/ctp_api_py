@@ -208,6 +208,24 @@ PyObject* bg_current_bar(PyObject* self, PyObject* args)
     // return Py_BuildValue("i", 0);
 }
 
+PyObject* bg_included_data_flag(PyObject* self, PyObject* args)
+{
+    (void)self;
+    md_union_dtype_t v;
+    bar_generator_t* bargen;
+
+    if (!PyArg_ParseTuple(args, "L", &v.i64)) {
+        return Py_BuildValue("i", -1);
+    }
+    bargen = (bar_generator_t*)v.ptr;
+
+    if (!bargen) {
+        return Py_BuildValue("i", -2);
+    }
+
+    return Py_BuildValue("i", bargen->included_cur_data_flag);
+}
+
 PyObject* bg_version(PyObject* self, PyObject* args)
 {
     (void)self;

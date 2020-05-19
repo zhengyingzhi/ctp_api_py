@@ -58,6 +58,7 @@ struct XcSecurityInfo
 {
     char        InstrumentID[31];
     char        ExchangeID[8];
+    char        SecType[10];            // STK or OPT
     char        SecName[50];            // 简称
     char        EndDate[20];            // 最后交易日期
     char        StartDate[10];          // 上市日期
@@ -70,6 +71,28 @@ struct XcSecurityInfo
     double      ExRightRatio;           // 除权比例
     double      DividendAmount;         // 除息金额
     char        SecurityStatusFlag[50]; // 产品状态标志
+
+    // for option
+    char        ContractID[50];
+    char        Underlying[20];         // UnderlyingSecCode
+    char        UnderlyingName[50];     // UnderlyingSymbol
+    char        UnderlyingType[10];
+    char        OptionType[3];
+    char        CallOrPut[3];
+    int32_t     Multiplier;             // ContractMultipleUnit
+    double      StrikePrice;            // ExercisePrice 行权价
+    char        StrikeDate[10];         // ExerciseDate 行权日
+    char        DeliveryDate[10];       // 交割日
+    char        ExpireDate[10];         // 到期日
+    char        UpdateVersion[10];      // 合约版本号
+    uint32_t    TotalLongPosition;      // 当前合约未平仓数
+    double      PreSettlePrice;         // SettlePricePx 前结算价
+    double      UnderlyingPreClose;     // 标的证券前收盘价
+    double      MarginUnit;             // 单位保证金
+    double      MarginRatioParam1;      // 保证金计算比例参数一
+    double      MarginRatioParam2;      // 保证金计算比例参数二
+    // char        SecurityStatusFlag[10]; // 期权合约状态信息标签
+
     char        Bz[200];                // 备注
 };
 
@@ -209,7 +232,9 @@ struct XcDepthMarketData
     uint32_t        Time;               // 原始时间
     price_status_t PriceStatus;        // 涨跌状态
     price_status_t LimitStatus;        // 涨跌停状态
+    double      RefPrice;
     double      UpDownRatio;        // 涨跌比例
+    double      PriceDiv;
 };
 
 
@@ -296,16 +321,9 @@ public:
     QWORD           refid;
     int             flush_count;
     int             have_level10;
-    int             statistic_mode;
     int             log_level;
     FILE*           fp;
 
-    uint32_t    m_UpStatistics[MAX_UPDOWN_LEVEL];
-    uint32_t    m_DownStatistics[MAX_UPDOWN_LEVEL];
-    uint32_t    m_UpCount;
-    uint32_t    m_DownCount;
-    uint32_t    m_UpLimitCount;
-    uint32_t    m_DownLimitCount;
     std::vector<socket_struct_SubscribeDetail> m_SubList;
     std::mutex  m_Lock;
 
@@ -397,14 +415,11 @@ public:
     int unsubscribe_all();
 
     // request query data
-    int req_qry_data(string instrument);
+    int req_qry_data(const string& symbol);
     int req_qry_data_batch(const std::vector<std::string>& reqs);
 
     // set have level10 md
     void set_have_level10(int on);
-
-    // set statistic mode
-    void set_statistic_mode();
 
     // my extend functions
     string get_api_version();
@@ -414,17 +429,16 @@ public:
     // write msg into log file
     int write_line(int reserve, const std::string& line);
 
-    // get statistics
-    int get_statistics(dict out);
-
-    void statistic_md(XcDepthMarketData* pMD, int32_t isfirst);
-    int get_ratio_count(double ratio, int cond);
-
 #if HAVE_BAR_GENERATOR
     // new add
     int subscribe_bar_md(std::string instrument);
     void process_bar_gen(socket_struct_Dyna* apMD);
 #endif//HAVE_BAR_GENERATOR
+
+    //////////////////////////////////////////////////////////////////////////
+    // some raw api wrapper
+    int Subscribe(const std::string& exchange, const std::string& instrument, int dyna_flag, int depth_flag, int depth_order, int each_flag);
+    int Require(int ref_id, const std::string& exchange, const std::string& instrument);
 
 private:
     int write_data(int reserve, const char* fmt, ...);

@@ -44,6 +44,10 @@ MD_UTILS_API md_dict_value_t MD_UTILS_STDCALL md_dict_find2(md_dict_t* mdd, cons
 MD_UTILS_API int MD_UTILS_STDCALL md_dict_add(md_dict_t* mdd, uint64_t hashid, md_dict_value_t dt);
 MD_UTILS_API int MD_UTILS_STDCALL md_dict_add2(md_dict_t* mdd, uint64_t hashid, int date, int update_time);
 
+// mainly for c programs
+MD_UTILS_API int MD_UTILS_STDCALL md_dict_add_ptr(md_dict_t* mdd, uint64_t hashid, void* data_ptr);
+MD_UTILS_API void* MD_UTILS_STDCALL md_dict_find_ptr(md_dict_t* mdd, uint64_t hashid);
+
 MD_UTILS_API uint32_t MD_UTILS_STDCALL md_dict_size(md_dict_t* mdd);
 
 MD_UTILS_API void MD_UTILS_STDCALL md_dict_lock(md_dict_t* mdd);
