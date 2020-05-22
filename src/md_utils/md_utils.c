@@ -3,7 +3,7 @@
 #include <time.h>
 #include "md_utils.h"
 
-#define MD_UTILS_VERSION    "1.0.1"
+#define MD_UTILS_VERSION    "1.0.2"
 
 
 typedef struct

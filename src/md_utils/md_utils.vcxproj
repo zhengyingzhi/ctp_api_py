@@ -100,7 +100,7 @@
     <IntDir>$(SolutionDir)..\$(Platform)\objs\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)..\$(Platform)\$(Configuration)\</OutDir>
     <TargetName>$(ProjectName)</TargetName>
-    <TargetExt>.dll</TargetExt>
+    <TargetExt>.pyd</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelPy36|x64'">
     <OutDir>$(SolutionDir)..\$(Platform)\$(Configuration)\</OutDir>

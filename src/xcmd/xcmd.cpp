@@ -691,6 +691,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     {
         // 注意测试环境 180.169.89.22:2222 没有扩展字段，生产环境有
         socket_struct_Dyna_Extend2* pExtend = (socket_struct_Dyna_Extend2*)pDyna->Extend_fields;
+        pMD->IOPV = pExtend->IOPV / price_div;
         if (pExtend->DownLimit > 100)
         {
             pMD->UpperLimitPrice = pExtend->UpLimit / price_div;
@@ -710,6 +711,8 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     }
     else // if (strcmp(pDyna->MarketCode, "SSE") == 0)
     {
+        socket_struct_Dyna_Extend1* pExtend = (socket_struct_Dyna_Extend1*)pDyna->Extend_fields;
+        pMD->IOPV = pExtend->IOPV / price_div;
         XcSecurityInfo* psec_info = get_sec_info(lXcSymbol);
         if (psec_info)
         {
@@ -1581,6 +1584,7 @@ void XcMdApi::processOnRtnMarketData(Task *task, int isIOThread)
     data["Time"] = pMD->Time;
     data["TickCount"] = pMD->TickCount;
     data["RefPrice"] = pMD->RefPrice;
+    data["IOPV"] = pMD->IOPV;
 
     data["UpperLimitPrice"] = pMD->UpperLimitPrice;
     data["LowerLimitPrice"] = pMD->LowerLimitPrice;

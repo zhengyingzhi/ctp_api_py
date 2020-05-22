@@ -490,18 +490,18 @@ void MdApi::processRspUnSubForQuoteRsp(Task *task)
 
 void MdApi::processRtnDepthMarketData(Task *task)
 {
+#if HAVE_BAR_GENERATOR
     // @202003 below only work for 1m bar mode
     if (bar_mode)
     {
         if (task->task_data)
         {
-#if HAVE_BAR_GENERATOR
             processBarGen((CThostFtdcDepthMarketDataField*)task->task_data);
-#endif//HAVE_BAR_GENERATOR
             delete task->task_data;
         }
         return;
     }
+#endif//HAVE_BAR_GENERATOR
 
 	gil_scoped_acquire acquire;
 	dict data;

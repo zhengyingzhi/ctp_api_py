@@ -43,11 +43,13 @@ DEFINES += __STDC_FORMAT_MACROS
 INCLUDEPATH += ..
 INCLUDEPATH += ../../api/ctp_se
 INCLUDEPATH += ../../../thirdparty
-INCLUDEPATH += ../../../thirdparty/python35/linux_include
+# INCLUDEPATH += ../../../thirdparty/python35/linux_include
+INCLUDEPATH += ../../../thirdparty/python36/linux_include
 
 LIBS += -lpthread -lrt
 
-LIBS += -L../../../thirdparty/python35/linux64 -lpython3.5m
+# LIBS += -L../../../thirdparty/python35/linux64 -lpython3.5m
+LIBS += -L../../../thirdparty/python36/linux64 -lpython3.6m
 LIBS += -L../../api/ctp_se/linux64 -lthosttraderapi_se
 
 

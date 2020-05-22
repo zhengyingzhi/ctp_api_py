@@ -233,6 +233,7 @@ struct XcDepthMarketData
     price_status_t PriceStatus;        // ÕÇµø×´Ì¬
     price_status_t LimitStatus;        // ÕÇµøÍ£×´Ì¬
     double      RefPrice;
+    double      IOPV;
     double      UpDownRatio;        // ÕÇµø±ÈÀý
     double      PriceDiv;
 };

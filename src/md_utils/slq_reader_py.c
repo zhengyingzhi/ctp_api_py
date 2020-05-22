@@ -242,7 +242,7 @@ PyObject* slqr_create(PyObject* self, PyObject* args)
     PyObject* res;
 
     if (!PyArg_ParseTuple(args, "ss", &slq_name, &trading_day)) {
-        return Py_None;
+        Py_RETURN_NONE;
     }
 
     // fprintf(stderr, "slq_reader_create %s,%s\n", exchange, instrument);

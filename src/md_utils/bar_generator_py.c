@@ -30,6 +30,7 @@ static PyObject* _bg_convert_bar(bar_data_t* bar)
     PyDict_SetItemString(dp, "start_time", Py_BuildValue("i", bar->StartTime));
     PyDict_SetItemString(dp, "end_time", Py_BuildValue("i", bar->EndTime));
 #endif//BG_BAR_DEBUG
+
     return dp;
 }
 
@@ -43,7 +44,7 @@ PyObject* bg_create(PyObject* self, PyObject* args)
     PyObject* res;
 
     if (!PyArg_ParseTuple(args, "ss", &exchange, &instrument)) {
-        return Py_None;
+        Py_RETURN_NONE;
     }
 
     // fprintf(stderr, "bg_create %s,%s\n", exchange, instrument);
@@ -92,7 +93,7 @@ PyObject* bg_reset(PyObject* self, PyObject* args)
         bar_generator_reset(bargen);
     }
 
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 PyObject* bg_release(PyObject* self, PyObject* args)
@@ -145,7 +146,7 @@ PyObject* bg_update_data(PyObject* self, PyObject* args)
         return dp;
     }
 
-    return Py_None;
+    Py_RETURN_NONE;
     // return Py_BuildValue("i", 0);
 }
 
@@ -176,7 +177,7 @@ PyObject* bg_update_without_data(PyObject* self, PyObject* args)
         return dp;
     }
 
-    return Py_None;
+    Py_RETURN_NONE;
     // return Py_BuildValue("i", 0);
 }
 
@@ -204,7 +205,7 @@ PyObject* bg_current_bar(PyObject* self, PyObject* args)
         return dp;
     }
 
-    return Py_None;
+    Py_RETURN_NONE;
     // return Py_BuildValue("i", 0);
 }
 

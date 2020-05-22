@@ -41,7 +41,7 @@ PyObject* mdd_reset(PyObject* self, PyObject* args)
     mdd = (md_dict_t*)v.ptr;
     md_dict_reset(mdd);
 
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 PyObject* mdd_release(PyObject* self, PyObject* args)
