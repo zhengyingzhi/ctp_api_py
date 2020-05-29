@@ -10,7 +10,7 @@
 
 #define HS_TRADE                0x44545348
 
-#define HS_TRADE_VERSION        "0.0.2"
+#define HS_TRADE_VERSION        "1.0.0"
 
 
 extern void ShowPacket(IF2UnPacker *lpUnPacker);

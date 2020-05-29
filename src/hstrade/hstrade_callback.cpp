@@ -140,8 +140,9 @@ void TradeCallback::OnReceivedBizEx(CConnectionInterface *lpConnection, int hSen
 
 void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSend, IBizMessage* lpMsg)
 {
-    if (m_hstd->debug_mode)
-        fprintf(stderr, "TradeCallback::OnReceivedBizMsg hSend:%d\n", hSend);
+    if (m_hstd->debug_mode) {
+        fprintf(stderr, "TradeCallback::OnReceivedBizMsg hSend:%d, lpMsg:%p\n", hSend, lpMsg);
+    }
 
     if (!lpMsg)
     {
@@ -155,13 +156,18 @@ void TradeCallback::OnReceivedBizMsg(CConnectionInterface *lpConnection, int hSe
     m_return_msg = lpMsg->GetErrorInfo();
     int func_id = lpMsg->GetFunction();
     int issue_type = lpMsg->GetIssueType();
+    if (!m_return_msg)
+        m_return_msg = "";
+
+    if (m_hstd->debug_mode) {
+        fprintf(stderr, "TradeCallback::OnReceivedBizMsg func_id:%d, issue_type:%d, code:%d,  msg:%s\n",
+            func_id, issue_type, m_return_code, m_return_msg);
+    }
 
     if (m_return_code != 0)
     {
         if (m_hstd->spi && m_hstd->spi->on_msg_error)
         {
-            if (!m_return_msg)
-                m_return_msg = "";
             m_hstd->spi->on_msg_error(m_hstd, func_id, issue_type, hSend, m_return_code, m_return_msg);
         }
         return;

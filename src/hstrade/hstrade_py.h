@@ -11,12 +11,14 @@
 
 // using std::string;
 
+
 #ifdef HAVE_WRPPAER_PYTHON
 
 #include <t2sdk_interface.h>
 
 #include <pybind11/pybind11.h>
 using namespace pybind11;
+
 
 /// 异步模式
 #define HS_SYNC_MODE        0
@@ -69,6 +71,11 @@ public:
 
     // 设置序列号
     int set_sequece_no(int sequence_no);
+    int set_issue_type(int issue_type);
+    int set_company_id(int company_id);
+    int set_sender_company_id(int sender_company_id);
+    int set_system_no(int system_no);
+    int new_biz_message();
 
     // 写入JSON数据
     int set_json_value(const std::string& json_str);
@@ -120,11 +127,16 @@ private:
     hstrade_t*      m_hstd;
     hstrade_spi_t   m_spi;
 
+    IBizMessage*    m_pBizMessage;
+
     int             m_hsend;
     int             m_last_error_code;
     int             m_async_mode;
     int             m_data_proto;
     int             m_sequece_no;
+    int             m_company_id;
+    int             m_sender_company_id;
+    int             m_system_no;
 };
 
 #endif//HAVE_WRPPAER_PYTHON

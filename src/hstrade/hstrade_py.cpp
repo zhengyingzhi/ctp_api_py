@@ -1,11 +1,90 @@
 #include <iostream>
-
-#include <t2sdk_interface.h>
+#include <codecvt>
+#include <locale>
+#include <vector>
+using namespace std;
 
 #include "cJSON.h"
 
 #include "hstrade_callback.h"
 #include "hstrade_py.h"
+
+
+#ifdef _MSC_VER
+#else
+
+#include <unistd.h>
+#include <iconv.h>
+#define sleepms(x)  usleep((x) * 1000)
+
+int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, size_t outlen)
+{
+    iconv_t cd;
+    char** pin = &inbuf;
+    char** pout = &outbuf;
+
+    cd = iconv_open(to, from);
+    if (cd == 0)
+        return -1;
+    if (iconv(cd, pin, &inlen, pout, &outlen) == -1)
+        return -1;
+    iconv_close(cd);
+    return 0;
+}
+
+#endif//_MSC_VER
+
+
+//将GBK编码的字符串转换为UTF8
+static std::string to_utf(const std::string &gb2312)
+{
+#ifdef _MSC_VER
+    const static locale loc("zh-CN");
+
+    vector<wchar_t> wstr(gb2312.size());
+    wchar_t* wstrEnd = nullptr;
+    const char* gbEnd = nullptr;
+    mbstate_t state = {};
+    int res = use_facet<codecvt<wchar_t, char, mbstate_t> >
+        (loc).in(state,
+            gb2312.data(), gb2312.data() + gb2312.size(), gbEnd,
+            wstr.data(), wstr.data() + wstr.size(), wstrEnd);
+
+    if (codecvt_base::ok == res)
+    {
+        wstring_convert<codecvt_utf8<wchar_t>> cutf8;
+        return cutf8.to_bytes(wstring(wstr.data(), wstrEnd));
+    }
+
+    return std::string();
+#else
+    // const static locale loc("zh_CN.GB18030");
+    if ((int)gb2312.length() < 4080)
+    {
+        char outbuf[4080] = "";
+        int outlen = sizeof(outbuf) - 1;
+        int rv = code_convert("gb2312", "utf-8", (char*)gb2312.c_str(), (int)gb2312.length(), outbuf, outlen);
+        if (rv == -1)
+            return string();
+        return string(outbuf);
+    }
+    else
+    {
+        int outlen = gb2312.length() * 2 + 2;
+        char* outbuf = (char*)malloc(outlen);
+        memset(outbuf, 0, outlen);
+        int rv = code_convert("gb2312", "utf-8", (char*)gb2312.c_str(), (int)gb2312.length(), outbuf, outlen);
+
+        string ret(outbuf);
+        free(outbuf);
+
+        if (rv == -1)
+            return string();
+        else
+            return ret;
+    }
+#endif
+}
 
 
 #ifdef HAVE_WRPPAER_PYTHON
@@ -132,7 +211,7 @@ static void _on_msg_error_static(hstrade_t* hstd, int func_id, int issue_type, i
         return;
 
     gil_scoped_acquire acquire;
-    obj->on_msg_error(func_id, issue_type, ref_id, error_no, std::string(error_info));
+    obj->on_msg_error(func_id, issue_type, ref_id, error_no, std::string(to_utf(error_info)));
 }
 
 static void _on_recv_msg_static(hstrade_t* hstd, int func_id, int issue_type, int ref_id, const char* msg)
@@ -161,12 +240,17 @@ HSTdApi::HSTdApi()
     m_spi.on_msg_error = _on_msg_error_static;
     m_spi.on_json_msg = _on_recv_msg_static;
 
+    m_pBizMessage = NULL;
+
     m_hsend = 0;
     m_last_error_code = 0;
     m_async_mode = 0;
     m_data_proto = 0;
 
-    m_sequece_no = 0;
+    m_sequece_no = -1;
+    m_company_id = 91000;
+    m_sender_company_id = -1;
+    m_system_no = -1;
 }
 
 HSTdApi::~HSTdApi()
@@ -343,12 +427,61 @@ int HSTdApi::connect(int timeoutms)
 
 int HSTdApi::set_sequece_no(int sequence_no)
 {
+    if (m_pBizMessage)
+        m_pBizMessage->SetSequeceNo(sequence_no);
+
     m_sequece_no = sequence_no;
+    return 0;
+}
+
+int HSTdApi::set_issue_type(int issue_type)
+{
+    if (m_pBizMessage)
+        m_pBizMessage->SetIssueType(issue_type);
+    return 0;
+}
+
+int HSTdApi::set_company_id(int company_id)
+{
+    if (m_pBizMessage)
+        m_pBizMessage->SetCompanyID(company_id);
+
+    m_company_id = company_id;
+    return 0;
+}
+
+int HSTdApi::set_sender_company_id(int sender_company_id)
+{
+    if (m_pBizMessage)
+        m_pBizMessage->SetSenderCompanyID(sender_company_id);
+
+    m_sender_company_id = sender_company_id;
+    return 0;
+}
+
+int HSTdApi::set_system_no(int system_no)
+{
+    if (m_pBizMessage)
+        m_pBizMessage->SetSystemNo(system_no);
+
+    m_system_no = system_no;
+    return 0;
 }
 
 int HSTdApi::set_json_value(const std::string& json_str)
 {
     m_json_str = json_str;
+    return 0;
+}
+
+int HSTdApi::new_biz_message()
+{
+    if (m_pBizMessage) {
+        m_pBizMessage->Release();
+    }
+
+    m_pBizMessage = NewBizMessage();
+    m_pBizMessage->AddRef();
     return 0;
 }
 
@@ -360,18 +493,30 @@ int HSTdApi::send_pack_msg(int func_id, int subsystem_no, int branch_no)
     lpPacker = (IF2Packer*)m_packer;
 
     IBizMessage* lpBizMessage;
-    lpBizMessage = NewBizMessage();
-    lpBizMessage->AddRef();
+    lpBizMessage = m_pBizMessage;
+    if (!lpBizMessage)
+    {
+        new_biz_message();
+        lpBizMessage = m_pBizMessage;
+        lpBizMessage = NewBizMessage();
+        lpBizMessage->AddRef();
+
+        if (branch_no >= 0)
+            lpBizMessage->SetBranchNo(branch_no);
+
+        if (m_company_id >= 0)
+            lpBizMessage->SetCompanyID(m_company_id);
+
+        if (m_sender_company_id >= 0)
+            lpBizMessage->SetSenderCompanyID(m_sender_company_id);
+
+        if (m_sequece_no)
+            lpBizMessage->SetSequeceNo(m_sequece_no);
+    }
 
     lpBizMessage->SetFunction(func_id);
     lpBizMessage->SetPacketType(REQUEST_PACKET);
-    if (m_sequece_no)
-        lpBizMessage->SetSequeceNo(m_sequece_no);
-
-    lpBizMessage->SetBranchNo(branch_no);
-    lpBizMessage->SetSystemNo(subsystem_no);
-    // lpBizMessage->SetCompanyID(91000);
-    // lpBizMessage->SetSenderCompanyID(91000);
+    lpBizMessage->SetSubSystemNo(subsystem_no);
 
     // 设置打包数据
     if (func_id == UFX_FUNC_SUBSCRIBE)
@@ -391,6 +536,8 @@ int HSTdApi::send_pack_msg(int func_id, int subsystem_no, int branch_no)
     m_packer = NULL;
 
     lpBizMessage->Release();
+    lpBizMessage = NULL;
+    m_pBizMessage = NULL;
 
     m_hsend = rv;
     return rv;
@@ -794,6 +941,12 @@ PYBIND11_MODULE(hstrade, m)
         .def("config_get_int", &HSTdApi::config_get_int)
         .def("set_debug_mode", &HSTdApi::set_debug_mode)
         .def("set_json_value", &HSTdApi::set_json_value)
+        .def("set_issue_type", &HSTdApi::set_issue_type)
+        .def("set_company_id", &HSTdApi::set_company_id)
+        .def("set_sender_company_id", &HSTdApi::set_sender_company_id)
+        .def("set_sequece_no", &HSTdApi::set_sequece_no)
+        .def("set_system_no", &HSTdApi::set_system_no)
+        .def("new_biz_message", &HSTdApi::new_biz_message)
         .def("send_msg", &HSTdApi::send_msg)
         .def("recv_msg", &HSTdApi::recv_msg)
 
