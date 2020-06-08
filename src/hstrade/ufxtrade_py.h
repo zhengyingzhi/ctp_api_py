@@ -1,5 +1,5 @@
-#ifndef _HS_TRADE_PY_H_
-#define _HS_TRADE_PY_H_
+#ifndef _UFX_TRADE_PY_H_
+#define _UFX_TRADE_PY_H_
 
 #include <stdio.h>
 #include <string.h>
@@ -7,7 +7,7 @@
 #include <string>
 #include <map>
 
-#include "hstrade.h"
+#include "ufxtrade.h"
 
 // using std::string;
 
@@ -21,27 +21,27 @@ using namespace pybind11;
 
 
 /// 异步模式
-#define HS_SYNC_MODE        0
-#define HS_ASYNC_MODE       1
+#define UFX_SYNC_MODE        0
+#define UFX_ASYNC_MODE       1
 
 /// 数据模式
-#define HS_DATA_PROTO_RAW   0
-#define HS_DATA_PROTO_JSON  1
+#define UFX_DATA_PROTO_RAW   0
+#define UFX_DATA_PROTO_JSON  1
 
 
 /* wrapper api for python */
 
-class HSTdApi
+class UFXTdApi
 {
 public:
-    HSTdApi();
-    ~HSTdApi();
+    UFXTdApi();
+    ~UFXTdApi();
 
 public:
     // 获取API版本号
     int get_api_version();
 
-    std::string get_hstrade_version();
+    std::string get_ufxtrade_version();
 
     // 创建API async_mode：1-asyn, data_proto: 1-json
     void create_api(int async_mode = 0, int data_proto = 0);
@@ -69,27 +69,44 @@ public:
     // 连接服务器
     int connect(int timeoutms);
 
-    // 设置序列号
+    // some interfaces for IBizMessage
+    int set_branch_no(int branch_no);
+    int set_system_no(int system_no);
+    int set_subsystem_no(int subsystem_no);
+    int set_sender_id(int sender_id);
+    int set_packet_id(int packet_id);
     int set_sequece_no(int sequence_no);
     int set_issue_type(int issue_type);
     int set_company_id(int company_id);
     int set_sender_company_id(int sender_company_id);
-    int set_system_no(int system_no);
-    int new_biz_message();
+    int set_function(int func_id);
+    int set_packet_type(int packet_type);
+    int set_content(void);
+    int set_key_info(void);
+
+    int new_biz_message(void);
+    int release_biz_message(void);
+    int send_biz_msg(void);
 
     // 写入JSON数据
     int set_json_value(const std::string& json_str);
 
     // 发送数据
-    int send_msg(int func_id, int subsystem_no = 0, int branch_no = 0);
+    int send_msg(int func_id);
 
     // 接收数据
-    std::string recv_msg(int hsend);
+    std::string recv_biz_msg(int hsend);
 
+    // 创建打包器
+    void new_packer(int iver);
     // 开始打包
     void begin_pack(void);
+    // 
+    void new_and_begin_pack();
     // 结束打包
     void end_pack(void);
+    // 释放打包对象
+    void release_pack(void);
 
     // 添加包字段，字段类型：I(Integer), S(String), C(Char), D(Double)
     int add_field(const std::string& key, const std::string& field_type, int field_width, int field_scale=4);
@@ -100,20 +117,9 @@ public:
     int add_int(const int value);
     int add_double(const double value);
 
-    // 一些常用接口
-    int req_login(const dict& req);
-    int req_qry_account_info(const dict& req);
-    int req_qry_cash(const dict& req);
-    int req_qry_position(const dict& req);
-    int req_qry_order(const dict& req);
-    int req_qry_trade(const dict& req);
-    int req_qry_md(const std::string& exchange_type, const std::string& stock_code);
-    int req_order_insert(const dict& order_req);
-    int req_order_action(const dict& order_action);
-
 private:
     // 发送已打好包的数据
-    int send_pack_msg(int func_id, int subsystem_no, int branch_no);
+    int send_pack_msg(int func_id);
 
 public:
     virtual void on_front_connected() {}
@@ -124,8 +130,8 @@ public:
 private:
     std::string     m_json_str;
     IF2Packer*      m_packer;
-    hstrade_t*      m_hstd;
-    hstrade_spi_t   m_spi;
+    ufxtrade_t*     m_hstd;
+    ufxtrade_spi_t  m_spi;
 
     IBizMessage*    m_pBizMessage;
 
@@ -133,12 +139,9 @@ private:
     int             m_last_error_code;
     int             m_async_mode;
     int             m_data_proto;
-    int             m_sequece_no;
-    int             m_company_id;
-    int             m_sender_company_id;
-    int             m_system_no;
+    int             m_debug_level;
 };
 
 #endif//HAVE_WRPPAER_PYTHON
 
-#endif//_HS_TRADE_PY_H_
+#endif//_UFX_TRADE_PY_H_

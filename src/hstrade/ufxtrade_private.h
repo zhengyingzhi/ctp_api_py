@@ -1,10 +1,10 @@
-#ifndef _HS_TRADE_PRIVATE_H_
-#define _HS_TRADE_PRIVATE_H_
+#ifndef _UFX_TRADE_PRIVATE_H_
+#define _UFX_TRADE_PRIVATE_H_
 
 
 #include <t2sdk_interface.h>
 
-#include "hstrade.h"
+#include "ufxtrade.h"
 
 
 #define MY_DEBUG 1
@@ -22,7 +22,7 @@ static  inline void HSPrintNull(FILE* fd, const char* fmt, ...) { (void)fd; (voi
 
 class TradeCallback;
 
-typedef struct hstrade_apidata_s
+typedef struct ufxtrade_apidata_s
 {
     char    user_token[512];
     char    stock_account[16];
@@ -32,9 +32,9 @@ typedef struct hstrade_apidata_s
     int     op_branch_no;
     int     branch_no;
     int     sysnode_id;
-}hstrade_apidata_t;
+}ufxtrade_apidata_t;
 
-struct hstrade_s
+struct ufxtrade_s
 {
     int     desc;
     int     is_async;
@@ -48,16 +48,17 @@ struct hstrade_s
     CConnectionInterface*   conn;
     TradeCallback*          callback;
 
-    hstrade_spi_t*          spi;
-    hstrade_apidata_t       apidata;
+    ufxtrade_spi_t*         spi;
+    ufxtrade_apidata_t      apidata;
 
     char    server_addr[32];
 
     char    trading_day[9];
     char    client_name[24];
     char    client_id[24];
+    char    fund_account[24];
     char    password[24];
 };
 
 
-#endif//_HS_TRADE_PRIVATE_H_
+#endif//_UFX_TRADE_PRIVATE_H_

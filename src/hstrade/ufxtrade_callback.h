@@ -1,5 +1,5 @@
-#ifndef _HS_TRADE_CALLBACK_H_
-#define _HS_TRADE_CALLBACK_H_
+#ifndef _UFX_TRADE_CALLBACK_H_
+#define _UFX_TRADE_CALLBACK_H_
 
 #include <string>
 
@@ -7,7 +7,7 @@
 
 #include "cJSON.h"
 
-#include "hstrade_private.h"
+#include "ufxtrade_private.h"
 
 
 typedef void(*on_recv_msg_pt)(void* clientd, int func_id, int issue_type, const std::string& msg);
@@ -55,13 +55,13 @@ public:
     static int UnpackRtnOrderData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
     static int UnpackRtnTradeData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata);
 
-    static void GetErrorField(HSRspInfoField* rsp_info, IF2UnPacker* lpUnPacker);
+    static void GetErrorField(UFXRspInfoField* rsp_info, IF2UnPacker* lpUnPacker);
 
     static int GenJsonData(cJSON* json_data, IF2UnPacker* lpUnPacker);
     static cJSON* GenJsonDatas(IF2UnPacker* lpUnPacker, int func_id, int issue_type, int ref_id);
 
 public:
-    void SetContextData(hstrade_t* hstd);
+    void SetContextData(ufxtrade_t* hstd);
 
     void SetJsonMode(int data_proto);
 
@@ -97,7 +97,7 @@ public:
     void OnRtnTrade(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnPacker);
 
 private:
-    hstrade_t*  m_hstd;
+    ufxtrade_t*  m_hstd;
     int         m_data_proto;
 
     int         m_return_code;
@@ -106,4 +106,4 @@ private:
 
 
 
-#endif//_HS_TRADE_CALLBACK_H_
+#endif//_UFX_TRADE_CALLBACK_H_

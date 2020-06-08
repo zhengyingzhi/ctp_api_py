@@ -3,8 +3,8 @@
 #include <codecvt>
 #include <locale>
 
-#include "hstrade_struct.h"
-#include "hstrade_callback.h"
+#include "ufxtrade_struct.h"
+#include "ufxtrade_callback.h"
 
 using namespace std;
 
@@ -300,7 +300,7 @@ void TradeCallback::Reserved7()
 {
 }
 
-void TradeCallback::SetContextData(hstrade_t* hstd)
+void TradeCallback::SetContextData(ufxtrade_t* hstd)
 {
     m_hstd = hstd;
 }
@@ -312,7 +312,7 @@ void TradeCallback::SetJsonMode(int data_proto)
 
 int TradeCallback::IsJsonMode()
 {
-    return m_data_proto == 1;    // HS_DATA_PROTO_JSON
+    return m_data_proto == 1;    // UFX_DATA_PROTO_JSON
 }
 
 int TradeCallback::GenJsonData(cJSON* json_data, IF2UnPacker* lpUnPacker)
@@ -450,7 +450,7 @@ int TradeCallback::NotifyJsonData(cJSON* json, int func_id, int issue_type, int 
     return 0;
 }
 
-void TradeCallback::GetErrorField(HSRspInfoField* rsp_info, IF2UnPacker* lpUnPacker)
+void TradeCallback::GetErrorField(UFXRspInfoField* rsp_info, IF2UnPacker* lpUnPacker)
 {
     rsp_info->error_no = lpUnPacker->GetInt("error_no");
 
@@ -463,7 +463,7 @@ void TradeCallback::GetErrorField(HSRspInfoField* rsp_info, IF2UnPacker* lpUnPac
 
 void TradeCallback::OnResponseUserLogin(int hSend, IBizMessage* lpMsg, IF2UnPacker *lpUnPacker)
 {
-    hstrade_apidata_t* apidata = &m_hstd->apidata;
+    ufxtrade_apidata_t* apidata = &m_hstd->apidata;
 
     int branch_no = lpUnPacker->GetInt("branch_no");
     int sysnode_id = lpUnPacker->GetInt("sysnode_id");
@@ -482,8 +482,8 @@ void TradeCallback::OnResponseUserLogin(int hSend, IBizMessage* lpMsg, IF2UnPack
         return;
     }
 
-    HSRspUserLoginField rsp_login = { 0 };
-    HSRspInfoField rsp_info = { 0 };
+    UFXRspUserLoginField rsp_login = { 0 };
+    UFXRspInfoField rsp_info = { 0 };
     TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
 
     extract_str_field(rsp_login.company_name, "company_name");
@@ -494,7 +494,7 @@ void TradeCallback::OnResponseUserLogin(int hSend, IBizMessage* lpMsg, IF2UnPack
     rsp_login.system_id = sysnode_id;
     rsp_login.trading_date = init_date;
 
-    hstrade_spi_t* spi = m_hstd->spi;
+    ufxtrade_spi_t* spi = m_hstd->spi;
     if (spi && spi->on_user_login)
     {
         spi->on_user_login(m_hstd, &rsp_login, &rsp_info, hSend);
@@ -616,12 +616,12 @@ void TradeCallback::OnRtnTrade(int hSend, IBizMessage* lpMsg, IF2UnPacker* lpUnP
 //////////////////////////////////////////////////////////////////////////
 int TradeCallback::UnpackLoginData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata)
 {
-    hstrade_t* hstd;
-    hstrade_spi_t* spi;
-    hstd = (hstrade_t*)ctxdata;
+    ufxtrade_t* hstd;
+    ufxtrade_spi_t* spi;
+    hstd = (ufxtrade_t*)ctxdata;
     spi = hstd->spi;
 
-    HSRspInfoField rsp_info = { 0 };
+    UFXRspInfoField rsp_info = { 0 };
     TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
 
     int rows = lpUnPacker->GetRowCount();
@@ -633,7 +633,7 @@ int TradeCallback::UnpackLoginData(IF2UnPacker* lpUnPacker, int ref_id, int ds_i
 
     for (int row = 0; row < rows; ++row)
     {
-        HSRspUserLoginField login_data = { 0 };
+        UFXRspUserLoginField login_data = { 0 };
         // TODO:
 
         if (spi && spi->on_user_login)
@@ -648,12 +648,12 @@ int TradeCallback::UnpackLoginData(IF2UnPacker* lpUnPacker, int ref_id, int ds_i
 
 int TradeCallback::UnpackRspOrderData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata)
 {
-    hstrade_t* hstd;
-    hstrade_spi_t* spi;
-    hstd = (hstrade_t*)ctxdata;
+    ufxtrade_t* hstd;
+    ufxtrade_spi_t* spi;
+    hstd = (ufxtrade_t*)ctxdata;
     spi = hstd->spi;
 
-    HSRspInfoField rsp_info = { 0 };
+    UFXRspInfoField rsp_info = { 0 };
     TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
 
     int islast = 0;
@@ -695,12 +695,12 @@ int TradeCallback::UnpackRspOrderData(IF2UnPacker* lpUnPacker, int ref_id, int d
 
 int TradeCallback::UnpackRspOrderActionData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata)
 {
-    hstrade_t* hstd;
-    hstrade_spi_t* spi;
-    hstd = (hstrade_t*)ctxdata;
+    ufxtrade_t* hstd;
+    ufxtrade_spi_t* spi;
+    hstd = (ufxtrade_t*)ctxdata;
     spi = hstd->spi;
 
-    HSRspInfoField rsp_info = { 0 };
+    UFXRspInfoField rsp_info = { 0 };
     TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
 
     int islast = 0;
@@ -745,12 +745,12 @@ int TradeCallback::UnpackRspOrderActionData(IF2UnPacker* lpUnPacker, int ref_id,
 
 int TradeCallback::UnpackTradingAccountData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata)
 {
-    hstrade_t* hstd;
-    hstrade_spi_t* spi;
-    hstd = (hstrade_t*)ctxdata;
+    ufxtrade_t* hstd;
+    ufxtrade_spi_t* spi;
+    hstd = (ufxtrade_t*)ctxdata;
     spi = hstd->spi;
 
-    HSRspInfoField rsp_info = { 0 };
+    UFXRspInfoField rsp_info = { 0 };
     TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
 
     int islast = 0;
@@ -793,12 +793,12 @@ int TradeCallback::UnpackTradingAccountData(IF2UnPacker* lpUnPacker, int ref_id,
 
 int TradeCallback::UnpackPositionData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata)
 {
-    hstrade_t* hstd;
-    hstrade_spi_t* spi;
-    hstd = (hstrade_t*)ctxdata;
+    ufxtrade_t* hstd;
+    ufxtrade_spi_t* spi;
+    hstd = (ufxtrade_t*)ctxdata;
     spi = hstd->spi;
 
-    HSRspInfoField rsp_info = { 0 };
+    UFXRspInfoField rsp_info = { 0 };
     TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
 
     int islast = 0;
@@ -851,12 +851,12 @@ int TradeCallback::UnpackPositionData(IF2UnPacker* lpUnPacker, int ref_id, int d
 
 int TradeCallback::UnpackQryOrderData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata)
 {
-    hstrade_t* hstd;
-    hstrade_spi_t* spi;
-    hstd = (hstrade_t*)ctxdata;
+    ufxtrade_t* hstd;
+    ufxtrade_spi_t* spi;
+    hstd = (ufxtrade_t*)ctxdata;
     spi = hstd->spi;
 
-    HSRspInfoField rsp_info = { 0 };
+    UFXRspInfoField rsp_info = { 0 };
     TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
 
     int islast = 0;
@@ -910,12 +910,12 @@ int TradeCallback::UnpackQryOrderData(IF2UnPacker* lpUnPacker, int ref_id, int d
 
 int TradeCallback::UnpackQryTradeData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata)
 {
-    hstrade_t* hstd;
-    hstrade_spi_t* spi;
-    hstd = (hstrade_t*)ctxdata;
+    ufxtrade_t* hstd;
+    ufxtrade_spi_t* spi;
+    hstd = (ufxtrade_t*)ctxdata;
     spi = hstd->spi;
 
-    HSRspInfoField rsp_info = { 0 };
+    UFXRspInfoField rsp_info = { 0 };
     TradeCallback::GetErrorField(&rsp_info, lpUnPacker);
 
     int islast = 0;
@@ -971,9 +971,9 @@ int TradeCallback::UnpackQryTradeData(IF2UnPacker* lpUnPacker, int ref_id, int d
 
 int TradeCallback::UnpackRtnOrderData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata)
 {
-    hstrade_t* hstd;
-    hstrade_spi_t* spi;
-    hstd = (hstrade_t*)ctxdata;
+    ufxtrade_t* hstd;
+    ufxtrade_spi_t* spi;
+    hstd = (ufxtrade_t*)ctxdata;
     spi = hstd->spi;
 
     int islast = 0;
@@ -1020,9 +1020,9 @@ int TradeCallback::UnpackRtnOrderData(IF2UnPacker* lpUnPacker, int ref_id, int d
 
 int TradeCallback::UnpackRtnTradeData(IF2UnPacker* lpUnPacker, int ref_id, int ds_index, void* ctxdata)
 {
-    hstrade_t* hstd;
-    hstrade_spi_t* spi;
-    hstd = (hstrade_t*)ctxdata;
+    ufxtrade_t* hstd;
+    ufxtrade_spi_t* spi;
+    hstd = (ufxtrade_t*)ctxdata;
     spi = hstd->spi;
 
     int islast = 0;

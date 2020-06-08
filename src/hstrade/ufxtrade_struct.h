@@ -1,5 +1,5 @@
-#ifndef _HS_TRADE_STRUCT_H_
-#define _HS_TRADE_STRUCT_H_
+#ifndef _UFX_TRADE_STRUCT_H_
+#define _UFX_TRADE_STRUCT_H_
 
 #include <stdint.h>
 
@@ -37,79 +37,79 @@
 
 
 /// 字段类型定义 field type
-#define HS_FT_Char                  'C'         // 字符
-#define HS_FT_Str                   'S'         // 字符串
-#define HS_FT_Int                   'I'         // 整形
-#define HS_FT_Decimal               'D'         // 浮点形
-#define HS_FT_Float                 'F'         // 浮点形
-#define HS_FT_Raw                   'R'         // 二进制
+#define UFX_FT_Char                  'C'         // 字符
+#define UFX_FT_Str                   'S'         // 字符串
+#define UFX_FT_Int                   'I'         // 整形
+#define UFX_FT_Decimal               'D'         // 浮点形
+#define UFX_FT_Float                 'F'         // 浮点形
+#define UFX_FT_Raw                   'R'         // 二进制
 
 
 /// 一些常用字段长度定义
-#define HS_CLIENT_ID_LEN            18
-#define HS_STOCK_CODE_LEN           24
-#define HS_STOCK_NAME_LEN           16
-#define HS_EXCHANGE_TYPE_LEN        4
-#define HS_ENTRUST_PROP_LEN         4
-#define HS_STOCK_TYPE_LEN           4
-#define HS_ENTRUST_NO_LEN           16
-#define HS_BUSINESS_NO_LEN          32
+#define UFX_CLIENT_ID_LEN            18
+#define UFX_STOCK_CODE_LEN           24
+#define UFX_STOCK_NAME_LEN           16
+#define UFX_EXCHANGE_TYPE_LEN        4
+#define UFX_ENTRUST_PROP_LEN         4
+#define UFX_STOCK_TYPE_LEN           4
+#define UFX_ENTRUST_NO_LEN           16
+#define UFX_BUSINESS_NO_LEN          32
 
 
 /// 交易类别 exchange_type C4
-#define HS_EXCHANGE_CASH    "0"         // 资金
-#define HS_EXCHANGE_SSE     "1"         // 上海
-#define HS_EXCHANGE_SZSE    "2"         // 深圳
+#define UFX_EXCHANGE_CASH    "0"         // 资金
+#define UFX_EXCHANGE_SSE     "1"         // 上海
+#define UFX_EXCHANGE_SZSE    "2"         // 深圳
 
 /// 买卖方向 entrust_bs C1
-#define HS_D_Buy            '1'         // 买入
-#define HS_D_Sell           '2'         // 卖出
+#define UFX_D_Buy            '1'         // 买入
+#define UFX_D_Sell           '2'         // 卖出
 
 /// 委托属性 entrust_prop C3
-#define HS_EP_BuySell       "0"         // 买卖
-#define HS_EP_R             "R"         // 五档市价转限价
-#define HS_EP_U             "U"         // 五档市价即成剩撤
-#define HS_EP_d             "d"         // 限价委托
+#define UFX_EP_BuySell       "0"         // 买卖
+#define UFX_EP_R             "R"         // 五档市价转限价
+#define UFX_EP_U             "U"         // 五档市价即成剩撤
+#define UFX_EP_d             "d"         // 限价委托
 
 /// 证券类别 stock_type C4
-#define HS_ST_Stock         "0"         // 股票
-#define HS_ST_Fund          "1"         // 基金
-#define HS_ST_Bonus         "2"         // 红利
-#define HS_ST_NormSubcri    "4"         // 普通申购
-#define HS_ST_FundSubRed    "A"         // 基金申赎
-#define HS_ST_FundLOF       "L"         // LOF基金
-#define HS_ST_ETFSubscri    "M"         // ETF认购
-#define HS_ST_ETFRed        "N"         // ETF申赎
-#define HS_ST_FundETF       "T"         // ETF基金
-#define HS_ST_StockGEM      "c"         // 创业板
+#define UFX_ST_Stock         "0"         // 股票
+#define UFX_ST_Fund          "1"         // 基金
+#define UFX_ST_Bonus         "2"         // 红利
+#define UFX_ST_NormSubcri    "4"         // 普通申购
+#define UFX_ST_FundSubRed    "A"         // 基金申赎
+#define UFX_ST_FundLOF       "L"         // LOF基金
+#define UFX_ST_ETFSubscri    "M"         // ETF认购
+#define UFX_ST_ETFRed        "N"         // ETF申赎
+#define UFX_ST_FundETF       "T"         // ETF基金
+#define UFX_ST_StockGEM      "c"         // 创业板
 
 /// 委托状态 entrust_status C1
-#define HS_ES_NotPlace          '0'     // 未报
-#define HS_ES_ToPlace           '1'     // 待报
-#define HS_ES_Placed            '2'     // 已报
-#define HS_ES_PlacedToCancel    '3'     // 已报待撤
-#define HS_ES_PartTradeToCancel '4'     // 部成待撤
-#define HS_ES_PartCancel        '5'     // 部撤
-#define HS_ES_Cancelled         '6'     // 已撤
-#define HS_ES_PartTrade         '7'     // 部成
-#define HS_ES_Trade             '8'     // 已成
-#define HS_ES_Placing           'C'     // 正报
+#define UFX_ES_NotPlace          '0'     // 未报
+#define UFX_ES_ToPlace           '1'     // 待报
+#define UFX_ES_Placed            '2'     // 已报
+#define UFX_ES_PlacedToCancel    '3'     // 已报待撤
+#define UFX_ES_PartTradeToCancel '4'     // 部成待撤
+#define UFX_ES_PartCancel        '5'     // 部撤
+#define UFX_ES_Cancelled         '6'     // 已撤
+#define UFX_ES_PartTrade         '7'     // 部成
+#define UFX_ES_Trade             '8'     // 已成
+#define UFX_ES_Placing           'C'     // 正报
 
 /// 委托类别 entrust_type C1
-#define HS_ET_Entrust           '0'     // 委托
-#define HS_ET_Query             '1'     // 查询
-#define HS_ET_EntrustCancel     '2'     // 撤单
-#define HS_ET_EntrustAgain      '3'     // 补单
+#define UFX_ET_Entrust           '0'     // 委托
+#define UFX_ET_Query             '1'     // 查询
+#define UFX_ET_EntrustCancel     '2'     // 撤单
+#define UFX_ET_EntrustAgain      '3'     // 补单
 
 
 /// 密码类别
-#define HS_PWD_TYPE_FUND        '1'     // 资金密码
-#define HS_PWD_TYPE_TRADE       '2'     // 交易密码
+#define UFX_PWD_TYPE_FUND        '1'     // 资金密码
+#define UFX_PWD_TYPE_TRADE       '2'     // 交易密码
 
 
 #pragma pack(push,4)
 
-struct HSRspInfoField
+struct UFXRspInfoField
 {
     int         error_no;               // 错误代码
     char        error_info[256];        // 错误提示
@@ -117,7 +117,7 @@ struct HSRspInfoField
 
 
 ///订阅应答数据 620001
-struct HSRspSubscribeField
+struct UFXRspSubscribeField
 {
     int         branch_no;              // 营业部号
     char        client_id[18];          // 账号
@@ -126,7 +126,7 @@ struct HSRspSubscribeField
 };
 
 ///查询请求数据
-struct HSReqQueryField
+struct UFXReqQueryField
 {
     int         branch_no;              // 营业部号
     char        client_id[18];          // 账号
@@ -135,7 +135,7 @@ struct HSReqQueryField
 };
 
 ///客户登录 331100
-struct HSReqUserLoginField
+struct UFXReqUserLoginField
 {
     char        client_id[18];          // 账号
     char        password[24];           // 密码
@@ -145,7 +145,7 @@ struct HSReqUserLoginField
 };
 
 ///客户登录应答
-struct HSRspUserLoginField
+struct UFXRspUserLoginField
 {
     char        client_id[18];          // 账号
     char        client_name[16];        // 投资者姓名
@@ -161,7 +161,7 @@ struct HSRspUserLoginField
 };
 
 ///报单录入 333002
-struct HSReqOrderInsertField
+struct UFXReqOrderInsertField
 {
     int         branch_no;          // 营业部号
     char        client_id[18];      // 账号 client_id/fund_account
@@ -177,7 +177,7 @@ struct HSReqOrderInsertField
 };
 
 ///撤单请求 333017
-struct HSReqOrderActionField
+struct UFXReqOrderActionField
 {
     int         branch_no;          // 营业部号
     char        client_id[18];      // 账号
@@ -337,4 +337,4 @@ struct HSMarketDataField
 
 #pragma pack(pop)
 
-#endif//_HS_TRADE_STRUCT_H_
+#endif//_UFX_TRADE_STRUCT_H_

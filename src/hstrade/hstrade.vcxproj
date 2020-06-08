@@ -23,6 +23,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>hstrade</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <ProjectName>ufxtd</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -154,17 +155,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="cJSON.h" />
-    <ClInclude Include="hstrade.h" />
-    <ClInclude Include="hstrade_callback.h" />
-    <ClInclude Include="hstrade_private.h" />
-    <ClInclude Include="hstrade_py.h" />
-    <ClInclude Include="hstrade_struct.h" />
+    <ClInclude Include="ufxtrade.h" />
+    <ClInclude Include="ufxtrade_callback.h" />
+    <ClInclude Include="ufxtrade_private.h" />
+    <ClInclude Include="ufxtrade_py.h" />
+    <ClInclude Include="ufxtrade_struct.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cJSON.c" />
-    <ClCompile Include="hstrade.cpp" />
-    <ClCompile Include="hstrade_callback.cpp" />
-    <ClCompile Include="hstrade_py.cpp" />
+    <ClCompile Include="ufxtrade.cpp" />
+    <ClCompile Include="ufxtrade_callback.cpp" />
+    <ClCompile Include="ufxtrade_py.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
