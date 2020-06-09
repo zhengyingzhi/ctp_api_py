@@ -1,5 +1,7 @@
 #include <stdarg.h>
 #include <time.h>
+#include <limits.h>
+#include <ctype.h>
 #include <iostream>
 #include <codecvt>
 #include <locale>
@@ -36,7 +38,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.4.0"
+#define XC_MDAPI_VERSION    "1.4.2"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -689,24 +691,38 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
 
     if (memcmp(pDyna->MarketCode, "SZSE", 4) == 0)
     {
+        // here also included SZSEOPT
+
         // 注意测试环境 180.169.89.22:2222 没有扩展字段，生产环境有
         socket_struct_Dyna_Extend2* pExtend = (socket_struct_Dyna_Extend2*)pDyna->Extend_fields;
         pMD->IOPV = pExtend->IOPV / price_div;
-        if (pExtend->DownLimit > 100)
+
+        // 
+        if (pExtend->DownLimit == 0 || pExtend->DownLimit > 999999999  ||
+            pExtend->UpLimit == 0 || pExtend->UpLimit > 999999999)
         {
-            pMD->UpperLimitPrice = pExtend->UpLimit / price_div;
-            pMD->LowerLimitPrice = pExtend->DownLimit / price_div;
-        }
-        else if (get_sec_info(lXcSymbol))
-        {
+            if (log_level == XC_LIMIT_LOG_LV)
+            {
+                fprintf(stderr, "OnRespDyna quoteID:%ld,code:%s,time:%d,new:%u,UpLimit:%u,DownLimit:%u\n",
+                    (long)qQuoteID, pDyna->SecCode, pDyna->Time, (uint32_t)pDyna->New, pExtend->UpLimit, pExtend->DownLimit);
+            }
+
             XcSecurityInfo* psec_info = get_sec_info(lXcSymbol);
-            pMD->UpperLimitPrice = psec_info->UpperLimitPrice;
-            pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
+            if (psec_info)
+            {
+                pMD->UpperLimitPrice = psec_info->UpperLimitPrice;
+                pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
+            }
+            else
+            {
+                pMD->UpperLimitPrice = 0;
+                pMD->LowerLimitPrice = 0;
+            }
         }
         else
         {
-            pMD->UpperLimitPrice = 0;
-            pMD->LowerLimitPrice = 0;
+            pMD->UpperLimitPrice = pExtend->UpLimit / price_div;
+            pMD->LowerLimitPrice = pExtend->DownLimit / price_div;
         }
     }
     else // if (strcmp(pDyna->MarketCode, "SSE") == 0)
