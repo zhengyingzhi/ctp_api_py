@@ -439,6 +439,7 @@ public:
     //////////////////////////////////////////////////////////////////////////
     // some raw api wrapper
     int Subscribe(const std::string& exchange, const std::string& instrument, int dyna_flag, int depth_flag, int depth_order, int each_flag);
+    int Cancel(const std::string& exchange, const std::string& instrument, int dyna_flag, int depth_flag, int depth_order, int each_flag);
     int Require(int ref_id, const std::string& exchange, const std::string& instrument);
 
 private:

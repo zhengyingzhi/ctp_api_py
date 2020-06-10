@@ -38,7 +38,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.4.2"
+#define XC_MDAPI_VERSION    "1.4.3"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -400,6 +400,16 @@ void XcMdApi::OnRespSecurity_Opt(QWORD qQuoteID, void* pParam)
     socket_struct_Security_Opt* pSecurityOpt = (socket_struct_Security_Opt*)pParam;
     socket_struct_Security_Opt_Extend* pExtend = (socket_struct_Security_Opt_Extend*)pSecurityOpt->Extend_fields;
 
+#if 0
+    std::cout << "OnRespSecurity_Opt:" << std::endl
+              << "StartDate:" << pSecurityOpt->StartDate << " EndDate:" << pSecurityOpt->EndDate << std::endl
+              << " ContractID:" << pSecurityOpt->ContractID << " CallOrPut:" << pSecurityOpt->CallOrPut << std::endl
+              << " ExpireDate:" << pSecurityOpt->ExpireDate << " OptionType:" << pSecurityOpt->OptionType << std::endl
+              << " ExerciseDate:" << pSecurityOpt->ExerciseDate << " OptionType:" << pSecurityOpt->OptionType << std::endl
+              << " UnderlyingSecCode:" << pSecurityOpt->UnderlyingSecCode << " UnderlyingSymbol:" << pSecurityOpt->UnderlyingSymbol << std::endl
+              << std::endl;
+#endif
+
     XcSecurityInfo lSecInfo;
     memset(&lSecInfo, 0, sizeof(lSecInfo));
     strcpy(lSecInfo.ExchangeID, pSecurityOpt->MarketCode);
@@ -513,22 +523,35 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
         lSecInfo.LowerLimitPrice = atof(buf);
     }
 
-    if (strcmp(lSecInfo.SecType, "OPT") == 0)
+    if (strcmp(lSecInfo.SecType, "SZOPT") == 0 || strcmp(lSecInfo.SecType, "OPT") == 0)
     {
-        // strcpy(lSecInfo.ContractID, pSecurity->ContractID);
+        strcpy(lSecInfo.ContractID, pSecurity->EnglishName);
         strcpy(lSecInfo.Underlying, pSecurity->UnderlyingSecurityID);
-        // strcpy(lSecInfo.UnderlyingName, pSecurity->UnderlyingSymbol);
+        if (strcmp(lSecInfo.Underlying, "159919") == 0)
+            strcpy(lSecInfo.UnderlyingName, "300ETF");
         // strcpy(lSecInfo.UnderlyingType, pSecurity->UnderlyingType);
-        // strcpy(lSecInfo.OptionType, pSecurity->OptionType);
+        lSecInfo.OptionType[0] = pSecurity->ExerciseType;
         lSecInfo.CallOrPut[0] = pSecurity->CallOrPut;
         strcpy(lSecInfo.StrikeDate, pSecurity->ExerciseBeginDate);
-        // strcpy(lSecInfo.DeliveryDate, pSecurity->DeliveryDate);
+        strcpy(lSecInfo.DeliveryDate, pSecurity->DeliveryDay);
         strcpy(lSecInfo.ExpireDate, pSecurity->LastTradeDay);
         lSecInfo.Multiplier = (int32_t)pSecurity->ContractUnit;
         lSecInfo.StrikePrice = pSecurity->ExercisePrice;
         lSecInfo.TotalLongPosition = (uint32_t)pSecurity->ContractPosition;
         // lSecInfo.UnderlyingPreClose = pSecurity->UnderlyingClosePx;
         lSecInfo.PreSettlePrice = pSecurity->PrevClearingPrice;
+
+#if MD_MAP_STRING_KEY
+        XcSecurityInfo* lpUnderlyingSecInfo = get_sec_info(atoi(lSecInfo.Underlying));
+#else
+        int lXcSymbol = atoi(pSecurity->SecCode);
+        XcSecurityInfo* lpUnderlyingSecInfo = get_sec_info(lXcSymbol);
+#endif//MD_MAP_STRING_KEY
+        if (lpUnderlyingSecInfo)
+        {
+            lSecInfo.UnderlyingPreClose = lpUnderlyingSecInfo->PreClosePrice;
+        }
+
         // lSecInfo.MarginUnit = pSecurity->MarginUnit;
         // lSecInfo.MarginRatioParam1 = pSecurity->MarginRatioParam1;
         // lSecInfo.MarginRatioParam2 = pSecurity->MarginRatioParam2;
@@ -1177,12 +1200,16 @@ int XcMdApi::unsubscribe_all()
     sub_flag.EachDeal_flag = false;
     sub_flag.EachOrder_flag = false;
 
-    socket_struct_SubscribeDetail SubList[2];
+    socket_struct_SubscribeDetail SubList[4];
     strcpy(SubList[0].MarketCode, Scdm_SSE);
     strcpy(SubList[0].SecCode, "*");
     strcpy(SubList[1].MarketCode, Scdm_SZSE);
     strcpy(SubList[1].SecCode, "*");
-    return api->Cancel(5, &sub_flag, SubList, 2);
+    strcpy(SubList[2].MarketCode, Scdm_SSEOPT);
+    strcpy(SubList[2].SecCode, "*");
+    strcpy(SubList[3].MarketCode, "SZSEOPT");
+    strcpy(SubList[4].SecCode, "*");
+    return api->Cancel(5, &sub_flag, SubList, 4);
 }
 
 int XcMdApi::req_qry_data(const string& symbol)
@@ -1402,6 +1429,30 @@ int XcMdApi::Subscribe(const std::string& exchange, const std::string& instrumen
     if (rv < 0)
     {
         XcDebugInfo(XcDbgFd, "xcmdapi Subscribe failed!!\n");
+        return rv;
+    }
+
+    return rv;
+}
+
+int XcMdApi::Cancel(const std::string& exchange, const std::string& instrument, int dyna_flag, int depth_flag, int depth_order, int each_flag)
+{
+    interface_struct_Subscribe sub_flag;
+    sub_flag.Dyna_flag = dyna_flag ? true : false;
+    sub_flag.DepthOrder_flag = depth_order ? true : false;
+    sub_flag.Depth_flag = depth_flag ? true : false;
+    sub_flag.EachDeal_flag = each_flag ? true : false;
+    sub_flag.EachOrder_flag = each_flag ? true : false;
+
+    // ¶©ÔÄ
+    socket_struct_SubscribeDetail SubList[MaxSize];
+    strncpy(SubList[0].MarketCode, exchange.c_str(), sizeof(SubList[0].MarketCode) - 1);
+    strncpy(SubList[0].SecCode, instrument.c_str(), sizeof(SubList[0].SecCode) - 1);
+    int SubSize = 1;
+    int rv = this->api->Cancel(refid++, &sub_flag, SubList, SubSize);
+    if (rv < 0)
+    {
+        XcDebugInfo(XcDbgFd, "xcmdapi Cancel failed!!\n");
         return rv;
     }
 
@@ -1845,6 +1896,7 @@ PYBIND11_MODULE(xcmd, m)
         .def("req_qry_data_batch", &XcMdApi::req_qry_data_batch)
         .def("Require", &XcMdApi::Require)
         .def("Subscribe", &XcMdApi::Subscribe)
+        .def("Cancel", &XcMdApi::Cancel)
 
 #if HAVE_BAR_GENERATOR
         .def("subscribe_bar_md", &XcMdApi::subscribe_bar_md)
