@@ -73,6 +73,7 @@ struct bar_generator_s
     int32_t     generated;
     int32_t     first_update_flag;
     int32_t     have_end_auction;
+    int32_t     stock_flag;
 
     int64_t     begin_volume;
     double      begin_turnover;

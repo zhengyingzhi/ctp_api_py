@@ -4,7 +4,7 @@
 #include "bar_generator.h"
 
 
-#define BAR_GENERATOR_VERSION   "1.0.4"
+#define BAR_GENERATOR_VERSION   "1.0.5"
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -187,9 +187,10 @@ static code_pause_time_t default_code_pause_time_table[] = {
 
 static const char* codes_2300[] = { "bu", "fu", "hc", "rb", "ru", "sp", "ss", NULL };
 static const char* codes_2330[] = { "a", "b", "m", "eb", "y", "i", "jm", "j", "p", "pg",
-    "RM", "OI", "CF", "CY", "SR", "FG", "MA", "JR", "SF", "WH", "SM", "RS", "RI", "PM", "LR", "AP", "TA", "ZC", NULL };
+    "RM", "OI", "CF", "CY", "SR", "FG", "MA", "JR", "SA", "SF", "WH", "SM", "RS", "RI",
+    "PM", "LR", "AP", "TA", "ZC", NULL };
 static const char* codes_100[] = { "al", "cu", "ni", "pb", "sn", "zn", NULL };
-static const char* codes_230[] = { "ag", "au", "sc", "nr", NULL };
+static const char* codes_230[] = { "ag", "au", "sc", "nr", "lu", NULL };
 static const char* codes_fut[] = { "c", "cs", "jd", "l", "v", "pp", "fb", "bb", "wr" };
 
 static int pause_time_2300[] = { 230000, 101500, 113000, 150000, BG_INVAL_PAUSE_TIME };
@@ -262,8 +263,8 @@ static bool filter_cn_security_by_updatetime(const char* instrument, int update_
 static bool filter_cn_future_by_updatetime(const char* instrument, int update_time)
 {
     (void)instrument;
-    if ((update_time > 150001 && update_time < 205900) ||
-        (update_time > 23001 && update_time < 85900))
+    if ((update_time > 150001 && update_time < 205500) ||
+        (update_time > 23001 && update_time < 85500))
     {
         return true;
     }
@@ -285,7 +286,8 @@ int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen, const char* exc
 
     if (instrument)
     {
-        bargen->have_end_auction = is_stock(instrument);
+        bargen->stock_flag = is_stock(instrument);
+        bargen->have_end_auction = bargen->stock_flag;
 
         strncpy(bargen->instrument, instrument, sizeof(bargen->instrument) - 1);
         get_product_code(bargen->code, instrument);
@@ -382,10 +384,13 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
     sim_time_t tick_tm = { 0 };
     int_to_ptime(&tick_tm, update_time, 0);
 
+    if (last_price < 0.01) {
+        return NULL;
+    }
+
     // fprintf(stderr, "bar_update: instr:%s,lastpx:%.2lf, vol:%ld,time:%d\n", 
     //     instrument, last_price, (long)volume, update_time);
-    if (bargen->filter_data_by_updatetime(bargen->instrument, update_time))
-    {
+    if (bargen->filter_data_by_updatetime(bargen->instrument, update_time)) {
         return NULL;
     }
 
@@ -441,8 +446,9 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
         // ---- md minute changed now ----
 
         // previous is auction time or not
-        if ((bargen->prev_update_time >= 85900 && bargen->prev_update_time <= 85959) ||
-            (bargen->prev_update_time >= 205900 && bargen->prev_update_time <= 205959))
+        if ((bargen->stock_flag && (bargen->prev_update_time >= 92500 && bargen->prev_update_time <= 92929)) || 
+            !bargen->stock_flag && ((bargen->prev_update_time >= 85900 && bargen->prev_update_time <= 85959) ||
+                                    (bargen->prev_update_time >= 205900 && bargen->prev_update_time <= 205959)))
         {
             generated = 0;
 
