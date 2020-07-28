@@ -38,7 +38,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.4.3"
+#define XC_MDAPI_VERSION    "1.4.4"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -712,6 +712,18 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     pMD->RefPrice = pDyna->RefPrice / price_div;
     memcpy(pMD->TradingPhaseCode, pDyna->TradingPhaseCode, sizeof(pMD->TradingPhaseCode));
 
+    // @202006 可能收盘错误的 pExtend->UpLimit/DownLimit，这里从静态信息中获取
+    XcSecurityInfo* psec_info = get_sec_info(lXcSymbol);
+    if (psec_info)
+    {
+        pMD->UpperLimitPrice = psec_info->UpperLimitPrice;
+        pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
+    }
+    else
+    {
+        // pass
+    }
+
     if (memcmp(pDyna->MarketCode, "SZSE", 4) == 0)
     {
         // here also included SZSEOPT
@@ -719,45 +731,11 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
         // 注意测试环境 180.169.89.22:2222 没有扩展字段，生产环境有
         socket_struct_Dyna_Extend2* pExtend = (socket_struct_Dyna_Extend2*)pDyna->Extend_fields;
         pMD->IOPV = pExtend->IOPV / price_div;
-
-        // 
-        if (pExtend->DownLimit == 0 || pExtend->DownLimit > 999999999  ||
-            pExtend->UpLimit == 0 || pExtend->UpLimit > 999999999)
-        {
-            if (log_level == XC_LIMIT_LOG_LV)
-            {
-                fprintf(stderr, "OnRespDyna quoteID:%ld,code:%s,time:%d,new:%u,UpLimit:%u,DownLimit:%u\n",
-                    (long)qQuoteID, pDyna->SecCode, pDyna->Time, (uint32_t)pDyna->New, pExtend->UpLimit, pExtend->DownLimit);
-            }
-
-            XcSecurityInfo* psec_info = get_sec_info(lXcSymbol);
-            if (psec_info)
-            {
-                pMD->UpperLimitPrice = psec_info->UpperLimitPrice;
-                pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
-            }
-            else
-            {
-                pMD->UpperLimitPrice = 0;
-                pMD->LowerLimitPrice = 0;
-            }
-        }
-        else
-        {
-            pMD->UpperLimitPrice = pExtend->UpLimit / price_div;
-            pMD->LowerLimitPrice = pExtend->DownLimit / price_div;
-        }
     }
     else // if (strcmp(pDyna->MarketCode, "SSE") == 0)
     {
         socket_struct_Dyna_Extend1* pExtend = (socket_struct_Dyna_Extend1*)pDyna->Extend_fields;
         pMD->IOPV = pExtend->IOPV / price_div;
-        XcSecurityInfo* psec_info = get_sec_info(lXcSymbol);
-        if (psec_info)
-        {
-            pMD->UpperLimitPrice = psec_info->UpperLimitPrice;
-            pMD->LowerLimitPrice = psec_info->LowerLimitPrice;
-        }
     }
 
     strcpy(pMD->TradingDay, trading_day);
@@ -961,9 +939,16 @@ void XcMdApi::OnRespEachDeal(QWORD qQuoteID, void* pParam)
     socket_struct_EachDeal* pEachDeal = (socket_struct_EachDeal*)pParam;
 
     gil_scoped_acquire acquire;
+    char temp[8] = "";
     dict data;
     data["ExchangeID"] = to_utf(pEachDeal->MarketCode);
     data["InstrumentID"] = to_utf(pEachDeal->SecCode);
+
+#if 0
+    std::cout << "EachDeal:" << pEachDeal->SecCode << "." << pEachDeal->MarketCode << ", "
+        << pEachDeal->Price << ", " << pEachDeal->Amount << ", vol:" << pEachDeal->Volume
+        << ", time:" << pEachDeal->Time << ", Type:" << pEachDeal->Type << "\n";
+#endif//0
 
     if (strcmp(pEachDeal->MarketCode, "SZSE") == 0 || strcmp(pEachDeal->MarketCode, "SSE") == 0)
     {
@@ -973,7 +958,9 @@ void XcMdApi::OnRespEachDeal(QWORD qQuoteID, void* pParam)
         {
             socket_struct_EachDeal_Extend1* pExtend2;
             pExtend2 = (socket_struct_EachDeal_Extend1*)pEachDeal->Extend_fields;
-            data["BsFlag"] = pExtend2->BsFlag;
+
+            temp[0] = pExtend2->BsFlag;
+            data["BsFlag"] = to_utf(temp);
         }
     }
     else
@@ -985,9 +972,12 @@ void XcMdApi::OnRespEachDeal(QWORD qQuoteID, void* pParam)
     data["BuyNo"] = pEachDeal->BuyNo;
     data["SellNo"] = pEachDeal->SellNo;
     data["BuyNo"] = pEachDeal->BuyNo;
-    data["DealNo"] = pEachDeal->DealNo;
-    data["Type"] = pEachDeal->Type;     // 成交类型 F：成交 4：撤销
+    data["DealNo"] = pEachDeal->DealNo; 
     data["Time"] = pEachDeal->Time;
+
+    // 成交类型 F：成交 4：撤销;
+    temp[0] = pEachDeal->Type;
+    data["Type"] = to_utf(temp);
 
     this->on_rtn_each_deal(data);
 }
@@ -1896,6 +1886,7 @@ PYBIND11_MODULE(xcmd, m)
         .def("req_qry_data_batch", &XcMdApi::req_qry_data_batch)
         .def("Require", &XcMdApi::Require)
         .def("Subscribe", &XcMdApi::Subscribe)
+        .def("UnSubscribe", &XcMdApi::Cancel)
         .def("Cancel", &XcMdApi::Cancel)
 
 #if HAVE_BAR_GENERATOR
