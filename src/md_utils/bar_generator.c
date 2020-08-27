@@ -447,8 +447,8 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
 
         // previous is auction time or not
         if ((bargen->stock_flag && (bargen->prev_update_time >= 92500 && bargen->prev_update_time <= 92929)) || 
-            !bargen->stock_flag && ((bargen->prev_update_time >= 85900 && bargen->prev_update_time <= 85959) ||
-                                    (bargen->prev_update_time >= 205900 && bargen->prev_update_time <= 205959)))
+            (!bargen->stock_flag && ((bargen->prev_update_time >= 85900 && bargen->prev_update_time <= 85959) ||
+                                    (bargen->prev_update_time >= 205900 && bargen->prev_update_time <= 205959))))
         {
             generated = 0;
 
