@@ -38,7 +38,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd2.h"
 
 
-#define XC_MDAPI_VERSION    "2.0.0a"
+#define XC_MDAPI_VERSION    "2.0.0"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -531,12 +531,16 @@ void XcMdApi::OnRespSecurity_Sz(char StationId, QWORD qQuoteID, char MarketCode,
     strcpy(lSecInfo.SecurityStatusFlag, pSecurity->SecurityStatus);
 
     lSecInfo.PreClosePrice = pSecurity->PrevClosePx;
-#if 0
-    if (pExtend->T_LimitUpRate < 0.0001)
+
+    if (pSecurity->T_LimitUpRate < 0.0001)
     {
         double lLimitRate = 0.1;
-        if (strstr(lSecInfo.SecName, "ST"))
+        if (strstr(lSecInfo.SecName, "ST")) {
             lLimitRate = 0.05;
+        }
+        else if (strncmp(lSecInfo.InstrumentID, "30", 2) == 0) {
+            lLimitRate = 0.2;
+        }
 
         char buf[200] = "";
         sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 + lLimitRate));
@@ -548,13 +552,12 @@ void XcMdApi::OnRespSecurity_Sz(char StationId, QWORD qQuoteID, char MarketCode,
     else
     {
         char buf[200] = "";
-        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 + pExtend->T_LimitUpRate));
+        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 + pSecurity->T_LimitUpRate));
         lSecInfo.UpperLimitPrice = atof(buf);
 
-        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 - pExtend->T_LimitDownRate));
+        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 - pSecurity->T_LimitDownRate));
         lSecInfo.LowerLimitPrice = atof(buf);
     }
-#endif//0
 
     if (strcmp(lSecInfo.SecType, "SZOPT") == 0 || strcmp(lSecInfo.SecType, "OPT") == 0)
     {
