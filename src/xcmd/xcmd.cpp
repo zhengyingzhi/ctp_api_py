@@ -38,7 +38,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.4.4"
+#define XC_MDAPI_VERSION    "1.4.5"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -702,11 +702,19 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
     pMD->Turnover = pDyna->Amount / price_div;
     pMD->OpenInterest = pDyna->OpenInt / price_div;
 
-    int hour = int(pDyna->Time / 10000);
-    int minute = int(pDyna->Time / 100) % 100;
-    int second = int(pDyna->Time % 100);
+    int hhmmss;
+    if (pDyna->Time > 10000000) {
+        hhmmss = pDyna->Time / 1000;
+        pMD->UpdateMillisec = hhmmss % 1000;
+    }
+    else {
+        hhmmss = pDyna->Time;
+        pMD->UpdateMillisec = 0;
+    }
+    int hour = int(hhmmss / 10000);
+    int minute = int(hhmmss  / 100) % 100;
+    int second = int(hhmmss % 100);
     sprintf(pMD->UpdateTime, "%02d:%02d:%02d", hour, minute, second);
-    pMD->UpdateMillisec = 0;
     pMD->Time = pDyna->Time;
     pMD->TickCount = (uint32_t)pDyna->TickCount;
     pMD->RefPrice = pDyna->RefPrice / price_div;

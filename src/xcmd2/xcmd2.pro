@@ -41,7 +41,7 @@ DEFINES += __STDC_FORMAT_MACROS
 # DEFINES += HAVE_WRPPAER_PYTHON
 
 
-INCLUDEPATH += ..
+INCLUDEPATH += .
 INCLUDEPATH += ./XcMarketApi
 INCLUDEPATH += ../../thirdparty
 # INCLUDEPATH += ../../thirdparty/python35/linux_include
@@ -51,17 +51,17 @@ LIBS += -lpthread -lrt
 
 # LIBS += -L../../thirdparty/python35/linux64 -lpython3.5m
 LIBS += -L../../thirdparty/python36/linux64 -lpython3.6m
-LIBS += -L../api/XcMarketApi/linux -lXcMarketApi
+LIBS += -L./XcMarketApi/linux64 -lXcMarketApi
 # LIBS += -L$$DESTDIR -lmd_utils
 
 
 # Input
 HEADERS += xcmd2.h \
-    ./XcTradeApi/Xc_Message_Define.h \
-    ./XcTradeApi/Xc_Message_Struct.h \
-    ./XcTradeApi/Xc_Public_Define.h \
-    ./XcTradeApi/Xc_Public_Struct.h \
-    ./XcTradeApi/XcMarketApi.h
+    ./XcMarketApi/Xc_Message_Define.h \
+    ./XcMarketApi/Xc_Message_Struct.h \
+    ./XcMarketApi/Xc_Public_Define.h \
+    ./XcMarketApi/Xc_Public_Struct.h \
+    ./XcMarketApi/XcMarketApi.h
 
 SOURCES += xcmd2.cpp
 
