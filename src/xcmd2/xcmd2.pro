@@ -47,11 +47,11 @@ INCLUDEPATH += ../../thirdparty
 # INCLUDEPATH += ../../thirdparty/python35/linux_include
 INCLUDEPATH += ../../thirdparty/python36/linux_include
 
-LIBS += -lpthread -lrt
+LIBS += -lpthread -lrt -ldl
 
 # LIBS += -L../../thirdparty/python35/linux64 -lpython3.5m
 LIBS += -L../../thirdparty/python36/linux64 -lpython3.6m
-LIBS += -L./XcMarketApi/linux64 -lXcMarketApi
+# LIBS += -L./XcMarketApi/linux64 -lXcMarketApi
 # LIBS += -L$$DESTDIR -lmd_utils
 
 

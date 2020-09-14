@@ -13,6 +13,7 @@
 #else
 #include <sys/time.h>
 #include <sys/types.h>
+#include <dlfcn.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <iconv.h>
@@ -38,7 +39,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd2.h"
 
 
-#define XC_MDAPI_VERSION    "2.0.0"
+#define XC_MDAPI_VERSION    "2.0.1"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -514,8 +515,8 @@ void XcMdApi::OnRespSecurity_Sz(char StationId, QWORD qQuoteID, char MarketCode,
     // socket_struct_Security_Sz_Extend* pExtend = (socket_struct_Security_Sz_Extend*)pSecurity->Extend_fields;
 
     XC_SECURITYINFO_SZ_T* pSecurity = (XC_SECURITYINFO_SZ_T*)apSecurity;
-    XcDebugInfo(XcDbgFd, "OnRespSecurity_Sz Code:%s,Name:%s,PreClose:%.2lf\n",
-        pSecurity->StockCode, pSecurity->SecName, pSecurity->PrevClosePx);
+    XcDebugInfo(XcDbgFd, "OnRespSecurity_Sz Code:%s,Name:%s,PreClose:%.2lf,T_LimitUpRate:%.4lf\n",
+        pSecurity->StockCode, pSecurity->SecName, pSecurity->PrevClosePx, pSecurity->T_LimitUpRate);
 
     XcSecurityInfo lSecInfo;
     memset(&lSecInfo, 0, sizeof(lSecInfo));
@@ -1224,7 +1225,23 @@ int XcMdApi::CreateMarketApi()
 {
     if (!m_api)
     {
+#ifdef _MSC_VER
         m_api = CXcMarketApi::CreateMarketApi();
+#else
+        typedef CXcMarketApi*(*p_Create)();
+        p_Create API_Create = NULL;
+        void* hdll = dlopen("libXcMarketApi.so", RTLD_LAZY);
+        if (!hdll) {
+            fprintf(stderr, "xcmd2 dlopen('libXcMarketApi.so') failed!\n");
+            return -100;
+        }
+        API_Create = (p_Create)dlsym(hdll, "CreateMarketApi");
+        if (!API_Create) {
+            fprintf(stderr, "xcmd2 dlsym('CreateMarketApi') failed!\n");
+            return -101;
+        }
+        m_api = API_Create();
+#endif//_MSC_VER
         if (!m_api) {
             return -1;
         }
