@@ -71,8 +71,8 @@ struct bar_generator_s
     uint32_t    tick_count;
     uint32_t    bar_count;
     int32_t     generated;
-    int32_t     first_update_flag;
-    int32_t     have_end_auction;
+    int32_t     first_update_flag;      // default is 1
+    int32_t     have_end_auction;       // for a stocks
     int32_t     stock_flag;
 
     int64_t     begin_volume;
@@ -108,6 +108,11 @@ typedef struct bar_generator_s bar_generator_t;
  */
 MD_UTILS_API int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen,
     const char* exchange, const char* instrument);
+
+/* set filter update time flag
+ * on: the flag enabled or not
+ */
+MD_UTILS_API void MD_UTILS_STDCALL bar_generator_set_filter_updatetime(bar_generator_t* bargen, int on);
 
 /* set the new product code pause times,
  * pause_times: [230000, 101500, 113000, 150000, BG_INVAL_PAUSE_TIME]

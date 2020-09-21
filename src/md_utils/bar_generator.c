@@ -4,7 +4,7 @@
 #include "bar_generator.h"
 
 
-#define BAR_GENERATOR_VERSION   "1.0.5"
+#define BAR_GENERATOR_VERSION   "1.0.6"
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -154,44 +154,14 @@ static field_names_t default_fieldnames = {
 };
 
 
-typedef struct
-{
-    const char* exchange;
-    const char* code;
-    int32_t pause_times[5];
-}code_pause_time_t;
-
-static code_pause_time_t default_code_pause_time_table[] = {
-    { MD_EXCHANGE_DCE, "a",   { 230000, 101500, 113000, 150000, BG_INVAL_PAUSE_TIME }},
-    { MD_EXCHANGE_DCE, "b",   { 230000, 101500, 113000, 150000, BG_INVAL_PAUSE_TIME }},
-    { MD_EXCHANGE_DCE, "m",   { 230000, 101500, 113000, 150000, BG_INVAL_PAUSE_TIME }},
-    { MD_EXCHANGE_SHFE, "ag", { 23000, 101500, 113000, 150000,  BG_INVAL_PAUSE_TIME }},
-    { MD_EXCHANGE_SHFE, "cu", { 10000, 101500, 113000, 150000,  BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_SHFE, "al", { 10000, 101500, 113000, 150000,  BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_SHFE, "zn", { 10000, 101500, 113000, 150000,  BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_SHFE, "pb", { 10000, 101500, 113000, 150000,  BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_SHFE, "sn", { 10000, 101500, 113000, 150000,  BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_SHFE, "rb", { 230000, 101500, 113000, 150000, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_SHFE, "ru", { 230000, 101500, 113000, 150000, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_INE,  "sc", { 23000, 101500, 113000, 150000,  BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_INE,  "nr", { 23000, 101500, 113000, 150000,  BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "IF",{ 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "IC",{ 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "IH",{ 113000, 150000, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "T", { 113000, 151500, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "TS",{ 113000, 151500, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "TF",{ 113000, 151500, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { MD_EXCHANGE_CFFEX, "TT",{ 113000, 151500, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } },
-    { NULL, NULL, { BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME, BG_INVAL_PAUSE_TIME } }
-};
-
-static const char* codes_2300[] = { "bu", "fu", "hc", "rb", "ru", "sp", "ss", NULL };
-static const char* codes_2330[] = { "a", "b", "m", "eb", "y", "i", "jm", "j", "p", "pg",
-    "RM", "OI", "CF", "CY", "SR", "FG", "MA", "JR", "SA", "SF", "WH", "SM", "RS", "RI",
-    "PM", "LR", "AP", "TA", "ZC", NULL };
-static const char* codes_100[] = { "al", "cu", "ni", "pb", "sn", "zn", NULL };
-static const char* codes_230[] = { "ag", "au", "sc", "nr", "lu", NULL };
-static const char* codes_fut[] = { "c", "cs", "jd", "l", "v", "pp", "fb", "bb", "wr" };
+static const char* codes_2300[] = { "a", "b", "c", "cs", "eb", "eg", "i", "j", "jm", "l", "m", "rr", "p", "pg", "pp",
+                                     "v", "y", "bu", "fu", "hc", "rb", "ru", "sp", "nr", "lu", "CF", "CY", "FG", "MA",
+                                     "OI", "RM", "SA", "SR", "TA", "ZC", NULL };
+static const char* codes_2330[] = { NULL };
+static const char* codes_100[] = { "al", "cu", "ni", "pb", "sn", "ss", "zn", NULL };
+static const char* codes_230[] = { "ag", "au", "sc", NULL };
+static const char* codes_fut[] = { "AP", "bb", "CJ", "fb", "IC", "IF", "IH", "jd", "JR", "LR", "PM", "RI", "RS", "SF",
+                                    "SM", "T", "TF", "TS", "UR", "WH", "wr", NULL };
 
 static int pause_time_2300[] = { 230000, 101500, 113000, 150000, BG_INVAL_PAUSE_TIME };
 static int pause_time_2330[] = { 233000, 101500, 113000, 150000, BG_INVAL_PAUSE_TIME };
@@ -209,7 +179,11 @@ static bool is_code_exist(const char* codes_table[], const char* code)
     for (index = 0; codes_table[index]; ++index)
     {
         pcur = codes_table[index];
+#ifdef _MSC_VER
         if (strcmp(pcur, code) == 0)
+#else
+        if (strcasecmp(pcur, code) == 0)
+#endif//_MSC_VER
         {
             return true;
         }
@@ -268,6 +242,13 @@ static bool filter_cn_future_by_updatetime(const char* instrument, int update_ti
     {
         return true;
     }
+    return false;
+}
+
+static bool filter_empty_by_updatetime(const char* instrument, int update_time)
+{
+    (void)instrument;
+    (void)update_time;
     return false;
 }
 
@@ -345,7 +326,18 @@ int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen, const char* exc
         }
     }
 
-    if (instrument[0] >= '0' && instrument[0] <= '9')
+    bar_generator_set_filter_updatetime(bargen, 1);
+    return 0;
+}
+
+void MD_UTILS_STDCALL bar_generator_set_filter_updatetime(bar_generator_t* bargen, int on)
+{
+    if (!on)
+    {
+        bargen->filter_data_by_updatetime = filter_empty_by_updatetime;
+    }
+
+    if (bargen->instrument[0] >= '0' && bargen->instrument[0] <= '9')
     {
         bargen->filter_data_by_updatetime = filter_cn_security_by_updatetime;
     }
@@ -353,7 +345,6 @@ int MD_UTILS_STDCALL bar_generator_init(bar_generator_t* bargen, const char* exc
     {
         bargen->filter_data_by_updatetime = filter_cn_future_by_updatetime;
     }
-    return 0;
 }
 
 void MD_UTILS_STDCALL bar_generator_set_pause_times(bar_generator_t* bargen, int pause_times[], int size)
@@ -384,7 +375,7 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
     sim_time_t tick_tm = { 0 };
     int_to_ptime(&tick_tm, update_time, 0);
 
-    if (last_price < 0.01) {
+    if (last_price < 0.0001) {
         return NULL;
     }
 

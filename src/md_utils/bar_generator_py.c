@@ -58,6 +58,26 @@ PyObject* bg_create(PyObject* self, PyObject* args)
     return res;
 }
 
+PyObject* bg_set_filter_updatetime(PyObject* self, PyObject* args)
+{
+    (void)self;
+    md_union_dtype_t v;
+    bar_generator_t* bargen;
+    int flag;
+
+    if (!PyArg_ParseTuple(args, "Li", &v.i64, &flag)) {
+        return Py_BuildValue("i", -1);
+    }
+
+    bargen = (bar_generator_t*)v.ptr;
+    if (!bargen) {
+        return Py_BuildValue("i", -2);
+    }
+
+    bar_generator_set_filter_updatetime(bargen, flag);
+    return Py_BuildValue("i", 0);
+}
+
 PyObject* bg_set_end_auction(PyObject* self, PyObject* args)
 {
     (void)self;
