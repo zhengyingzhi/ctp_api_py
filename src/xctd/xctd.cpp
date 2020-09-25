@@ -7,11 +7,23 @@
 #include "xctd.h"
 
 #ifdef _MSC_VER
+#include <Windows.h>
+
+static long get_tid()
+{
+    return GetCurrentThreadId();
+}
 #else
 
+#include <pthread.h>
 #include <unistd.h>
 #include <iconv.h>
 #define sleepms(x)  usleep((x) * 1000)
+
+static long get_tid()
+{
+    return (long)pthread_self();
+}
 
 int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, size_t outlen)
 {
@@ -41,18 +53,9 @@ static  inline void XcPrintNull(FILE* fd, const char* fmt, ...) { (void)fd; (voi
 #endif//MY_DEBUG
 #define XcDbgFd stdout
 
+#define DEBUG_VIEW_LEVEL        12
+#define IS_DBGVIEW(level)       ((level) == (DEBUG_VIEW_LEVEL))
 
-#define XC_OP_BRANCH_NO         "0"
-#define XC_OP_ENTRUST_WAY       "7"     // 网上委托
-#define XC_PASSWORD_TYPE        "2"     // 1-资金密码 2-交易密码
-
-#define XC_EXCHANGE_TYPE_CASH   "0"     // 0-资金 1-上海 2-深圳
-#define XC_EXCHANGE_TYPE_SSE    "1"
-#define XC_EXCHANGE_TYPE_SZSE   "2"
-
-#define XC_ENTRUST_TYPE_BUY     "1"     // 1-买入 2-卖出
-#define XC_ENTRUST_TYPE_SELL    "2"
-#define XC_ENTRUST_PROP         "0"     // 0-买卖
 
 #if 0
 //从字典中获取某个建值对应的字符串，并赋值到请求结构体对象的值上
@@ -84,10 +87,19 @@ static const char* func_id_desc(int func_id)
     case XC_FUNC_QRY_ORDER:         return "qry_order";
     case XC_FUNC_QRY_TRADE:         return "qry_trade";
     case XC_FUNC_QRY_POSITION:      return "qry_position";
-    case XC_FUNC_QRY_MD:            return "qrt_md";
+    case XC_FUNC_QRY_MD:            return "qry_md";
     case XC_FUNC_LOGIN:             return "client_login";
     case XC_FUNC_QRY_ACCOUNTINFO:   return "qry_account_info";
     case XC_FUNC_SUB_ORDER:         return "subscribe_order";
+    case XC_FUNC_OPT_QRY_INFO:      return "opt_qry_info";
+    case XC_FUNC_OPT_QRY_UNDERLYING:return "opt_qry_underlying";
+    case XC_FUNC_OPT_PLACE_ORDER:   return "opt_place_order";
+    case XC_FUNC_OPT_CANCEL_ORDER:  return "opt_cancel_order";
+    case XC_FUNC_OPT_QRY_ORDER:     return "opt_qry_order";
+    case XC_FUNC_OPT_QRY_TRADE:     return "opt_qry_trade";
+    case XC_FUNC_OPT_QRY_POSITION:  return "opt_qry_position";
+    case XC_FUNC_OPT_QRY_ASSET:     return "opt_qry_asset";
+    case XC_FUNC_OPT_QRY_MD:        return "opt_qry_md";
     default:                        return "unknown";
     }
 }
@@ -143,37 +155,69 @@ static std::string to_utf(const std::string &gb2312)
 #endif
 }
 
+static void log_debug(const char* fmt, ...)
+{
+    char buf[16300] = "";
+    int  len = 0;
+
+    time_t now = time(NULL);
+    struct tm* ptm = localtime(&now);
+    len = sprintf(buf + len, "%04d-%02d-%02d %02d:%02d:%02d [%ld] ",
+        ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec, get_tid());
+
+    va_list args;
+    va_start(args, fmt);
+    len += vsnprintf(buf + len, sizeof(buf) - len - 2, fmt, args);
+    va_end(args);
+    // [len++] = '\r';
+    buf[len++] = '\n';
+    buf[len] = '\0';
+
+#ifdef _MSC_VER
+    OutputDebugStringA(buf);
+#else
+    fprintf(stderr, buf);
+#endif//_MSC_VRR
+}
+
 
 XcTdApi::XcTdApi()
-    : api()
-    , fp()
+    : m_api()
+    , m_fp()
 {
 }
 
 XcTdApi::~XcTdApi()
 {
-    if (fp)
+    if (m_fp)
     {
-        fclose(fp);
-        fp = NULL;
+        fclose(m_fp);
+        m_fp = NULL;
     }
 }
 
 void XcTdApi::OnClose()
 {
-    XcDebugInfo(XcDbgFd, "xctdapi OnClose\n");
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd OnClose");
+    }
     this->on_front_disconnected(-1);
 }
 
 void XcTdApi::OnDisConnect(void)
 {
-    XcDebugInfo(XcDbgFd, "xctdapi OnDisConnect\n");
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd OnDisConnect");
+    }
     this->on_front_disconnected(-1);
 }
 
 void XcTdApi::OnConnected(void)
 {
-    XcDebugInfo(XcDbgFd, "xctdapi OnConnected\n");
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd OnConnected");
+    }
     this->on_front_connected();
 }
 
@@ -181,6 +225,10 @@ void XcTdApi::OnRecvJsonMsg(char* pJsonMsg)
 {
     // XcDebugInfo(XcDbgFd, pJsonMsg);
     // write_data(0, pJsonMsg);
+
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd OnRecvJsonMsg");
+    }
 
     std::string msg = to_utf(pJsonMsg);
     this->on_recv_msg(msg);
@@ -207,35 +255,43 @@ void XcTdApi::OnRecvPackEndRow(int iFunid, int iRefid, int iIssueType, int iSet,
 //////////////////////////////////////////////////////////////////////////
 void XcTdApi::create_td_api(int async_mode, int data_proto)
 {
-    this->api = CXcTradeApi::CreateTradeApi();
-    this->api->Register(async_mode, data_proto, this);
+    m_api = CXcTradeApi::CreateTradeApi();
+    m_api->Register(async_mode, data_proto, this);
+
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd create_td_api async_mode:%d, data_proto:%d", async_mode, data_proto);
+    }
 }
 
 void XcTdApi::release()
 {
-    if (this->api)
+    if (m_api)
     {
-        this->api->Release();
-        this->api = NULL;
+        m_api->Release();
+        m_api = NULL;
     }
 }
 
-int XcTdApi::connect(std::string server_port, std::string license_path, std::string fund_account)
+int XcTdApi::connect(std::string server_addr, std::string license, std::string fund_account)
 {
     int rv;
-    XcDebugInfo(XcDbgFd, "xctdapi init user_id:%s, server_port:%s, liscense:%s\n",
-        fund_account.c_str(), server_port.c_str(), license_path.c_str());
+    XcDebugInfo(XcDbgFd, "xctdapi init user_id:%s, server_addr:%s, liscense:%s\n",
+        fund_account.c_str(), server_addr.c_str(), license.c_str());
+
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd connect server_addr:%s, fund_account:%s", server_addr.c_str(), fund_account.c_str());
+    }
 
     // keep it
-    account_id = fund_account;
+    m_server_addr = server_addr;
+    m_license = license;
+    m_account_id = fund_account;
 
-    // write_data(0, "xctdapi connecting to server_port:%s, license_path:%s, fund_account:%s",
-    //     server_port.c_str(), license_path.c_str(), fund_account.c_str());
-    rv = this->api->Connect((char*)server_port.c_str(), (char*)license_path.c_str(), System_UFX, (char*)fund_account.c_str());
+    rv = m_api->Connect((char*)server_addr.c_str(), (char*)license.c_str(), System_UFX, (char*)fund_account.c_str());
     if (rv < 0)
     {
-        XcDebugInfo(XcDbgFd, "xctdapi Connect to %s failed:%d\n", server_port.c_str(), rv);
-        write_data(0, "xctdapi %s connect to %s failed rv:%d", fund_account.c_str(), server_port.c_str(), rv);
+        XcDebugInfo(XcDbgFd, "xctdapi Connect to %s failed:%d\n", server_addr.c_str(), rv);
+        write_data(0, "xctdapi %s connect to %s failed rv:%d", fund_account.c_str(), server_addr.c_str(), rv);
     }
 
     return rv;
@@ -243,27 +299,27 @@ int XcTdApi::connect(std::string server_port, std::string license_path, std::str
 
 void XcTdApi::begin_pack(void)
 {
-    api->BeginPack();
+    m_api->BeginPack();
 }
 
 void XcTdApi::end_pack(void)
 {
-    api->EndPack();
+    m_api->EndPack();
 }
 
 int XcTdApi::set_pack_value(const std::string& key_name, const std::string& value)
 {
-    return api->SetPackValue(key_name.c_str(), value.c_str());
+    return m_api->SetPackValue(key_name.c_str(), value.c_str());
 }
 
 int XcTdApi::set_json_value(const std::string& json_str)
 {
-    return api->SetJsonValue(json_str.c_str());
+    return m_api->SetJsonValue(json_str.c_str());
 }
 
 int XcTdApi::send_msg(int func_id, int subsystem_no, int branch_no)
 {
-    int rv = api->SendMsg(func_id, subsystem_no, branch_no);
+    int rv = m_api->SendMsg(func_id, subsystem_no, branch_no);
     return rv;
 }
 
@@ -272,45 +328,59 @@ int XcTdApi::send_json_data(int func_id, const std::string& data, int subsystem_
     // write_data(0, "send_data func_id:%d(%s),subsystem_no:%d,branch_no:%d,data:\n%s",
     //     func_id, func_id_desc(func_id), subsystem_no, branch_no, data.c_str());
 
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd send_json_data func_id:%d(%s), subsystem_no:%d, branch_no:%d, data:%dbytes!",
+                   func_id, func_id_desc(func_id), subsystem_no, branch_no, data.length());
+    }
+
     int rv;
-    rv = api->SetJsonValue(data.c_str());
+    rv = m_api->SetJsonValue(data.c_str());
     if (rv < 0) {
         return rv;
     }
 
-    rv = api->SendMsg(func_id, subsystem_no, branch_no);
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd SendMsg func_id:%d...", func_id);
+    }
+
+    rv = m_api->SendMsg(func_id, subsystem_no, branch_no);
+
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd SendMsg func_id:%d, rv:%d...", func_id, rv);
+    }
+
     return rv;
 }
 
 int XcTdApi::recv_msg()
 {
-    return api->RecvMsg();
+    return m_api->RecvMsg();
 }
 
 int XcTdApi::get_data_set_count()
 {
-    return api->GetDataSetCount();
+    return m_api->GetDataSetCount();
 }
 
 int XcTdApi::get_cur_row_count()
 {
-    return api->GetCurRowCount();
+    return m_api->GetCurRowCount();
 }
 
 int XcTdApi::get_cur_col_count()
 {
-    return api->GetCurColCount();
+    return m_api->GetCurColCount();
 }
 
 int XcTdApi::get_cur_data_set(int index)
 {
-    return api->GetCurDataSet(index);
+    return m_api->GetCurDataSet(index);
 }
 
 std::string XcTdApi::get_col_name(int col)
 {
     char name[1024] = "";
-    if (api->GetColName(col, name))
+    if (m_api->GetColName(col, name))
     {
         return std::string(name);
     }
@@ -320,7 +390,7 @@ std::string XcTdApi::get_col_name(int col)
 std::string XcTdApi::get_col_value(int col)
 {
     char value[4096] = "";
-    if (api->GetColValue(col, value))
+    if (m_api->GetColValue(col, value))
     {
     }
     return to_utf(value);
@@ -328,13 +398,13 @@ std::string XcTdApi::get_col_value(int col)
 
 void XcTdApi::get_next_row()
 {
-    api->GetNextRow();
+    m_api->GetNextRow();
 }
 
 std::string XcTdApi::get_json_value(int len)
 {
     char* buf = new char[len + 1];
-    api->GetJsonValue(buf);
+    m_api->GetJsonValue(buf);
     buf[len] = '\0';
 
     std::string msg = to_utf(buf);
@@ -344,7 +414,7 @@ std::string XcTdApi::get_json_value(int len)
 std::string XcTdApi::recv_json_data()
 {
     int ret;
-    ret = api->RecvMsg();
+    ret = m_api->RecvMsg();
     if (ret <= 0)
     {
         // error
@@ -356,27 +426,27 @@ std::string XcTdApi::recv_json_data()
 
 int XcTdApi::get_space()
 {
-    if (api)
+    if (m_api)
     {
-        return api->GetSpace();
+        return m_api->GetSpace();
     }
     return -1;
 }
 
 int XcTdApi::get_frequency()
 {
-    if (api)
+    if (m_api)
     {
-        return api->GetFrequency();
+        return m_api->GetFrequency();
     }
     return -1;
 }
 
 std::string XcTdApi::get_last_error_msg()
 {
-    if (api)
+    if (m_api)
     {
-        std::string errmsg = to_utf(api->GetLastErrorMsg());
+        std::string errmsg = to_utf(m_api->GetLastErrorMsg());
         return errmsg;
     }
     return std::string("");
@@ -389,13 +459,13 @@ std::string XcTdApi::get_api_version()
 
 int XcTdApi::open_debug(std::string log_file, int log_level)
 {
-    (void)log_level;
+    m_log_level = log_level;
 
-    if (fp)
+    if (m_fp)
     {
-        fflush(fp);
-        fclose(fp);
-        fp = NULL;
+        fflush(m_fp);
+        fclose(m_fp);
+        m_fp = NULL;
     }
 
     time_t now = time(NULL);
@@ -411,38 +481,20 @@ int XcTdApi::open_debug(std::string log_file, int log_level)
         strncpy(filename, log_file.c_str(), sizeof(filename) - 1);
     }
 
-    fp = fopen(filename, "a+");
-    if (!fp)
+    m_fp = fopen(filename, "a+");
+    if (!m_fp)
     {
-        XcDebugInfo(XcDbgFd, "open serialize file:%s failed!\n", filename);
+        fprintf(stderr, "open serialize file:%s failed!\n", filename);
         return -1;
     }
 
     return 0;
 }
 
-std::string XcTdApi::get_field_buy()
-{
-    return XC_ENTRUST_TYPE_BUY;
-}
-std::string XcTdApi::get_field_sell()
-{
-    return XC_ENTRUST_TYPE_SELL;
-}
-
-std::string XcTdApi::get_field_exchange_sse()
-{
-    return XC_EXCHANGE_TYPE_SSE;
-}
-std::string XcTdApi::get_field_exchange_szse()
-{
-    return XC_EXCHANGE_TYPE_SZSE;
-}
-
 int XcTdApi::write_line(int reserve, const std::string& line)
 {
     (void)reserve;
-    if (!fp)
+    if (!m_fp)
     {
         return -1;
     }
@@ -457,10 +509,10 @@ int XcTdApi::write_line(int reserve, const std::string& line)
         ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
         ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
 
-    fwrite(buf, len, 1, fp);
-    fwrite(line.c_str(), line.length(), 1, fp);
-    fwrite("\n", 1, 1, fp);
-    fflush(fp);
+    fwrite(buf, len, 1, m_fp);
+    fwrite(line.c_str(), line.length(), 1, m_fp);
+    fwrite("\n", 1, 1, m_fp);
+    fflush(m_fp);
 #endif
     return 0;
 }
@@ -468,7 +520,7 @@ int XcTdApi::write_line(int reserve, const std::string& line)
 int XcTdApi::write_data(int reserve, const char* fmt, ...)
 {
     (void)reserve;
-    if (!fp)
+    if (!m_fp)
     {
         return -1;
     }
@@ -491,8 +543,8 @@ int XcTdApi::write_data(int reserve, const char* fmt, ...)
     buf[len++] = '\n';
     buf[len] = '\0';
 
-    fwrite(buf, len, 1, fp);
-    fflush(fp);
+    fwrite(buf, len, 1, m_fp);
+    fflush(m_fp);
 #endif
     return 0;
 }
@@ -512,7 +564,7 @@ public:
         {
             PYBIND11_OVERLOAD(void, XcTdApi, on_front_connected);
         }
-        catch (const error_already_set &e)
+        catch (const pybind11::error_already_set &e)
         {
             std::cout << "on_front_connected: " << e.what() << std::endl;
         }
@@ -524,7 +576,7 @@ public:
         {
             PYBIND11_OVERLOAD(void, XcTdApi, on_front_disconnected, reqid);
         }
-        catch (const error_already_set &e)
+        catch (const pybind11::error_already_set &e)
         {
             std::cout << "on_front_disconnected: " << e.what() << std::endl;
         }
@@ -536,7 +588,7 @@ public:
         {
             PYBIND11_OVERLOAD(void, XcTdApi, on_recv_msg, msg);
         }
-        catch (const error_already_set &e)
+        catch (const pybind11::error_already_set &e)
         {
             std::cout << "on_recv_msg: " << e.what() << std::endl;
         }
@@ -548,7 +600,7 @@ public:
         {
             PYBIND11_OVERLOAD(void, XcTdApi, on_recv_pack_msg, iFunid, iRefid, iIssueType, iSet, iRow, iCol, name, value);
         }
-        catch (const error_already_set &e)
+        catch (const pybind11::error_already_set &e)
         {
             std::cout << "on_recv_pack_msg: " << e.what() << std::endl;
         }
@@ -560,7 +612,7 @@ public:
         {
             PYBIND11_OVERLOAD(void, XcTdApi, on_recv_pack_end_set, iFunid, iRefid, iIssueType, iSet);
         }
-        catch (const error_already_set &e)
+        catch (const pybind11::error_already_set &e)
         {
             std::cout << "on_recv_pack_end_set: " << e.what() << std::endl;
         }
@@ -572,7 +624,7 @@ public:
         {
             PYBIND11_OVERLOAD(void, XcTdApi, on_recv_pack_end_row, iFunid, iRefid, iIssueType, iSet, iRow);
         }
-        catch (const error_already_set &e)
+        catch (const pybind11::error_already_set &e)
         {
             std::cout << "on_recv_pack_end_row: " << e.what() << std::endl;
         }
@@ -583,9 +635,9 @@ public:
 
 PYBIND11_MODULE(xctd, m)
 {
-    class_<XcTdApi, PyTdApi> tdapi(m, "XcTdApi", module_local());
+    pybind11::class_<XcTdApi, PyTdApi> tdapi(m, "XcTdApi", pybind11::module_local());
     tdapi
-        .def(init<>())
+        .def(pybind11::init<>())
         .def("create_td_api", &XcTdApi::create_td_api)
         .def("create_api", &XcTdApi::create_td_api)
         .def("release", &XcTdApi::release)
@@ -608,17 +660,35 @@ PYBIND11_MODULE(xctd, m)
         .def("get_frequency", &XcTdApi::get_frequency)
         .def("get_last_error_msg", &XcTdApi::get_last_error_msg)
 
+        // some raw api names
+        .def("CreateTradeApi", &XcTdApi::create_td_api)
+        .def("Release", &XcTdApi::release)
+        .def("Connect", &XcTdApi::connect)
+        .def("BeginPack", &XcTdApi::begin_pack)
+        .def("SetPackValue", &XcTdApi::set_pack_value)
+        .def("SetJsonValue", &XcTdApi::set_json_value)
+        .def("SendMsg", &XcTdApi::send_msg)
+        .def("RecvMsg", &XcTdApi::recv_msg)
+        .def("GetDataSetCount", &XcTdApi::get_data_set_count)
+        .def("GetCurRowCount", &XcTdApi::get_cur_row_count)
+        .def("GetCurColCount", &XcTdApi::get_cur_col_count)
+        .def("GetCurDataSet", &XcTdApi::get_cur_data_set)
+        .def("GetColName", &XcTdApi::get_col_name)
+        .def("GetColValue", &XcTdApi::get_col_value)
+        .def("GetNextRow", &XcTdApi::get_next_row)
+        .def("GetJsonValue", &XcTdApi::get_json_value)
+        .def("GetSpace", &XcTdApi::get_space)
+        .def("GetFrequency", &XcTdApi::get_frequency)
+        .def("GetLastErrorMsg", &XcTdApi::get_last_error_msg)
+
+        // my wrappered api names
         .def("send_json_data", &XcTdApi::send_json_data)
         .def("recv_json_data", &XcTdApi::recv_json_data)
         .def("get_api_version", &XcTdApi::get_api_version)
         .def("open_debug", &XcTdApi::open_debug)
-
-        .def("get_field_buy", &XcTdApi::get_field_buy)
-        .def("get_field_sell", &XcTdApi::get_field_sell)
-        .def("get_field_exchange_sse", &XcTdApi::get_field_exchange_sse)
-        .def("get_field_exchange_szse", &XcTdApi::get_field_exchange_szse)
         .def("write_line", &XcTdApi::write_line)
 
+        // py virtual funcs
         .def("on_front_connected", &XcTdApi::on_front_connected)
         .def("on_front_disconnected", &XcTdApi::on_front_disconnected)
         .def("on_recv_msg", &XcTdApi::on_recv_msg)

@@ -17,10 +17,10 @@
 // using std::string;
 // using std::map;
 // using namespace std;
-using namespace pybind11;
+// using namespace pybind11;
 
 
-#define XC_TDAPI_VERSION        "1.0.1"
+#define XC_TDAPI_VERSION        "1.1.0"
 
 #define XC_FUNC_QRY_SECINFO     330300      // 证券代码信息查询
 #define XC_FUNC_QRY_CASH_FAST   332254      // 客户资金快速查询
@@ -38,6 +38,16 @@ using namespace pybind11;
 #define XC_FUNC_SUB_ORDER       620001      // 订阅回报主推
 #define XC_FUNC_RTN_ORDER       620003      // 回报主推
 
+#define XC_FUNC_OPT_QRY_INFO        338000  // 期权代码查询
+#define XC_FUNC_OPT_QRY_UNDERLYING  338001  // 期权标的查询
+#define XC_FUNC_OPT_PLACE_ORDER     338011  // 期权委托
+#define XC_FUNC_OPT_CANCEL_ORDER    338012  // 期权撤单
+#define XC_FUNC_OPT_QRY_ORDER       338020  // 期权委托查询
+#define XC_FUNC_OPT_QRY_TRADE       338021  // 期权成交查询
+#define XC_FUNC_OPT_QRY_POSITION    338023  // 期权持仓查询
+#define XC_FUNC_OPT_QRY_ASSET       338022  // 期权资产查询
+#define XC_FUNC_OPT_QRY_MD          395     // 期权行情查询
+
 
 class XcTdApi :public CXcTradeSpi
 {
@@ -45,10 +55,13 @@ public:
     XcTdApi();
     ~XcTdApi();
 
-    CXcTradeApi*    api;
-    FILE*           fp;
+    CXcTradeApi*    m_api;
+    FILE*           m_fp;
+    int             m_log_level;
 
-    std::string     account_id;
+    std::string     m_server_addr;
+    std::string     m_license;
+    std::string     m_account_id;
 
 public:
     /* 断开提示*/
@@ -89,7 +102,7 @@ public:
     void release();
 
     // 连接服务器
-    int connect(std::string server_port, std::string license_path, std::string fund_account);
+    int connect(std::string server_addr, std::string license, std::string fund_account);
 
     // 开始打包
     void begin_pack(void);
@@ -144,12 +157,6 @@ public:
     std::string get_api_version();
 
     int open_debug(std::string log_file, int log_level);
-
-    // some api for field map
-    std::string get_field_buy();
-    std::string get_field_sell();
-    std::string get_field_exchange_sse();
-    std::string get_field_exchange_szse();
 
     // write msg into log file
     int write_line(int reserve, const std::string& line);
