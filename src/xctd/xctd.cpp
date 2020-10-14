@@ -185,6 +185,7 @@ static void log_debug(const char* fmt, ...)
 XcTdApi::XcTdApi()
     : m_api()
     , m_fp()
+    , m_active(false)
 {
 }
 
@@ -195,14 +196,91 @@ XcTdApi::~XcTdApi()
         fclose(m_fp);
         m_fp = NULL;
     }
+
+    if (m_active)
+    {
+        this->release();
+    }
 }
+
+void XcTdApi::processTask()
+{
+    try
+    {
+        while (m_active)
+        {
+            Task task = m_task_queue.pop();
+            // fprintf(stderr, "-->> got task %d\n", task.task_name);
+
+            switch (task.task_name)
+            {
+            case ONCLOSE:
+            {
+                this->processOnClose(&task);
+                break;
+            }
+
+            case ONDISCONNECT:
+            {
+                this->processOnDisConnect(&task);
+                break;
+            }
+
+            case ONCONNECTED:
+            {
+                this->processOnConnected(&task);
+                break;
+            }
+
+            case ONRECVJSONMSG:
+            {
+                this->processOnRecvJsonMsg(&task);
+                break;
+            }
+
+            } // switch
+        } // while
+    }
+    catch (const TerminatedError&)
+    {
+    }
+}
+
+void XcTdApi::processOnClose(Task *task)
+{
+    pybind11::gil_scoped_acquire acquire;
+    this->on_front_disconnected(-1);
+}
+
+void XcTdApi::processOnDisConnect(Task *task)
+{
+    pybind11::gil_scoped_acquire acquire;
+    this->on_front_disconnected(-1);
+}
+
+void XcTdApi::processOnConnected(Task *task)
+{
+    pybind11::gil_scoped_acquire acquire;
+    this->on_front_connected();
+}
+
+void XcTdApi::processOnRecvJsonMsg(Task *task)
+{
+    pybind11::gil_scoped_acquire acquire;
+    this->on_recv_msg(task->task_msg);
+}
+
 
 void XcTdApi::OnClose()
 {
     if (IS_DBGVIEW(m_log_level)) {
         log_debug("xctd OnClose");
     }
-    this->on_front_disconnected(-1);
+
+    Task task = Task();
+    task.task_name = ONCLOSE;
+    task.task_id = -1;
+    m_task_queue.push(task);
 }
 
 void XcTdApi::OnDisConnect(void)
@@ -210,7 +288,11 @@ void XcTdApi::OnDisConnect(void)
     if (IS_DBGVIEW(m_log_level)) {
         log_debug("xctd OnDisConnect");
     }
-    this->on_front_disconnected(-1);
+
+    Task task = Task();
+    task.task_name = ONDISCONNECT;
+    task.task_id = -1;
+    m_task_queue.push(task);
 }
 
 void XcTdApi::OnConnected(void)
@@ -218,7 +300,11 @@ void XcTdApi::OnConnected(void)
     if (IS_DBGVIEW(m_log_level)) {
         log_debug("xctd OnConnected");
     }
-    this->on_front_connected();
+
+    Task task = Task();
+    task.task_name = ONCONNECTED;
+    task.task_id = 0;
+    m_task_queue.push(task);
 }
 
 void XcTdApi::OnRecvJsonMsg(char* pJsonMsg)
@@ -230,8 +316,11 @@ void XcTdApi::OnRecvJsonMsg(char* pJsonMsg)
         log_debug("xctd OnRecvJsonMsg");
     }
 
-    std::string msg = to_utf(pJsonMsg);
-    this->on_recv_msg(msg);
+    Task task = Task();
+    task.task_name = ONRECVJSONMSG;
+    task.task_id = 0;
+    task.task_msg = to_utf(pJsonMsg);
+    m_task_queue.push(task);
 }
 
 void XcTdApi::OnRecvPackMsg(int iFunid, int iRefid, int iIssueType, int iSet, int iRow, int iCol, char* szName, char* szValue)
@@ -253,22 +342,28 @@ void XcTdApi::OnRecvPackEndRow(int iFunid, int iRefid, int iIssueType, int iSet,
 
 
 //////////////////////////////////////////////////////////////////////////
-void XcTdApi::create_td_api(int async_mode, int data_proto)
+int XcTdApi::create_td_api(int async_mode, int data_proto)
 {
     m_api = CXcTradeApi::CreateTradeApi();
-    m_api->Register(async_mode, data_proto, this);
+    int rv = m_api->Register(async_mode, data_proto, this);
 
     if (IS_DBGVIEW(m_log_level)) {
-        log_debug("xctd create_td_api async_mode:%d, data_proto:%d", async_mode, data_proto);
+        log_debug("xctd create_td_api async_mode:%d, data_proto:%d, rv:%d", async_mode, data_proto, rv);
     }
+    return rv;
 }
 
 void XcTdApi::release()
 {
     if (m_api)
     {
+        m_active = false;
+        m_task_queue.terminate();
+
         m_api->Release();
         m_api = NULL;
+
+        m_task_thread.join();
     }
 }
 
@@ -279,13 +374,20 @@ int XcTdApi::connect(std::string server_addr, std::string license, std::string f
         fund_account.c_str(), server_addr.c_str(), license.c_str());
 
     if (IS_DBGVIEW(m_log_level)) {
-        log_debug("xctd connect server_addr:%s, fund_account:%s", server_addr.c_str(), fund_account.c_str());
+        log_debug("xctd connect server_addr:%s, fund_account:%s, m_active:%d",
+            server_addr.c_str(), fund_account.c_str(), m_active);
     }
 
     // keep it
     m_server_addr = server_addr;
     m_license = license;
     m_account_id = fund_account;
+
+    if (!m_active)
+    {
+        m_active = true;
+        m_task_thread = std::thread(&XcTdApi::processTask, this);
+    }
 
     rv = m_api->Connect((char*)server_addr.c_str(), (char*)license.c_str(), System_UFX, (char*)fund_account.c_str());
     if (rv < 0)

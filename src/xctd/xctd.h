@@ -6,6 +6,12 @@
 
 #include <string>
 #include <map>
+#include <vector>
+#include <mutex>
+#include <queue>
+#include <thread>
+#include <condition_variable>
+
 
 #include <pybind11/pybind11.h>
 #include <XcTradeApi/XcTradeApi.h>
@@ -20,7 +26,7 @@
 // using namespace pybind11;
 
 
-#define XC_TDAPI_VERSION        "1.1.0"
+#define XC_TDAPI_VERSION        "1.2.0"
 
 #define XC_FUNC_QRY_SECINFO     330300      // 证券代码信息查询
 #define XC_FUNC_QRY_CASH_FAST   332254      // 客户资金快速查询
@@ -49,6 +55,66 @@
 #define XC_FUNC_OPT_QRY_MD          395     // 期权行情查询
 
 
+
+#define ONCLOSE         1
+#define ONDISCONNECT    2
+#define ONCONNECTED     3
+#define ONRECVJSONMSG   4
+
+//任务结构体
+struct Task
+{
+    int task_name;      //回调函数名称对应的常量
+    void *task_data;    //数据指针
+    void *task_error;   //错误指针
+    int task_id;        //请求id
+    bool task_last;     //是否为最后返回
+    std::string task_msg;
+};
+
+class TerminatedError : std::exception
+{};
+
+class TaskQueue
+{
+private:
+    std::queue<Task> queue_;
+    std::mutex mutex_;
+    std::condition_variable cond_;
+
+    bool _terminate = false;
+
+public:
+    void push(const Task &task)
+    {
+        std::unique_lock<std::mutex > mlock(mutex_);
+        queue_.push(task);
+        mlock.unlock();
+        cond_.notify_one();
+    }
+
+    //取出老的任务
+    Task pop()
+    {
+        std::unique_lock<std::mutex> mlock(mutex_);
+        cond_.wait(mlock, [&]() {
+            return !queue_.empty() || _terminate;
+        });
+        if (_terminate)
+            throw TerminatedError();
+        Task task = queue_.front();
+        queue_.pop();
+        return task;
+    }
+
+    void terminate()
+    {
+        _terminate = true;
+        cond_.notify_all();
+    }
+};
+
+
 class XcTdApi :public CXcTradeSpi
 {
 public:
@@ -62,6 +128,17 @@ public:
     std::string     m_server_addr;
     std::string     m_license;
     std::string     m_account_id;
+
+    std::thread     m_task_thread;
+    TaskQueue       m_task_queue;
+    bool            m_active = false;
+
+private:
+    void processTask();
+    void processOnClose(Task *task);
+    void processOnDisConnect(Task *task);
+    void processOnConnected(Task *task);
+    void processOnRecvJsonMsg(Task *task);
 
 public:
     /* 断开提示*/
@@ -96,7 +173,7 @@ public:
 
 public:
     // 创建API async_mode：1-asyn, data_proto: 1-json
-    void create_td_api(int async_mode = Trans_Mode_ASY, int data_proto = Data_Proto_Json);
+    int create_td_api(int async_mode = Trans_Mode_ASY, int data_proto = Data_Proto_Json);
 
     // 销毁API
     void release();
