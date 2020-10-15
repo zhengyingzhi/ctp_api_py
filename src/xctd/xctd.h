@@ -26,7 +26,7 @@
 // using namespace pybind11;
 
 
-#define XC_TDAPI_VERSION        "1.2.0"
+#define XC_TDAPI_VERSION        "1.2.1"
 
 #define XC_FUNC_QRY_SECINFO     330300      // 证券代码信息查询
 #define XC_FUNC_QRY_CASH_FAST   332254      // 客户资金快速查询
@@ -128,6 +128,8 @@ public:
     std::string     m_server_addr;
     std::string     m_license;
     std::string     m_account_id;
+    int             m_async_mode;
+    int             m_data_proto;
 
     std::thread     m_task_thread;
     TaskQueue       m_task_queue;

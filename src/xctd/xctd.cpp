@@ -187,6 +187,8 @@ XcTdApi::XcTdApi()
     , m_fp()
     , m_active(false)
 {
+    m_async_mode = 0;
+    m_data_proto = 0;
 }
 
 XcTdApi::~XcTdApi()
@@ -344,6 +346,9 @@ void XcTdApi::OnRecvPackEndRow(int iFunid, int iRefid, int iIssueType, int iSet,
 //////////////////////////////////////////////////////////////////////////
 int XcTdApi::create_td_api(int async_mode, int data_proto)
 {
+    m_async_mode = async_mode;
+    m_data_proto = data_proto;
+
     m_api = CXcTradeApi::CreateTradeApi();
     int rv = m_api->Register(async_mode, data_proto, this);
 
@@ -374,8 +379,8 @@ int XcTdApi::connect(std::string server_addr, std::string license, std::string f
         fund_account.c_str(), server_addr.c_str(), license.c_str());
 
     if (IS_DBGVIEW(m_log_level)) {
-        log_debug("xctd connect server_addr:%s, fund_account:%s, m_active:%d",
-            server_addr.c_str(), fund_account.c_str(), m_active);
+        log_debug("xctd connect server_addr:%s, fund_account:%s, m_active:%d, m_async_mode:%d",
+            server_addr.c_str(), fund_account.c_str(), m_active, m_async_mode);
     }
 
     // keep it
@@ -383,10 +388,11 @@ int XcTdApi::connect(std::string server_addr, std::string license, std::string f
     m_license = license;
     m_account_id = fund_account;
 
-    if (!m_active)
+    if (!m_active && m_async_mode)
     {
         m_active = true;
         m_task_thread = std::thread(&XcTdApi::processTask, this);
+        write_data(0, "xctdapi created thread since working async mode");
     }
 
     rv = m_api->Connect((char*)server_addr.c_str(), (char*)license.c_str(), System_UFX, (char*)fund_account.c_str());
