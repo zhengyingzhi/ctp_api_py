@@ -10,6 +10,7 @@
 #ifdef _MSC_VER
 #include <Windows.h>
 #define sleepms(x)  Sleep((x))
+#define get_tid     GetCurrentThreadId
 #else
 #include <sys/time.h>
 #include <sys/types.h>
@@ -18,6 +19,7 @@
 #include <unistd.h>
 #include <iconv.h>
 #define sleepms(x)  usleep((x) * 1000)
+#define get_tid     pthread_self
 
 int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, size_t outlen)
 {
@@ -39,7 +41,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd2.h"
 
 
-#define XC_MDAPI_VERSION    "2.0.1"
+#define XC_MDAPI_VERSION    "2.0.2"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -812,7 +814,7 @@ void XcMdApi::OnRespDyna(char StationId, QWORD qQuoteID, DWORD SplitId, char Mar
     // keep it firstly, and notify when issue end
     // m_pendings.push_back(pMD);
 
-    if (log_level == XC_SPEC_LOG_LV && pDyna->Time >= 91500000 && pDyna->Time <= 151500000)
+    if (log_level == XC_SPEC_LOG_LV && (hhmmss >= 91500 && hhmmss <= 153000))
     {
         write_data(log_level, "RespDyna %ld,%s,%s,%.2lf,%.2lf,%.2lf,%.2lf,%ld,%.2lf,%.2lf,%.2lf,bid:%.2lf,%d,ask:%.2lf,%d,n:%d",
             (long)qQuoteID, pMD->UpdateTime, pMD->InstrumentID, pMD->LastPrice, pMD->OpenPrice, pMD->HighestPrice, pMD->LowestPrice,
@@ -1245,6 +1247,9 @@ int XcMdApi::CreateMarketApi()
         if (!m_api) {
             return -1;
         }
+
+        int tid = (int)get_tid();
+        write_data(log_level, "CreateMarketApi m_api:%p, tid:%d", m_api, tid);
         return 0;
     }
     return 1;
@@ -1257,7 +1262,8 @@ int XcMdApi::Register(const std::string& user_id, const std::string& license)
 
 int XcMdApi::Release()
 {
-    write_data(0, "Release");
+    int tid = (int)get_tid();
+    write_data(log_level, "Release m_api:%p, tid:%d", m_api, tid);
 
     if (m_api)
     {
@@ -1282,6 +1288,15 @@ int XcMdApi::Connect(std::string server_addr)
         sprintf(lbuffer, "tcp://%s", server_addr.c_str());
         server_addr = lbuffer;
     }
+
+
+    if (m_thread_mode && !m_active)
+    {
+        m_active = true;
+        m_task_thread = std::thread(&XcMdApi::processTask, this);
+    }
+
+
     return m_api->Connect(server_addr.c_str());
 }
 
@@ -1533,6 +1548,10 @@ std::string XcMdApi::GetLastErrorMsg()
 //////////////////////////////////////////////////////////////////////////
 void XcMdApi::processTask()
 {
+    int count = 0;
+    int tid = (int)get_tid();
+    write_data(log_level, "xcmd2 thread task [%d] running", tid);
+
     try
     {
         while (m_active)
@@ -1577,11 +1596,21 @@ void XcMdApi::processTask()
                 break;
             }
             } // switch
+
+            count += 1;
+#if 0
+            if (count & 62235 == 0)
+            {
+                write_data(log_level, "");
+            }
+#endif//0
         } // while
     }
     catch (const TerminatedError&)
     {
     }
+
+    write_data(log_level, "xcmd2 thread task [%d] end", tid);
 }
 
 void XcMdApi::processOnUserLogin(Task *task)
