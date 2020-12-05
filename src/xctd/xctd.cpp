@@ -189,6 +189,7 @@ XcTdApi::XcTdApi()
 {
     m_async_mode = 0;
     m_data_proto = 0;
+    m_count = 0;
 }
 
 XcTdApi::~XcTdApi()
@@ -213,6 +214,9 @@ void XcTdApi::processTask()
         {
             Task task = m_task_queue.pop();
             // fprintf(stderr, "-->> got task %d\n", task.task_name);
+            if (IS_DBGVIEW(m_log_level)) {
+                log_debug("xctd processTask count:%d", task.task_id);
+            }
 
             switch (task.task_name)
             {
@@ -278,6 +282,7 @@ void XcTdApi::OnClose()
     if (IS_DBGVIEW(m_log_level)) {
         log_debug("xctd OnClose");
     }
+    write_log(m_log_level, "OnClose");
 
     Task task = Task();
     task.task_name = ONCLOSE;
@@ -290,6 +295,7 @@ void XcTdApi::OnDisConnect(void)
     if (IS_DBGVIEW(m_log_level)) {
         log_debug("xctd OnDisConnect");
     }
+    write_log(m_log_level, "OnDisConnect");
 
     Task task = Task();
     task.task_name = ONDISCONNECT;
@@ -302,6 +308,7 @@ void XcTdApi::OnConnected(void)
     if (IS_DBGVIEW(m_log_level)) {
         log_debug("xctd OnConnected");
     }
+    write_log(m_log_level, "OnConnected");
 
     Task task = Task();
     task.task_name = ONCONNECTED;
@@ -311,22 +318,23 @@ void XcTdApi::OnConnected(void)
 
 void XcTdApi::OnRecvJsonMsg(char* pJsonMsg)
 {
-    // XcDebugInfo(XcDbgFd, pJsonMsg);
-    // write_data(0, pJsonMsg);
-
     if (IS_DBGVIEW(m_log_level)) {
-        log_debug("xctd OnRecvJsonMsg");
+        log_debug("xctd OnRecvJsonMsg count:%d", m_count);
     }
 
     Task task = Task();
     task.task_name = ONRECVJSONMSG;
-    task.task_id = 0;
+    task.task_id = m_count++;
     task.task_msg = to_utf(pJsonMsg);
     m_task_queue.push(task);
 }
 
 void XcTdApi::OnRecvPackMsg(int iFunid, int iRefid, int iIssueType, int iSet, int iRow, int iCol, char* szName, char* szValue)
 {
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd OnRecvPackMsg");
+    }
+
     std::string name = to_utf(szName);
     std::string value = to_utf(szValue);
     this->on_recv_pack_msg(iFunid, iRefid, iIssueType, iSet, iRow, iCol, name, value);
@@ -334,11 +342,19 @@ void XcTdApi::OnRecvPackMsg(int iFunid, int iRefid, int iIssueType, int iSet, in
 
 void XcTdApi::OnRecvPackEndSet(int iFunid, int iRefid, int iIssueType, int iSet)
 {
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd OnRecvPackEndSet");
+    }
+
     this->on_recv_pack_end_set(iFunid, iRefid, iIssueType, iSet);
 }
 
 void XcTdApi::OnRecvPackEndRow(int iFunid, int iRefid, int iIssueType, int iSet, int iRow)
 {
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd OnRecvPackEndRow");
+    }
+
     this->on_recv_pack_end_row(iFunid, iRefid, iIssueType, iSet, iRow);
 }
 
@@ -349,6 +365,12 @@ int XcTdApi::create_td_api(int async_mode, int data_proto)
     m_async_mode = async_mode;
     m_data_proto = data_proto;
 
+    if (m_api)
+    {
+        m_api->Release();
+        m_api = NULL;
+    }
+
     m_api = CXcTradeApi::CreateTradeApi();
     int rv = m_api->Register(async_mode, data_proto, this);
 
@@ -358,8 +380,41 @@ int XcTdApi::create_td_api(int async_mode, int data_proto)
     return rv;
 }
 
+int XcTdApi::create_trade_api()
+{
+    if (m_api)
+    {
+        m_api->Release();
+        m_api = NULL;
+    }
+
+    m_api = CXcTradeApi::CreateTradeApi();
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd create_trade_api m_api:%p", m_api);
+    }
+    write_log(m_log_level, "create_trade_api m_api:%p", m_api);
+    return 0;
+}
+
+int XcTdApi::register_spi(int async_mode, int data_proto)
+{
+    m_async_mode = async_mode;
+    m_data_proto = data_proto;
+    int rv = m_api->Register(async_mode, data_proto, this);
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd register_spi async_mode:%d, data_proto:%d, rv:%d", async_mode, data_proto, rv);
+    }
+    write_log(m_log_level, "register_spi async_mode:%d, data_proto:%d, rv:%d", async_mode, data_proto, rv);
+    return rv;
+}
+
 void XcTdApi::release()
 {
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd release m_api:%p", m_api);
+    }
+    write_log(m_log_level, "release m_api:%p", m_api);
+
     if (m_api)
     {
         m_active = false;
@@ -392,14 +447,14 @@ int XcTdApi::connect(std::string server_addr, std::string license, std::string f
     {
         m_active = true;
         m_task_thread = std::thread(&XcTdApi::processTask, this);
-        write_data(0, "xctdapi created thread since working async mode");
+        write_log(m_log_level, "xctdapi created thread since working async mode");
     }
 
     rv = m_api->Connect((char*)server_addr.c_str(), (char*)license.c_str(), System_UFX, (char*)fund_account.c_str());
     if (rv < 0)
     {
         XcDebugInfo(XcDbgFd, "xctdapi Connect to %s failed:%d\n", server_addr.c_str(), rv);
-        write_data(0, "xctdapi %s connect to %s failed rv:%d", fund_account.c_str(), server_addr.c_str(), rv);
+        write_log(0, "xctdapi %s connect to %s failed rv:%d", fund_account.c_str(), server_addr.c_str(), rv);
     }
 
     return rv;
@@ -433,7 +488,7 @@ int XcTdApi::send_msg(int func_id, int subsystem_no, int branch_no)
 
 int XcTdApi::send_json_data(int func_id, const std::string& data, int subsystem_no, int branch_no)
 {
-    // write_data(0, "send_data func_id:%d(%s),subsystem_no:%d,branch_no:%d,data:\n%s",
+    // write_log(0, "send_data func_id:%d(%s),subsystem_no:%d,branch_no:%d,data:\n%s",
     //     func_id, func_id_desc(func_id), subsystem_no, branch_no, data.c_str());
 
     if (IS_DBGVIEW(m_log_level)) {
@@ -568,6 +623,9 @@ std::string XcTdApi::get_api_version()
 int XcTdApi::open_debug(std::string log_file, int log_level)
 {
     m_log_level = log_level;
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd open_debug log_file:%s, log_level:%d, ver:%s", log_file.c_str(), log_level, XC_TDAPI_VERSION);
+    }
 
     if (m_fp)
     {
@@ -625,7 +683,7 @@ int XcTdApi::write_line(int reserve, const std::string& line)
     return 0;
 }
 
-int XcTdApi::write_data(int reserve, const char* fmt, ...)
+int XcTdApi::write_log(int reserve, const char* fmt, ...)
 {
     (void)reserve;
     if (!m_fp)
@@ -661,7 +719,7 @@ int XcTdApi::write_data(int reserve, const char* fmt, ...)
 ///Boost.Python·â×°
 ///-------------------------------------------------------------------------------------
 
-class PyTdApi : public XcTdApi
+class PyXcTdApi : public XcTdApi
 {
 public:
     using XcTdApi::XcTdApi;
@@ -743,7 +801,7 @@ public:
 
 PYBIND11_MODULE(xctd, m)
 {
-    pybind11::class_<XcTdApi, PyTdApi> tdapi(m, "XcTdApi", pybind11::module_local());
+    pybind11::class_<XcTdApi, PyXcTdApi> tdapi(m, "XcTdApi", pybind11::module_local());
     tdapi
         .def(pybind11::init<>())
         .def("create_td_api", &XcTdApi::create_td_api)
@@ -769,7 +827,8 @@ PYBIND11_MODULE(xctd, m)
         .def("get_last_error_msg", &XcTdApi::get_last_error_msg)
 
         // some raw api names
-        .def("CreateTradeApi", &XcTdApi::create_td_api)
+        .def("CreateTradeApi", &XcTdApi::create_trade_api)
+        .def("Register", &XcTdApi::register_spi)
         .def("Release", &XcTdApi::release)
         .def("Connect", &XcTdApi::connect)
         .def("BeginPack", &XcTdApi::begin_pack)

@@ -26,7 +26,7 @@
 // using namespace pybind11;
 
 
-#define XC_TDAPI_VERSION        "1.2.1"
+#define XC_TDAPI_VERSION        "1.2.2"
 
 #define XC_FUNC_QRY_SECINFO     330300      // 证券代码信息查询
 #define XC_FUNC_QRY_CASH_FAST   332254      // 客户资金快速查询
@@ -130,6 +130,7 @@ public:
     std::string     m_account_id;
     int             m_async_mode;
     int             m_data_proto;
+    int             m_count;
 
     std::thread     m_task_thread;
     TaskQueue       m_task_queue;
@@ -176,6 +177,10 @@ public:
 public:
     // 创建API async_mode：1-asyn, data_proto: 1-json
     int create_td_api(int async_mode = Trans_Mode_ASY, int data_proto = Data_Proto_Json);
+
+    int create_trade_api();
+
+    int register_spi(int async_mode = Trans_Mode_ASY, int data_proto = Data_Proto_Json);
 
     // 销毁API
     void release();
@@ -241,5 +246,5 @@ public:
     int write_line(int reserve, const std::string& line);
 
 private:
-    int write_data(int reserve, const char* fmt, ...);
+    int write_log(int reserve, const char* fmt, ...);
 };
