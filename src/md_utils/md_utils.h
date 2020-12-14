@@ -104,6 +104,8 @@ MD_UTILS_API int MD_UTILS_STDCALL is_stock(const char* instrument);
 
 MD_UTILS_API int MD_UTILS_STDCALL convert_market_id(const char* exchange);
 
+MD_UTILS_API char* MD_UTILS_STDCALL data_change(char* apdata);
+
 
 #ifdef __cplusplus
 }

@@ -57,6 +57,9 @@
     <ClCompile Include="slq_reader_py.c">
       <Filter>other</Filter>
     </ClCompile>
+    <ClCompile Include="ztl_base64.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bar_generator.h">
@@ -88,6 +91,9 @@
     </ClInclude>
     <ClInclude Include="slq_reader.h">
       <Filter>other</Filter>
+    </ClInclude>
+    <ClInclude Include="ztl_base64.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

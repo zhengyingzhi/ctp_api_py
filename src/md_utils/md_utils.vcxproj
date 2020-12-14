@@ -196,6 +196,7 @@
     <ClCompile Include="md_utils.c" />
     <ClCompile Include="md_utils_py.c" />
     <ClCompile Include="slq_reader_py.c" />
+    <ClCompile Include="ztl_base64.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bardata_list.h" />
@@ -208,6 +209,7 @@
     <ClInclude Include="md_utils.h" />
     <ClInclude Include="md_utils_py.h" />
     <ClInclude Include="slq_reader.h" />
+    <ClInclude Include="ztl_base64.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

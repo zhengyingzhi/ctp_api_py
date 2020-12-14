@@ -5,6 +5,7 @@
 
 #include "md_utils.h"
 #include "md_utils_py.h"
+#include "ztl_base64.h"
 
 
 #if HAVE_PY_WRAPPER
@@ -12,6 +13,7 @@
 
 /* ---------- bar generate py interfaces begin ---------- */
 extern PyObject* bg_create(PyObject* self, PyObject* args);
+extern PyObject* bg_set_filter_updatetime(PyObject* self, PyObject* args);
 extern PyObject* bg_set_end_auction(PyObject* self, PyObject* args);
 extern PyObject* bg_reset(PyObject* self, PyObject* args);
 extern PyObject* bg_release(PyObject* self, PyObject* args);
@@ -39,6 +41,7 @@ instrument: str the instrument code like 000001/ru2009/IF2006\n\
 date:       str the action day\n\
 update_time:int the last update time like 134520\n"
 #define BG_CURRENT_BAR_DOC      "return the current bar data (maybe not finished yet)"
+#define BG_SET_FILTER_UPDATETIME_DOC    "whether filter the the none trading update-time like 113001~125959."
 #define BG_SET_END_AUCTION_DOC  "the end auction flag for the instrument (mainly for SSE).\n\
 end_auction_flag: int on or off"
 #define BG_VERSION_DOC          "the bar generator module version"
@@ -97,12 +100,56 @@ static PyObject* mu_to_int_time(PyObject* self, PyObject* args)
     return Py_BuildValue("i", to_int_time(time_str));
 }
 
+static PyObject* mu_data_encode(PyObject* self, PyObject* args)
+{
+    (void)self;
+    char* raw_data = NULL;
+    if (!PyArg_ParseTuple(args, "s", &raw_data)) {
+        return Py_BuildValue("i", -1);
+    }
+
+    if (!raw_data || !raw_data[0])
+        return Py_BuildValue("i", -1);
+
+    char lbuf[1000] = "";
+    strncpy(lbuf, raw_data, sizeof(lbuf) - 1);
+    data_change(lbuf);
+
+    char ldst[1000] = "";
+    uint32_t* llen = sizeof(ldst) - 1;
+    ztl_base64_encode(lbuf, strlen(lbuf), ldst, &llen);
+
+    return Py_BuildValue("s", ldst);
+}
+
+static PyObject* mu_data_decode(PyObject* self, PyObject* args)
+{
+    (void)self;
+    char* raw_data = NULL;
+    if (!PyArg_ParseTuple(args, "s", &raw_data)) {
+        return Py_BuildValue("i", -1);
+    }
+
+    if (!raw_data || !raw_data[0])
+        return Py_BuildValue("i", -1);
+
+    char lbuf[1000] = "";
+    uint32_t* llen = sizeof(lbuf) - 1;
+    ztl_base64_decode(raw_data, strlen(raw_data), lbuf, &llen);
+
+    data_change(lbuf);
+
+    return Py_BuildValue("s", lbuf);
+}
+
 /* ---------- md utils py interfaces end   ---------- */
 
 //////////////////////////////////////////////////////////////////////////
 static PyMethodDef MdUtilsModuleMethods[] = {
     { "mu_version", mu_version,     METH_NOARGS , "md utils module version" },
     { "mu_to_int_time", mu_to_int_time, METH_VARARGS , "convert time str to int" },
+    { "mu_data_encode", mu_data_encode, METH_VARARGS , "simple data encode" },
+    { "mu_data_decode", mu_data_decode, METH_VARARGS , "simple data decode" },
 
     { "bg_create",  bg_create,      METH_VARARGS, BG_CREATE_DOC },
     { "bg_release", bg_release,     METH_VARARGS, BG_RELEASE_DOC },
@@ -111,6 +158,7 @@ static PyMethodDef MdUtilsModuleMethods[] = {
     { "bg_update_without_data",     bg_update_without_data, METH_VARARGS, BG_UPDATE_WITHOUT_DATA_DOC },
     { "bg_current_bar",             bg_current_bar       ,  METH_VARARGS, BG_CURRENT_BAR_DOC },
     { "bg_included_data_flag",      bg_included_data_flag,  METH_VARARGS, "whether the last updated data included in or not" },
+    { "bg_set_filter_updatetime",   bg_set_filter_updatetime,   METH_VARARGS, BG_SET_FILTER_UPDATETIME_DOC },
     { "bg_set_end_auction",         bg_set_end_auction,     METH_VARARGS, BG_SET_END_AUCTION_DOC },
     { "bg_version", bg_version,     METH_NOARGS,  BG_VERSION_DOC },
 

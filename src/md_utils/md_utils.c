@@ -3,7 +3,7 @@
 #include <time.h>
 #include "md_utils.h"
 
-#define MD_UTILS_VERSION    "1.0.2"
+#define MD_UTILS_VERSION    "1.0.3"
 
 
 typedef struct
@@ -19,6 +19,7 @@ static code_exchange_t code_exchange_table[] = {
     { "bb", MD_EXCHANGE_DCE, "" },
     { "c",  MD_EXCHANGE_DCE, "" },
     { "cs", MD_EXCHANGE_DCE, "" },
+    { "eb", MD_EXCHANGE_DCE, "" },
     { "eg", MD_EXCHANGE_DCE, "" },
     { "fb", MD_EXCHANGE_DCE, "" },
     { "i",  MD_EXCHANGE_DCE, "" },
@@ -26,6 +27,7 @@ static code_exchange_t code_exchange_table[] = {
     { "jd", MD_EXCHANGE_DCE, "" },
     { "jm", MD_EXCHANGE_DCE, "" },
     { "l",  MD_EXCHANGE_DCE, "" },
+    { "lh",  MD_EXCHANGE_DCE, "" },
     { "m",  MD_EXCHANGE_DCE, "" },
     { "rr", MD_EXCHANGE_DCE, "" },
     { "p",  MD_EXCHANGE_DCE, "" },
@@ -43,16 +45,18 @@ static code_exchange_t code_exchange_table[] = {
     { "LR", MD_EXCHANGE_CZCE, "" },
     { "MA", MD_EXCHANGE_CZCE, "" },
     { "OI", MD_EXCHANGE_CZCE, "" },
+    { "PF", MD_EXCHANGE_CZCE, "" },
     { "PM", MD_EXCHANGE_CZCE, "" },
     { "RI", MD_EXCHANGE_CZCE, "" },
     { "RM", MD_EXCHANGE_CZCE, "" },
     { "RS", MD_EXCHANGE_CZCE, "" },
+    { "SA", MD_EXCHANGE_CZCE, "" },
     { "SF", MD_EXCHANGE_CZCE, "" },
     { "SM", MD_EXCHANGE_CZCE, "" },
     { "SR", MD_EXCHANGE_CZCE, "" },
     { "TA", MD_EXCHANGE_CZCE, "" },
-    { "WH", MD_EXCHANGE_CZCE, "" },
     { "UR", MD_EXCHANGE_CZCE, "" },
+    { "WH", MD_EXCHANGE_CZCE, "" },
     { "ZC", MD_EXCHANGE_CZCE, "" },
 
     { "ag", MD_EXCHANGE_SHFE, "" },
@@ -60,20 +64,22 @@ static code_exchange_t code_exchange_table[] = {
     { "au", MD_EXCHANGE_SHFE, "" },
     { "bu", MD_EXCHANGE_SHFE, "" },
     { "cu", MD_EXCHANGE_SHFE, "" },
-    { "hc", MD_EXCHANGE_SHFE, "" },
     { "fu", MD_EXCHANGE_SHFE, "" },
+    { "hc", MD_EXCHANGE_SHFE, "" },
     { "ni", MD_EXCHANGE_SHFE, "" },
     { "pb", MD_EXCHANGE_SHFE, "" },
     { "rb", MD_EXCHANGE_SHFE, "" },
     { "ru", MD_EXCHANGE_SHFE, "" },
     { "sn", MD_EXCHANGE_SHFE, "" },
-    { "wr", MD_EXCHANGE_SHFE, "" },
-    { "zn", MD_EXCHANGE_SHFE, "" },
     { "sp", MD_EXCHANGE_SHFE, "" },
     { "ss", MD_EXCHANGE_SHFE, "" },
+    { "wr", MD_EXCHANGE_SHFE, "" },
+    { "zn", MD_EXCHANGE_SHFE, "" },
 
     { "sc", MD_EXCHANGE_INE, "原油" },
-    { "nr", MD_EXCHANGE_INE, "" },
+    { "bc", MD_EXCHANGE_INE, "国际铜" },
+    { "lu", MD_EXCHANGE_INE, "低硫燃油" },
+    { "nr", MD_EXCHANGE_INE, "20号胶" },
 
     { "IC", MD_EXCHANGE_CFFEX, "中证500指数" },
     { "IF", MD_EXCHANGE_CFFEX, "沪深300指数" },
@@ -288,4 +294,22 @@ int MD_UTILS_STDCALL convert_market_id(const char* exchange)
     }
 
     return MD_MI_NONE;
+}
+
+char* MD_UTILS_STDCALL data_change(char* apdata)
+{
+    unsigned char *p;
+    unsigned char uch, umask, index = 0;
+    p = (unsigned char *)apdata;
+    while ((uch = *p))
+    {
+        umask = 0xFF - index;
+        *p++ = uch  ^ umask;
+        index++;
+
+        if (index > 8)
+            index = 0;
+    }
+
+    return apdata;
 }

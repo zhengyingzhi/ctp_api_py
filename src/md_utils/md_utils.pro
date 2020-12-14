@@ -62,7 +62,8 @@ HEADERS += bar_generator.h \
     md_dict.h \
     md_utils.h \
     md_utils_py.h \
-    slq_reader.h 
+    slq_reader.h \
+    ztl_base64.h
 
 SOURCES += bar_generator.c \
     bardata_list.c \
@@ -75,5 +76,6 @@ SOURCES += bar_generator.c \
     md_dict_py.c \
     md_utils.c \
     md_utils_py.c \
-    slq_reader_py.c 
+    slq_reader_py.c \
+    ztl_base64.c
 
