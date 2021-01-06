@@ -134,6 +134,7 @@
     <OutDir>$(SolutionDir)..\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\$(Platform)\objs\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetExt>.pyd</TargetExt>
+    <TargetName>ctptd</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -236,15 +237,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;CTPMD_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\api\ctp_se;..\;..\pyscript;..\..\..\thirdparty\python35\include;..\..\..\thirdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\api\ctp_se;..\;..\pyscript;..\..\..\thirdparty\python36\include;..\..\..\thirdparty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>python35.lib;thosttraderapi_se.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\api\ctp_se\win64;..\..\..\thirdparty\python35\win64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>python36.lib;thosttraderapi_se.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\api\ctp_se\win64;..\..\..\thirdparty\python36\win64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
