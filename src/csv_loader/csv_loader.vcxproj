@@ -108,6 +108,7 @@
     <IntDir>$(SolutionDir)..\$(Platform)\objs\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetExt>.pyd</TargetExt>
     <LinkIncremental>false</LinkIncremental>
+    <TargetName>csv_reader.cp36-win_amd64</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

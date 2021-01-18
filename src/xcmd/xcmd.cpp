@@ -38,7 +38,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.4.5"
+#define XC_MDAPI_VERSION    "1.4.6"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -700,7 +700,7 @@ void XcMdApi::OnRespDyna(QWORD qQuoteID, void* pParam)
 
     pMD->Volume = (int)pDyna->Volume;
     pMD->Turnover = pDyna->Amount / price_div;
-    pMD->OpenInterest = pDyna->OpenInt / price_div;
+    pMD->OpenInterest = pDyna->OpenInt;
 
     int hhmmss;
     if (pDyna->Time > 10000000) {

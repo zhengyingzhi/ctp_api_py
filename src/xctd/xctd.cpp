@@ -213,9 +213,8 @@ void XcTdApi::processTask()
         while (m_active)
         {
             Task task = m_task_queue.pop();
-            // fprintf(stderr, "-->> got task %d\n", task.task_name);
             if (IS_DBGVIEW(m_log_level)) {
-                log_debug("xctd processTask count:%d", task.task_id);
+                log_debug("xctd processTask task:%d, count:%d", task.task_name, task.task_id);
             }
 
             switch (task.task_name)
@@ -245,6 +244,10 @@ void XcTdApi::processTask()
             }
 
             } // switch
+
+            if (IS_DBGVIEW(m_log_level)) {
+                log_debug("xctd processTask task:%d done", task.task_name);
+            }
         } // while
     }
     catch (const TerminatedError&)
@@ -319,7 +322,7 @@ void XcTdApi::OnConnected(void)
 void XcTdApi::OnRecvJsonMsg(char* pJsonMsg)
 {
     if (IS_DBGVIEW(m_log_level)) {
-        log_debug("xctd OnRecvJsonMsg count:%d", m_count);
+        log_debug("xctd OnRecvJsonMsg ..");
     }
 
     Task task = Task();
@@ -327,6 +330,10 @@ void XcTdApi::OnRecvJsonMsg(char* pJsonMsg)
     task.task_id = m_count++;
     task.task_msg = to_utf(pJsonMsg);
     m_task_queue.push(task);
+
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd OnRecvJsonMsg count:%d", m_count);
+    }
 }
 
 void XcTdApi::OnRecvPackMsg(int iFunid, int iRefid, int iIssueType, int iSet, int iRow, int iCol, char* szName, char* szValue)
@@ -477,12 +484,33 @@ int XcTdApi::set_pack_value(const std::string& key_name, const std::string& valu
 
 int XcTdApi::set_json_value(const std::string& json_str)
 {
-    return m_api->SetJsonValue(json_str.c_str());
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd set_json_value");
+    }
+
+    int rv = m_api->SetJsonValue(json_str.c_str());
+
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd set_json_value done");
+    }
+
+    return rv;
 }
 
 int XcTdApi::send_msg(int func_id, int subsystem_no, int branch_no)
 {
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd send_msg func_id:%d(%s), subsystem_no:%d, branch_no:%d",
+            func_id, func_id_desc(func_id), subsystem_no, branch_no);
+    }
+
     int rv = m_api->SendMsg(func_id, subsystem_no, branch_no);
+
+    if (IS_DBGVIEW(m_log_level)) {
+        log_debug("xctd send_msg func_id:%d(%s) done, rv:%d",
+            func_id, func_id_desc(func_id), rv);
+    }
+
     return rv;
 }
 
@@ -509,7 +537,7 @@ int XcTdApi::send_json_data(int func_id, const std::string& data, int subsystem_
     rv = m_api->SendMsg(func_id, subsystem_no, branch_no);
 
     if (IS_DBGVIEW(m_log_level)) {
-        log_debug("xctd SendMsg func_id:%d, rv:%d...", func_id, rv);
+        log_debug("xctd SendMsg done func_id:%d, rv:%d", func_id, rv);
     }
 
     return rv;

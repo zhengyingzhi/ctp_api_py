@@ -134,7 +134,7 @@
     <OutDir>$(SolutionDir)..\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\$(Platform)\objs\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetExt>.pyd</TargetExt>
-    <TargetName>ctptd</TargetName>
+    <TargetName>ctptd.cp36-win_amd64</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

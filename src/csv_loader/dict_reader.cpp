@@ -6,7 +6,7 @@
 #include <locale>
 
 
-#define DICT_READER_VER     "0.0.1"
+#define DICT_READER_VER     "0.0.2"
 
 
 #if 0 // demo struct

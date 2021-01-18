@@ -14,6 +14,7 @@
 
 #include <pybind11/pybind11.h>
 #include <KCBPCLI3/KCBPCLI.h>
+#include <KCBPCLI3/KDEncodeCli.h>
 
 // #include <nlohmann/json.hpp>
 // using json = nlohmann::json;
@@ -175,11 +176,15 @@ public:
     /*wrappered funcs*/
     int get_last_rv();
     std::string get_rs_as_json();
+    int set_value_encode(const std::string& KeyName, const std::string& Value, const std::string& EncodeKey, int EncodeLevel);
     int set_ssl_key_password(const std::string& KeyFileName, const std::string& Password);
     int set_value_sslencrypt(const std::string& KeyName, const std::string& Value);
     int rs_set_value_sslencrypt(int ColumnIndex, const std::string& Value);
     int rs_set_value_byname_sslencrypt(const std::string& ColumnName, const std::string& Value);
     int is_disconnected(int code);
+
+    /*wrappered kdencode*/
+    std::string kd_encode(int nEncode_Level, const std::string& SrcData, const std::string& EncodeKey);
 
     std::string get_api_version();
 

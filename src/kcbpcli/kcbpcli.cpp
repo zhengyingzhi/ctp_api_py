@@ -5,6 +5,7 @@
 // #include <condition_variable>
 
 #include "cJSON.h"
+#include "ztl_base64.h"
 #include "kcbpcli.h"
 
 #ifdef _MSC_VER
@@ -382,6 +383,12 @@ int KCBPCli::ACallProgramAndCommit(const std::string& ProgramName, pybind11::dic
     extract_callctrl(&stControl, dctCallCtrl);
     m_last_rv = KCBPCLI_ACallProgramAndCommit(m_handle, (char*)ProgramName.c_str(), &stControl);
 
+    if (IS_DBGVIEW(m_log_level))
+    {
+        log_debug("ACallProgramAndCommit(%s) rv:%d, szMsgId:%s,szCorrId:%s\n", ProgramName.c_str(), m_last_rv,
+            stControl.szMsgId, stControl.szCorrId);
+    }
+
     dctCallCtrl["szMsgId"] = stControl.szMsgId;
     dctCallCtrl["szCorrId"] = stControl.szCorrId;
     dctCallCtrl["tTimeStamp"] = stControl.tTimeStamp;
@@ -393,6 +400,12 @@ int KCBPCli::ACallProgram(const std::string& ProgramName, pybind11::dict& dctCal
     tagCallCtrl stControl = { 0 };
     extract_callctrl(&stControl, dctCallCtrl);
     m_last_rv = KCBPCLI_ACallProgram(m_handle, (char*)ProgramName.c_str(), &stControl);
+
+    if (IS_DBGVIEW(m_log_level))
+    {
+        log_debug("ACallProgram(%s) rv:%d, szMsgId:%s,szCorrId:%s\n", ProgramName.c_str(), m_last_rv,
+            stControl.szMsgId, stControl.szCorrId);
+    }
 
     dctCallCtrl["szMsgId"] = stControl.szMsgId;
     dctCallCtrl["szCorrId"] = stControl.szCorrId;
@@ -406,6 +419,12 @@ int KCBPCli::GetReply(pybind11::dict& dctCallCtrl)
     extract_callctrl(&stControl, dctCallCtrl);
     m_last_rv = KCBPCLI_GetReply(m_handle, &stControl);
 
+    if (IS_DBGVIEW(m_log_level))
+    {
+        log_debug("GetReply() rv:%d, szId:%s,szMsgId:%s,szCorrId:%s\n", m_last_rv,
+            stControl.szId, stControl.szMsgId, stControl.szCorrId);
+    }
+
     dctCallCtrl["szId"] = stControl.szId;
     return m_last_rv;
 }
@@ -416,6 +435,12 @@ int KCBPCli::Cancel(pybind11::dict& dctCallCtrl)
     extract_callctrl(&stControl, dctCallCtrl);
     m_last_rv = KCBPCLI_Cancel(m_handle, &stControl);
 
+    if (IS_DBGVIEW(m_log_level))
+    {
+        log_debug("Cancel() rv:%d, szId:%s,szMsgId:%s,szCorrId:%s\n", m_last_rv,
+            stControl.szId, stControl.szMsgId, stControl.szCorrId);
+    }
+
     dctCallCtrl["szId"] = stControl.szId;
     return m_last_rv;
 }
@@ -424,7 +449,7 @@ std::string KCBPCli::GetValue(const std::string& KeyName)
 {
     char value[16 * 1024] = { 0 };
     m_last_rv = KCBPCLI_GetValue(m_handle, (char*)KeyName.c_str(), value, sizeof(value) - 1);
-    return to_utf(value);;
+    return to_utf(value);
 }
 
 int KCBPCli::SetValue(const std::string& KeyName, const std::string& Value)
@@ -598,7 +623,7 @@ int KCBPCli::GetErrorCode()
 
 std::string KCBPCli::GetErrorMsg()
 {
-    char lErrorMsg[256] = "";
+    char lErrorMsg[512] = "";
     KCBPCLI_GetErrorMsg(m_handle, lErrorMsg);
     return to_utf(lErrorMsg);
 }
@@ -842,6 +867,7 @@ std::string KCBPCli::SSLGetCertInfo(const std::string& CertFileName, int nInfoTy
     return to_utf(szBuf);
 }
 
+
 int KCBPCli::get_last_rv()
 {
     return m_last_rv;
@@ -855,7 +881,8 @@ std::string KCBPCli::get_api_version()
 std::string KCBPCli::get_rs_as_json()
 {
     int nRow, nCol;
-    char szCode[13], szMsg[256];
+    char szCode[13] = { 0 };
+    char szMsg[256] = { 0 };
     char szColNames[256], szColName[256], szDat[1024];
     char* json_str;
     std::string ret;
@@ -867,6 +894,7 @@ std::string KCBPCli::get_rs_as_json()
     if (m_last_rv != 0)
     {
         printf("error: KCBPCLI_RsOpen return %d\n", m_last_rv);
+        log_debug("get_rs_as_json() error KCBPCLI_RsOpen return %d\n", m_last_rv);
         goto GET_RS_END;
     }
 
@@ -874,6 +902,7 @@ std::string KCBPCli::get_rs_as_json()
     if (m_last_rv != 0)
     {
         printf("error: KCBPCLI_RsFetchRow return %d\n", m_last_rv);
+        log_debug("get_rs_as_json() error KCBPCLI_RsFetchRow return %d\n", m_last_rv);
         goto GET_RS_END;
     }
 
@@ -895,12 +924,14 @@ std::string KCBPCli::get_rs_as_json()
     }
     if (m_last_rv != 0)
     {
-        printf( "get code fail, ret=%d\n ", m_last_rv);
+        printf("get code fail, ret=%d\n ", m_last_rv);
+        log_debug("get_rs_as_json() get code fail, szColNames:%s, ret=%d\n", szColNames, m_last_rv);
         goto GET_RS_END;
     }
     if (atoi(szCode) != 0)
     {
-        printf( "LBM Exec error code:%s, msg:%s\n ", szCode, szMsg);
+        printf("LBM Exec error code:%s, msg:%s\n ", szCode, szMsg);
+        log_debug("get_rs_as_json() error code:%s, msg:%s\n", szCode, szMsg);
         goto GET_RS_END;
     }
 
@@ -908,6 +939,7 @@ std::string KCBPCli::get_rs_as_json()
     m_last_rv = KCBPCLI_RsMore(m_handle);
     if(m_last_rv != 0)
     {
+        log_debug("get_rs_as_json() error KCBPCLI_RsMore return %d\n", m_last_rv);
         goto GET_RS_END;
     }
 
@@ -925,20 +957,27 @@ std::string KCBPCli::get_rs_as_json()
             break;
         }
 
-        printf("row %d\n", nRow++);
+        if (IS_DBGVIEW(m_log_level))
+        {
+            printf("get_rs_as_json() row %d\n", nRow++);
+        }
+
         nCol = 0;
         json_data = cJSON_CreateObject();
         KCBPCLI_RsGetColNum(m_handle, &nCol);
         for( int j = 1; j <= nCol; j++ )
         {
             KCBPCLI_RsGetColName(m_handle, j, szColName, sizeof(szColName) - 1);
-            printf("%s", szColName);
             KCBPCLI_RsGetColByName(m_handle, szColName, szDat);
-            printf(" = %s\n", szDat);
+
+            if (IS_DBGVIEW(m_log_level))
+            {
+                printf("get_rs_as_json(): %s = %s\n", szColName, szDat);
+            }
 
             cJSON_AddStringToObject(json_data, szColName, szDat);
         }
-        printf( "\n" );
+        // printf( "\n" );
 
         cJSON_AddItemToArray(array, json_data);
     }
@@ -952,6 +991,29 @@ std::string KCBPCli::get_rs_as_json()
 GET_RS_END:
     KCBPCLI_RsClose(m_handle);
     return ret;
+}
+
+int KCBPCli::set_value_encode(const std::string& KeyName, const std::string& Value,
+    const std::string& EncodeKey, int EncodeLevel)
+{
+    int rv;
+    unsigned char lDestData[1000] = { 0 };
+
+    if (EncodeLevel <= 0) {
+        EncodeLevel = KDCOMPLEX_ENCODE;
+    }
+
+    rv = KDEncode(EncodeLevel,
+        (unsigned char*)Value.c_str(), (int)Value.length(),
+        lDestData, sizeof(lDestData) - 1,
+        (void*)EncodeKey.c_str(), (int)EncodeKey.length());
+
+    if (IS_DBGVIEW(m_log_level))
+    {
+        printf("set_value_encode() KDEncode rv:%d\n", rv);
+    }
+
+    return KCBPCLI_SetVal(m_handle, (char*)KeyName.c_str(), lDestData, rv);
 }
 
 int KCBPCli::set_ssl_key_password(const std::string& KeyFileName, const std::string& Password)
@@ -1029,6 +1091,25 @@ int KCBPCli::is_disconnected(int code)
     }
 
     return 0;
+}
+
+std::string KCBPCli::kd_encode(int nEncode_Level, const std::string& SrcData, const std::string& EncodeKey)
+{
+    int rv;
+    unsigned char lDestData[1000] = { 0 };
+    rv = KDEncode(nEncode_Level,
+        (unsigned char*)SrcData.c_str(), (int)SrcData.length(),
+        lDestData, sizeof(lDestData) - 1,
+        (void*)EncodeKey.c_str(), (int)EncodeKey.length());
+
+    if (rv > 0)
+    {
+        char lBase64Data[1020] = { 0 };
+        uint32_t lBase64Len = sizeof(lBase64Data) - 1;
+        ztl_base64_encode((const char*)lDestData, rv, lBase64Data, &lBase64Len);
+        return std::string(lBase64Data, lBase64Len);
+    }
+    return "";
 }
 
 int KCBPCli::open_debug(std::string log_file, int log_level)
@@ -1268,11 +1349,13 @@ PYBIND11_MODULE(kcbpcli, m)
         // my wrappered api names
         .def("get_last_rv", &KCBPCli::get_last_rv)
         .def("get_rs_as_json", &KCBPCli::get_rs_as_json)
+        .def("set_value_encode", &KCBPCli::set_value_encode)
         .def("set_ssl_key_password", &KCBPCli::set_ssl_key_password)
         .def("set_value_sslencrypt", &KCBPCli::set_value_sslencrypt)
         .def("rs_set_value_sslencrypt", &KCBPCli::rs_set_value_sslencrypt)
         .def("rs_set_value_byname_sslencrypt", &KCBPCli::rs_set_value_byname_sslencrypt)
         .def("is_disconnected", &KCBPCli::is_disconnected)
+        .def("kd_encode", &KCBPCli::kd_encode)
 
         .def("get_api_version", &KCBPCli::get_api_version)
         .def("open_debug", &KCBPCli::open_debug)
