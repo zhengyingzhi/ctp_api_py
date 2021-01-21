@@ -1109,7 +1109,7 @@ int XcMdApi::subscribe_md(const std::string& symbol, int depth_order, int each_f
 {
     std::vector<std::string> lreqs;
     lreqs.push_back(symbol);
-    return Subscribe(12, lreqs, "", "", "");
+    return Subscribe(refid++, lreqs, "", "", "");
 }
 
 int XcMdApi::req_qry_data(const std::string& symbol)

@@ -500,7 +500,6 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
 
     lSecInfo.PreClosePrice = pSecurity->PrevClosePx;
 
-    int lOptFlag = 0;
     if (strcmp(lSecInfo.SecType, "SZOPT") == 0 || strcmp(lSecInfo.SecType, "OPT") == 0)
     {
         socket_struct_Security_Sz_Opt_Extend* pOptExtend = (socket_struct_Security_Sz_Opt_Extend*)pSecurity->Extend_fields;

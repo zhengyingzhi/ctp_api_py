@@ -201,7 +201,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\;..\api;..\..\thirdparty\python35\include;..\..\thirdparty</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\..\thirdparty\python35\include;..\..\thirdparty</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -210,7 +210,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>python35.lib;XcMarketApi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\api\XcMarketApi\win64;..\..\thirdparty;..\..\thirdparty\python35\win64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\XcMarketApi\win64;..\..\thirdparty;..\..\thirdparty\python35\win64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelPy36|x64'">
@@ -222,7 +222,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\;..\api;..\..\thirdparty\python36\include;..\..\thirdparty</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\..\thirdparty\python36\include;..\..\thirdparty</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -231,7 +231,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>python36.lib;XcMarketApi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\api\XcMarketApi\win64;..\..\thirdparty;..\..\thirdparty\python36\win64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\XcMarketApi\win64;..\..\thirdparty;..\..\thirdparty\python36\win64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
