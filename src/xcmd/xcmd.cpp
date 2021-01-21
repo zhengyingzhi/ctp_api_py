@@ -38,7 +38,7 @@ int code_convert(char* from, char* to, char* inbuf, size_t inlen, char* outbuf, 
 #include "xcmd.h"
 
 
-#define XC_MDAPI_VERSION    "1.4.6"
+#define XC_MDAPI_VERSION    "1.4.7"
 #define XC_SPEC_LOG_LV      11
 #define XC_LIMIT_LOG_LV     12
 
@@ -485,7 +485,6 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
 {
     // 深圳A股证券行情响应
     socket_struct_Security_Sz* pSecurity = (socket_struct_Security_Sz*)pParam;
-    socket_struct_Security_Sz_Extend* pExtend = (socket_struct_Security_Sz_Extend*)pSecurity->Extend_fields;
     XcDebugInfo(XcDbgFd, "OnRespSecurity_Sz Code:%s,Name:%s,PreClose:%.2lf\n",
         pSecurity->SecCode, pSecurity->SecName, pSecurity->PrevClosePx);
 
@@ -500,31 +499,11 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
     strcpy(lSecInfo.SecurityStatusFlag, pSecurity->SecurityStatus);
 
     lSecInfo.PreClosePrice = pSecurity->PrevClosePx;
-    if (pExtend->T_LimitUpRate < 0.0001)
-    {
-        double lLimitRate = 0.1;
-        if (strstr(lSecInfo.SecName, "ST"))
-            lLimitRate = 0.05;
 
-        char buf[200] = "";
-        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 + lLimitRate));
-        lSecInfo.UpperLimitPrice = atof(buf);
-
-        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 - lLimitRate));
-        lSecInfo.LowerLimitPrice = atof(buf);
-    }
-    else
-    {
-        char buf[200] = "";
-        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 + pExtend->T_LimitUpRate));
-        lSecInfo.UpperLimitPrice = atof(buf);
-
-        sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 - pExtend->T_LimitDownRate));
-        lSecInfo.LowerLimitPrice = atof(buf);
-    }
-
+    int lOptFlag = 0;
     if (strcmp(lSecInfo.SecType, "SZOPT") == 0 || strcmp(lSecInfo.SecType, "OPT") == 0)
     {
+        socket_struct_Security_Sz_Opt_Extend* pOptExtend = (socket_struct_Security_Sz_Opt_Extend*)pSecurity->Extend_fields;
         strcpy(lSecInfo.ContractID, pSecurity->EnglishName);
         strcpy(lSecInfo.Underlying, pSecurity->UnderlyingSecurityID);
         if (strcmp(lSecInfo.Underlying, "159919") == 0)
@@ -541,6 +520,9 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
         // lSecInfo.UnderlyingPreClose = pSecurity->UnderlyingClosePx;
         lSecInfo.PreSettlePrice = pSecurity->PrevClearingPrice;
 
+        lSecInfo.UpperLimitPrice = pOptExtend->PriceUpperLimit;
+        lSecInfo.LowerLimitPrice = pOptExtend->PriceLowerLimit;
+
 #if MD_MAP_STRING_KEY
         XcSecurityInfo* lpUnderlyingSecInfo = get_sec_info(atoi(lSecInfo.Underlying));
 #else
@@ -555,6 +537,36 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
         // lSecInfo.MarginUnit = pSecurity->MarginUnit;
         // lSecInfo.MarginRatioParam1 = pSecurity->MarginRatioParam1;
         // lSecInfo.MarginRatioParam2 = pSecurity->MarginRatioParam2;
+    }
+    else
+    {
+        socket_struct_Security_Sz_Extend* pExtend = (socket_struct_Security_Sz_Extend*)pSecurity->Extend_fields;
+        if (pExtend->T_LimitUpRate < 0.0001)
+        {
+            double lLimitRate = 0.1;
+            if (strncmp(lSecInfo.InstrumentID, "30", 2) == 0) {
+                lLimitRate = 0.20;
+            }
+            else if (strstr(lSecInfo.SecName, "ST")) {
+                lLimitRate = 0.05;
+            }
+
+            char buf[200] = "";
+            sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 + lLimitRate));
+            lSecInfo.UpperLimitPrice = atof(buf);
+
+            sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 - lLimitRate));
+            lSecInfo.LowerLimitPrice = atof(buf);
+        }
+        else
+        {
+            char buf[200] = "";
+            sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 + pExtend->T_LimitUpRate));
+            lSecInfo.UpperLimitPrice = atof(buf);
+
+            sprintf(buf, "%.2lf", lSecInfo.PreClosePrice * (1 - pExtend->T_LimitDownRate));
+            lSecInfo.LowerLimitPrice = atof(buf);
+        }
     }
 
 #if MD_MAP_STRING_KEY
@@ -576,17 +588,6 @@ void XcMdApi::OnRespSecurity_Sz(QWORD qQuoteID, void* pParam)
         }
         lSecInfo.SecName[index] = '\0';
         --index;
-    }
-
-    // only keep the AShares
-    if (0 && (strncmp(lSecInfo.InstrumentID, "00", 2) == 0 || strncmp(lSecInfo.InstrumentID, "30", 2) == 0))
-    {
-        socket_struct_SubscribeDetail sub;
-        strcpy(sub.MarketCode, lSecInfo.ExchangeID);
-        strcpy(sub.SecCode, lSecInfo.InstrumentID);
-
-        std::lock_guard<std::mutex> lk(m_Lock);
-        m_SubList.push_back(sub);
     }
 
     Task task = Task();

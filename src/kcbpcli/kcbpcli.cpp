@@ -457,6 +457,11 @@ int KCBPCli::SetValue(const std::string& KeyName, const std::string& Value)
     return KCBPCLI_SetValue(m_handle, (char*)KeyName.c_str(), (char*)Value.c_str());
 }
 
+int KCBPCli::SetVal(const std::string& KeyName, const std::string& Val)
+{
+    return KCBPCLI_SetVal(m_handle, (char*)KeyName.c_str(), (unsigned char*)Val.c_str(), (long)Val.length());
+}
+
 int KCBPCli::RsCreate(const std::string& Name, int ColNum, const std::string& ColInfo)
 {
     return KCBPCLI_RsCreate(m_handle, (char*)Name.c_str(), ColNum, (char*)ColInfo.c_str());
@@ -1003,17 +1008,26 @@ int KCBPCli::set_value_encode(const std::string& KeyName, const std::string& Val
         EncodeLevel = KDCOMPLEX_ENCODE;
     }
 
-    rv = KDEncode(EncodeLevel,
-        (unsigned char*)Value.c_str(), (int)Value.length(),
-        lDestData, sizeof(lDestData) - 1,
-        (void*)EncodeKey.c_str(), (int)EncodeKey.length());
+    if (!EncodeKey.empty())
+    {
+        rv = KDEncode(EncodeLevel,
+            (unsigned char*)Value.c_str(), (int)Value.length(),
+            lDestData, sizeof(lDestData) - 1,
+            (void*)EncodeKey.c_str(), (int)EncodeKey.length());
+    }
+    else
+    {
+        rv = (int)Value.length();
+        rv = rv < sizeof(lDestData) ? rv : sizeof(lDestData) - 1;
+        memcpy(lDestData, Value.c_str(), rv);
+    }
 
     if (IS_DBGVIEW(m_log_level))
     {
-        printf("set_value_encode() KDEncode rv:%d\n", rv);
+        log_debug("set_value_encode() KDEncode rv:%d\n", rv);
     }
 
-    return KCBPCLI_SetVal(m_handle, (char*)KeyName.c_str(), lDestData, rv);
+    return KCBPCLI_SetValue(m_handle, (char*)KeyName.c_str(), (char*)lDestData);
 }
 
 int KCBPCli::set_ssl_key_password(const std::string& KeyFileName, const std::string& Password)
@@ -1093,7 +1107,7 @@ int KCBPCli::is_disconnected(int code)
     return 0;
 }
 
-std::string KCBPCli::kd_encode(int nEncode_Level, const std::string& SrcData, const std::string& EncodeKey)
+std::string KCBPCli::kd_encode(int nEncode_Level, const std::string& SrcData, const std::string& EncodeKey, int Base64Flag)
 {
     int rv;
     unsigned char lDestData[1000] = { 0 };
@@ -1102,14 +1116,14 @@ std::string KCBPCli::kd_encode(int nEncode_Level, const std::string& SrcData, co
         lDestData, sizeof(lDestData) - 1,
         (void*)EncodeKey.c_str(), (int)EncodeKey.length());
 
-    if (rv > 0)
+    if (rv > 0 && Base64Flag)
     {
         char lBase64Data[1020] = { 0 };
         uint32_t lBase64Len = sizeof(lBase64Data) - 1;
         ztl_base64_encode((const char*)lDestData, rv, lBase64Data, &lBase64Len);
         return std::string(lBase64Data, lBase64Len);
     }
-    return "";
+    return std::string((char*)lDestData, rv);
 }
 
 int KCBPCli::open_debug(std::string log_file, int log_level)

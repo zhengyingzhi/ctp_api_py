@@ -25,7 +25,7 @@
 // using namespace pybind11;
 
 
-#define KCBPCLI_API_VERSION     "1.0.0"
+#define KCBPCLI_API_VERSION     "1.0.1"
 
 #define KCBP_ERR_REPLY_TIMEOUT  2001    // 接收应答超时
 #define KCBP_ERR_TRANS_FAULT    2082    // 数据通讯错误
@@ -96,6 +96,7 @@ public:
 
     std::string GetValue(const std::string& KeyName);
     int SetValue(const std::string& KeyName, const std::string& Value);
+    int SetVal(const std::string& KeyName, const std::string& Val);
 
     /*rs*/
     int RsCreate(const std::string& Name, int ColNum, const std::string& ColInfo);
@@ -184,7 +185,7 @@ public:
     int is_disconnected(int code);
 
     /*wrappered kdencode*/
-    std::string kd_encode(int nEncode_Level, const std::string& SrcData, const std::string& EncodeKey);
+    std::string kd_encode(int nEncode_Level, const std::string& SrcData, const std::string& EncodeKey, int Base64Flag);
 
     std::string get_api_version();
 
