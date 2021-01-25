@@ -4,7 +4,7 @@
 #include "bar_generator.h"
 
 
-#define BAR_GENERATOR_VERSION   "1.0.6"
+#define BAR_GENERATOR_VERSION   "1.0.7"
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -417,6 +417,9 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
             bar->High = last_price;
             bar->Low = last_price;
             bar->Close = last_price;
+            strncpy(bar->Date, date, 8);
+            sprintf(bar->Time, "%02d:%02d:%02d", tick_tm.tm_hour, tick_tm.tm_min, tick_tm.tm_sec);
+
 #if BG_BAR_DEBUG
             bar->StartTime = bargen->prev_update_time;
             bar->EndTime = update_time;
@@ -568,6 +571,7 @@ bar_data_t* MD_UTILS_STDCALL bar_generator_update_data(
             bar->Low = last_price;
         bar->Close = last_price;
         bar->OpenInterest = open_interest;
+        sprintf(bar->Time, "%02d:%02d:%02d", tick_tm.tm_hour, tick_tm.tm_min, tick_tm.tm_sec);
 #if BG_BAR_DEBUG
         bar->EndTime = update_time;
 #endif//BG_BAR_DEBUG
