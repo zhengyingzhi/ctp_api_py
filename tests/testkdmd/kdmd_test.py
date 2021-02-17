@@ -120,17 +120,17 @@ def main(server_ip, server_port):
     print('md init...')
 
     # 初始化api，连接前置机，参数为超时时间，0表示异步连接
-    timeout_ms = 2000
+    timeout_ms = 0
     rv = api.init(timeout_ms)
-    # sleep(1.5)
+    sleep(1.5)
     print("init rv:%s" % rv)
     
     # 登陆
     login_req = {}
     login_req['UserID'] = '00100001'
-    login_req['Password'] = ''
+    login_req['Password'] = 'bigquant123'
     rv = api.req_user_login(login_req, timeout_ms)
-    # sleep(0.5)
+    sleep(0.5)
     print("req_user_login rv:%s" % rv)
 
     ## 安全退出，测试通过
@@ -140,9 +140,9 @@ def main(server_ip, server_port):
     # 市场ID： 1-SSE 2-SZSE 参考 KD_MI_XXX
     # 服务数据ID：2-idx_info 3-idx_data 4-stk_info 5-stk_data 参考 KD_SI_XXX
     market_id = 1
-    service_id = 3
+    service_id = 4
     req = {
-        "InstrumentID": "000001",
+        "InstrumentID": "600446",
         "MarketId": market_id,
         "ServiceId": service_id
     }

@@ -565,16 +565,18 @@ std::string KCBPCli::RsGetColByName(const std::string& KeyName)
     return to_utf(value);
 }
 
-std::string KCBPCli::RsGetVal(int nColumnIndex)
+pybind11::bytes KCBPCli::RsGetVal(int nColumnIndex)
 {
     // int RsGetVal(int nColumnIndex, unsigned char **pValue, long *pSize);
     unsigned char* pValue = NULL;
     long nSize = 0;
     m_last_rv = KCBPCLI_RsGetVal(m_handle, nColumnIndex, &pValue, &nSize);
-    std::string ret = to_utf((char*)pValue);  // FIXME
-    KCBPCLI_FreeMemory(m_handle, pValue);
-
-    return ret;
+    if (pValue) {
+        pybind11::bytes ret((char*)pValue, m_last_rv);
+        KCBPCLI_FreeMemory(m_handle, pValue);
+        return ret;
+    }
+    return pybind11::bytes("");
 }
 
 std::string KCBPCli::RsGetValByName(const std::string& ColumnName)
@@ -1107,7 +1109,7 @@ int KCBPCli::is_disconnected(int code)
     return 0;
 }
 
-std::string KCBPCli::kd_encode(int nEncode_Level, const std::string& SrcData, const std::string& EncodeKey, int Base64Flag)
+pybind11::bytes KCBPCli::kd_encode(int nEncode_Level, const std::string& SrcData, const std::string& EncodeKey)
 {
     int rv;
     unsigned char lDestData[1000] = { 0 };
@@ -1116,14 +1118,7 @@ std::string KCBPCli::kd_encode(int nEncode_Level, const std::string& SrcData, co
         lDestData, sizeof(lDestData) - 1,
         (void*)EncodeKey.c_str(), (int)EncodeKey.length());
 
-    if (rv > 0 && Base64Flag)
-    {
-        char lBase64Data[1020] = { 0 };
-        uint32_t lBase64Len = sizeof(lBase64Data) - 1;
-        ztl_base64_encode((const char*)lDestData, rv, lBase64Data, &lBase64Len);
-        return std::string(lBase64Data, lBase64Len);
-    }
-    return std::string((char*)lDestData, rv);
+    return pybind11::bytes((char*)lDestData, rv);
 }
 
 int KCBPCli::open_debug(std::string log_file, int log_level)

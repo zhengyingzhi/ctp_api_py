@@ -32,7 +32,8 @@ void MD_UTILS_STDCALL bardata_series_release(bardata_series_t* bards)
 
 int MD_UTILS_STDCALL bardata_series_push_bar(bardata_series_t* bards,
     int date, int update_time,
-    double open, double high, double low, double close, int64_t volume, double turnover)
+    double open, double high, double low, double close,
+    int64_t volume, double turnover, double open_interest)
 {
     union_dt_t udt;
 
@@ -42,6 +43,7 @@ int MD_UTILS_STDCALL bardata_series_push_bar(bardata_series_t* bards,
     cdeque_push_double(&bards->closes, close);
     cdeque_push_int64(&bards->volumes, volume);
     cdeque_push_double(&bards->turnovers, turnover);
+    cdeque_push_double(&bards->open_interests, open_interest);
 
     udt.sdt.date = date;
     udt.sdt.update_time = update_time;
@@ -78,6 +80,11 @@ double* MD_UTILS_STDCALL bardata_series_close(bardata_series_t* bards)
 double* MD_UTILS_STDCALL bardata_series_turnover(bardata_series_t* bards)
 {
     return cdeque_data(&bards->turnovers);
+}
+
+double* MD_UTILS_STDCALL bardata_series_open_interest(bardata_series_t* bards)
+{
+    return cdeque_data(&bards->open_interests);
 }
 
 int64_t* MD_UTILS_STDCALL bardata_series_volume(bardata_series_t* bards)

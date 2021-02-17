@@ -163,7 +163,7 @@ public:
     //req:主动函数的请求字典
     //-------------------------------------------------------------------------------------
 
-    void create_md_api(string flow_path = "");
+    void create_md_api(string pszFlowPath = "");
 
     string get_api_version();
 

@@ -25,6 +25,14 @@
       <Configuration>RelPy36</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="RelPy38|Win32">
+      <Configuration>RelPy38</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelPy38|x64">
+      <Configuration>RelPy38</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{653F2D92-F824-40D6-82FB-9A56B244F30D}</ProjectGuid>
@@ -62,7 +70,14 @@
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='RelPy36|Win32'">
     <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelPy38|Win32'" Label="Configuration">
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='RelPy36|x64'">
+    <PlatformToolset>v140</PlatformToolset>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelPy38|x64'" Label="Configuration">
     <PlatformToolset>v140</PlatformToolset>
     <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
@@ -107,6 +122,12 @@
     <IntDir>$(SolutionDir)..\$(Platform)\objs\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetExt>.pyd</TargetExt>
     <TargetName>md_utils.cp36-win_amd64</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelPy38|x64'">
+    <OutDir>$(SolutionDir)..\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)..\$(Platform)\objs\$(ProjectName)\$(Configuration)\</IntDir>
+    <TargetExt>.pyd</TargetExt>
+    <TargetName>md_utils.cp38-win_amd64</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -182,6 +203,16 @@
     <Link>
       <AdditionalLibraryDirectories>..\..\thirdparty\python36\win64;..\..\thirdparty\ZToolLib\win64</AdditionalLibraryDirectories>
       <AdditionalDependencies>python36.lib;ZToolLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelPy38|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\..\thirdparty;..\..\thirdparty\ZToolLib\include;..\..\thirdparty\python38\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;MD_UTILS_EXPORTS;MD_UTILS_PY36;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>..\..\thirdparty\python38\win64;..\..\thirdparty\ZToolLib\win64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>python38.lib;ZToolLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

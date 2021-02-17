@@ -116,8 +116,8 @@ static PyObject* mu_data_encode(PyObject* self, PyObject* args)
     data_change(lbuf);
 
     char ldst[1000] = "";
-    uint32_t* llen = sizeof(ldst) - 1;
-    ztl_base64_encode(lbuf, strlen(lbuf), ldst, &llen);
+    uint32_t llen = sizeof(ldst) - 1;
+    ztl_base64_encode(lbuf, (uint32_t)strlen(lbuf), ldst, &llen);
 
     return Py_BuildValue("s", ldst);
 }
@@ -134,8 +134,8 @@ static PyObject* mu_data_decode(PyObject* self, PyObject* args)
         return Py_BuildValue("i", -1);
 
     char lbuf[1000] = "";
-    uint32_t* llen = sizeof(lbuf) - 1;
-    ztl_base64_decode(raw_data, strlen(raw_data), lbuf, &llen);
+    uint32_t llen = sizeof(lbuf) - 1;
+    ztl_base64_decode(raw_data, (uint32_t)strlen(raw_data), lbuf, &llen);
 
     data_change(lbuf);
 
@@ -144,8 +144,69 @@ static PyObject* mu_data_decode(PyObject* self, PyObject* args)
 
 /* ---------- md utils py interfaces end   ---------- */
 
+#if 0
+typedef struct st_test 
+{
+    int volume;
+    int age;
+    char name[8];
+    void* ptr;
+    int flag;
+}test_t;
+
+
+static PyObject* mu_test(PyObject* self, PyObject* args)
+{
+    test_t* t = (test_t*)malloc(sizeof(test_t));
+    memset(t, 0, sizeof(test_t));
+    t->volume = 4;
+    t->age = 31;
+    strcpy(t->name, "DCE");
+    t->ptr = t;
+    t->flag = 1;
+    fprintf(stderr, "test t:%p\n", t);
+    PyObject* ret;
+    // ret = PyBytes_FromStringAndSize((const char*)t, sizeof(test_t));
+    ret = PyByteArray_FromStringAndSize((const char*)t, sizeof(test_t));
+
+    // we can free memory here, or t is local var ok
+    free(t);
+
+    return ret;
+    // Py_RETURN_NONE;
+}
+
+static PyObject* mu_test2(PyObject* self, PyObject* args)
+{
+    int rv = 0;
+    int sz = 0;
+    test_t* t = NULL;
+    PyObject* o = NULL;
+    PyObject* op = NULL;
+    fprintf(stderr, "mu_test2 000 self:%p, args:%p\n", self, args);
+
+    rv = PyArg_ParseTuple(args, "|O", &o);  // o is a new PyOjbect*, then t, sz is new as well
+    // rv = PyArg_ParseTuple(args, "s#", &t, &sz);  // t is new bytes object, not bytearray type
+    if (o) {
+        t = PyByteArray_AsString(o);
+        sz = PyByteArray_Size(o);
+    }
+    fprintf(stderr, "rv:%d, test2 o:%p, sz=%d, t:%p\n", rv, o, sz, t);
+    if (t) {
+        fprintf(stderr, "test2 t v:%d, age:%d, name:%s, ptr:%p\n", t->volume, t->age, t->name, t->ptr);
+        // we need decref count for t, sz
+    }
+
+    Py_RETURN_NONE;
+}
+#endif//0
+
 //////////////////////////////////////////////////////////////////////////
 static PyMethodDef MdUtilsModuleMethods[] = {
+#if 0
+    {"test", mu_test, METH_NOARGS, "test"},
+    { "test2", mu_test2, METH_VARARGS, "test2" },
+#endif//0
     { "mu_version", mu_version,     METH_NOARGS , "md utils module version" },
     { "mu_to_int_time", mu_to_int_time, METH_VARARGS , "convert time str to int" },
     { "mu_data_encode", mu_data_encode, METH_VARARGS , "simple data encode" },

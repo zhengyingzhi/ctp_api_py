@@ -1082,6 +1082,10 @@ public:
 
     string getTradingDay();
 
+    void registerSpi(int flag);
+    void registerNameServer(string pszNsAddress);
+    void registerFensUserInfo(const dict& req);
+
     void registerFront(string pszFrontAddress);
 
     void subscribePrivateTopic(int nType);

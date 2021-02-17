@@ -117,7 +117,7 @@ public:
     int RsFetchRowScroll(int nOrientation, int nOffset);
     std::string RsGetCol(int Col);
     std::string RsGetColByName(const std::string& KeyName);
-    std::string RsGetVal(int nColumnIndex);
+    pybind11::bytes RsGetVal(int nColumnIndex);
     std::string RsGetValByName(const std::string& ColumnName);
     int RsGetRowNum();
     int RsGetColNum();
@@ -185,7 +185,7 @@ public:
     int is_disconnected(int code);
 
     /*wrappered kdencode*/
-    std::string kd_encode(int nEncode_Level, const std::string& SrcData, const std::string& EncodeKey, int Base64Flag);
+    pybind11::bytes kd_encode(int nEncode_Level, const std::string& SrcData, const std::string& EncodeKey);
 
     std::string get_api_version();
 

@@ -4,7 +4,7 @@
 #include "ctpmd.h"
 
 
-#define CTP_MD_VERSION      "1.1.3"
+#define CTP_MD_VERSION      "1.1.4"
 
 
 static int str_delimiter(char* apSrc, char** apRetArr, int aArrSize, char aDelimiter)
@@ -652,11 +652,36 @@ void MdApi::processBarGen(CThostFtdcDepthMarketDataField* apMD)
 ///Ö÷¶¯º¯Êý
 ///-------------------------------------------------------------------------------------
 
-void MdApi::createFtdcMdApi(string pszFlowPath)
+void MdApi::createFtdcMdApi(string pszFlowPath, const bool bIsUsingUdp, const bool bIsMulticast)
 {
-	this->api = CThostFtdcMdApi::CreateFtdcMdApi(pszFlowPath.c_str());
+	this->api = CThostFtdcMdApi::CreateFtdcMdApi(pszFlowPath.c_str(), bIsUsingUdp, bIsMulticast);
 	this->api->RegisterSpi(this);
 };
+
+void MdApi::registerSpi(int flag)
+{
+    if (flag) {
+        this->api->RegisterSpi(this);
+    }
+    else {
+        this->api->RegisterSpi(NULL);
+    }
+}
+
+void MdApi::registerNameServer(string pszNsAddress)
+{
+    this->api->RegisterNameServer((char*)pszNsAddress.c_str());
+}
+
+void MdApi::registerFensUserInfo(const dict& req)
+{
+    CThostFtdcFensUserInfoField myreq = CThostFtdcFensUserInfoField();
+    memset(&myreq, 0, sizeof(myreq));
+    getString(req, "BrokerID", myreq.BrokerID);
+    getString(req, "UserID", myreq.UserID);
+    getChar(req, "LoginMode", &myreq.LoginMode);
+    this->api->RegisterFensUserInfo(&myreq);
+}
 
 void MdApi::release()
 {
@@ -992,7 +1017,7 @@ PYBIND11_MODULE(ctpmd, m)
 	class_<MdApi, PyMdApi> mdapi(m, "MdApi", module_local());
 	mdapi
 		.def(init<>())
-		.def("createFtdcMdApi", &MdApi::createFtdcMdApi)
+		.def("createFtdcMdApi", &MdApi::createFtdcMdApi, pybind11::arg("pszFlowPath")="", pybind11::arg("bIsUsingUdp")=false, pybind11::arg("bIsMulticast") = false)
 		.def("release", &MdApi::release)
 		.def("init", &MdApi::init)
 		.def("join", &MdApi::join)
@@ -1000,6 +1025,9 @@ PYBIND11_MODULE(ctpmd, m)
 		.def("getApiVersion", &MdApi::getApiVersion)
 		.def("getTradingDay", &MdApi::getTradingDay)
 		.def("registerFront", &MdApi::registerFront)
+        .def("registerSpi", &MdApi::registerSpi)
+        .def("registerNameServer", &MdApi::registerNameServer)
+        .def("registerFensUserInfo", &MdApi::registerFensUserInfo)
 		.def("subscribeMarketData", &MdApi::subscribeMarketData)
 		.def("unSubscribeMarketData", &MdApi::unSubscribeMarketData)
 		.def("subscribeForQuoteRsp", &MdApi::subscribeForQuoteRsp)

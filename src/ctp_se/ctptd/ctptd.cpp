@@ -8294,6 +8294,31 @@ string TdApi::getApiVersion()
     return ver;
 }
 
+void TdApi::registerSpi(int flag)
+{
+    if (flag) {
+        this->api->RegisterSpi(this);
+    }
+    else {
+        this->api->RegisterSpi(NULL);
+    }
+}
+
+void TdApi::registerNameServer(string pszNsAddress)
+{
+    this->api->RegisterNameServer((char*)pszNsAddress.c_str());
+}
+
+void TdApi::registerFensUserInfo(const dict& req)
+{
+    CThostFtdcFensUserInfoField myreq = CThostFtdcFensUserInfoField();
+    memset(&myreq, 0, sizeof(myreq));
+    getString(req, "BrokerID", myreq.BrokerID);
+    getString(req, "UserID", myreq.UserID);
+    getChar(req, "LoginMode", &myreq.LoginMode);
+    this->api->RegisterFensUserInfo(&myreq);
+}
+
 void TdApi::registerFront(string pszFrontAddress)
 {
     this->api->RegisterFront((char*)pszFrontAddress.c_str());
@@ -11164,13 +11189,14 @@ PYBIND11_MODULE(ctptd, m)
     class_<TdApi, PyTdApi> TdApi(m, "TdApi", module_local());
     TdApi
         .def(init<>())
-        .def("createFtdcTraderApi", &TdApi::createFtdcTraderApi)
+        .def("createFtdcTraderApi", &TdApi::createFtdcTraderApi, pybind11::arg("pszFlowPath") = "")
         .def("release", &TdApi::release)
         .def("init", &TdApi::init)
         .def("join", &TdApi::join)
         .def("exit", &TdApi::exit)
         .def("getApiVersion", &TdApi::getApiVersion)
         .def("getTradingDay", &TdApi::getTradingDay)
+        .def("registerSpi", &TdApi::registerSpi)
         .def("registerFront", &TdApi::registerFront)
         .def("subscribePublicTopic", &TdApi::subscribePublicTopic)
         .def("subscribePrivateTopic", &TdApi::subscribePrivateTopic)

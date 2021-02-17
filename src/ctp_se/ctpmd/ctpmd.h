@@ -190,7 +190,7 @@ public:
 	//req:主动函数的请求字典
 	//-------------------------------------------------------------------------------------
 
-	void createFtdcMdApi(string pszFlowPath = "");
+	void createFtdcMdApi(string pszFlowPath = "", const bool bIsUsingUdp = false, const bool bIsMulticast = false);
 
 	void release();
 
@@ -203,6 +203,10 @@ public:
 	string getTradingDay();
 
 	string getApiVersion();
+
+    void registerSpi(int flag);
+    void registerNameServer(string pszNsAddress);
+    void registerFensUserInfo(const dict& req);
 
 	void registerFront(string pszFrontAddress);
 

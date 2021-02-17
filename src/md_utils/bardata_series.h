@@ -33,6 +33,7 @@ struct bardata_series_s
     cdeque_t    closes;
     cdeque_t    volumes;
     cdeque_t    turnovers;
+    cdeque_t    open_interests;
     cdeque_t    datetimes;
 
     int32_t     size;
@@ -50,7 +51,8 @@ MD_UTILS_API void MD_UTILS_STDCALL bardata_series_release(bardata_series_t* bard
 
 MD_UTILS_API int MD_UTILS_STDCALL bardata_series_push_bar(bardata_series_t* bards,
     int date, int update_time,
-    double open, double high, double low, double close, int64_t volume, double turnover);
+    double open, double high, double low, double close,
+    int64_t volume, double turnover, double open_interest);
 
 MD_UTILS_API int  MD_UTILS_STDCALL bardata_series_len(bardata_series_t* bards);
 
@@ -59,6 +61,7 @@ MD_UTILS_API double* MD_UTILS_STDCALL bardata_series_high(bardata_series_t* bard
 MD_UTILS_API double* MD_UTILS_STDCALL bardata_series_low(bardata_series_t* bards);
 MD_UTILS_API double* MD_UTILS_STDCALL bardata_series_close(bardata_series_t* bards);
 MD_UTILS_API double* MD_UTILS_STDCALL bardata_series_turnover(bardata_series_t* bards);
+MD_UTILS_API double* MD_UTILS_STDCALL bardata_series_open_interest(bardata_series_t* bards);
 MD_UTILS_API int64_t* MD_UTILS_STDCALL bardata_series_volume(bardata_series_t* bards);
 MD_UTILS_API int64_t* MD_UTILS_STDCALL bardata_series_datetime(bardata_series_t* bards);
 
